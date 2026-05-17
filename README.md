@@ -1,6 +1,6 @@
-# API Gestao Financeira
+# API Gestão Financeira
 
-API RESTful para controle financeiro pessoal multiusuario, com autenticacao via Sanctum, competencia mensal no formato `YYYY-MM` e endpoints de dashboard para consolidacao financeira.
+API RESTful para controle financeiro pessoal multiusuário, com autenticação via Sanctum, competência mensal no formato `YYYY-MM` e endpoints de dashboard para consolidação financeira.
 
 ## Stack
 
@@ -13,26 +13,26 @@ API RESTful para controle financeiro pessoal multiusuario, com autenticacao via 
 
 ## Objetivo do sistema
 
-O sistema foi construido para controlar:
+O sistema foi construído para controlar:
 
-- usuarios
-- categorias por usuario
-- transacoes financeiras
+- usuários
+- categorias por usuário
+- transações financeiras
 - reservas mensais
 - dashboard com indicadores e comparativos
 
-Cada usuario acessa apenas os seus proprios dados.
+Cada usuário acessa apenas os seus próprios dados.
 
-## Principais regras de negocio
+## Principais regras de negócio
 
-- a competencia mensal usa o formato `YYYY-MM`
-- categorias pertencem ao usuario autenticado
-- transacoes centralizam entradas e saidas
-- nao existe parcelamento
-- nao existe pagamento parcial
-- nao existe vencimento
-- exclusao e permanente
-- recorrencia e controlada por `boolean`
+- a competência mensal usa o formato `YYYY-MM`
+- categorias pertencem ao usuário autenticado
+- transações centralizam entradas e saídas
+- não existe parcelamento
+- não existe pagamento parcial
+- não existe vencimento
+- exclusão é permanente
+- recorrência é controlada por `boolean`
 
 ## Arquitetura
 
@@ -42,13 +42,13 @@ O projeto segue arquitetura em camadas:
 
 ### Camadas
 
-- `Controller`: recebe a requisicao HTTP
-- `Service`: aplica regra de negocio
+- `Controller`: recebe a requisição HTTP
+- `Service`: aplica regra de negócio
 - `Repository`: consulta e persiste dados
 - `Request`: valida e normaliza entrada
-- `Resource`: padroniza a saida JSON
+- `Resource`: padroniza a saída JSON
 - `Middleware`: trata responsabilidades transversais
-- `Model`: representa as entidades do dominio
+- `Model`: representa as entidades do domínio
 
 ## Estrutura principal
 
@@ -66,11 +66,11 @@ app/
 `-- Services
 ```
 
-## Modulos implementados
+## Módulos implementados
 
-- autenticacao
+- autenticação
 - categorias
-- transacoes
+- transações
 - reservas mensais
 - dashboard
 
@@ -88,7 +88,7 @@ O projeto foi preparado para rodar com:
 docker compose up -d
 ```
 
-### Instalar dependencias no container
+### Instalar dependências no container
 
 ```bash
 docker compose exec app composer install
@@ -106,9 +106,9 @@ docker compose exec app php artisan migrate --force
 docker compose exec app php artisan route:list
 ```
 
-## Configuracao de ambiente
+## Configuração de ambiente
 
-Exemplo de variaveis importantes:
+Exemplo de variáveis importantes:
 
 ```env
 APP_URL=http://localhost:8000
@@ -127,7 +127,7 @@ SANCTUM_STATEFUL_DOMAINS=localhost:5173
 SANCTUM_TOKEN_EXPIRATION=1440
 ```
 
-## Autenticacao
+## Autenticação
 
 A API utiliza Sanctum com Bearer Token.
 
@@ -141,10 +141,10 @@ Content-Type: application/json
 
 ### Fluxo recomendado
 
-1. registrar usuario em `/api/auth/register`
+1. registrar usuário em `/api/auth/register`
 2. armazenar o token retornado
 3. enviar o token nas rotas protegidas
-4. fazer logout em `/api/auth/logout` quando necessario
+4. fazer logout em `/api/auth/logout` quando necessário
 
 ## Endpoints principais
 
@@ -189,8 +189,8 @@ Content-Type: application/json
 
 O dashboard foi preparado para retornar:
 
-- total de entradas do mes
-- total de gastos do mes
+- total de entradas do mês
+- total de gastos do mês
 - valor restante
 - reserva atual
 - total guardado
@@ -198,10 +198,10 @@ O dashboard foi preparado para retornar:
 - categoria com menor gasto
 - gastos por categoria
 - comparativo de categorias entre meses
-- evolucao mensal
-- comparacao entre meses
+- evolução mensal
+- comparação entre meses
 
-## Formulas utilizadas
+## Fórmulas utilizadas
 
 ```text
 valor_restante = total_entradas - total_gastos
@@ -209,42 +209,42 @@ reserva_atual = reserva_anterior + valor_restante
 total_guardado = reserva_atual + investimento
 ```
 
-## Seguranca aplicada
+## Segurança aplicada
 
-- autenticacao com Sanctum
-- ownership por usuario nas consultas
-- middleware para forcar JSON
+- autenticação com Sanctum
+- ownership por usuário nas consultas
+- middleware para forçar JSON
 - throttle em login e registro
-- expiracao configurada para tokens
-- validacoes contextuais por usuario
+- expiração configurada para tokens
+- validações contextuais por usuário
 
-## Validacoes implementadas
+## Validações implementadas
 
 - `competency` com regra customizada
 - email normalizado em auth
-- nome e descricao com `trim`
-- unicidade de categoria por usuario e tipo
-- unicidade de reserva mensal por usuario e competencia
-- categoria da transacao restrita ao usuario autenticado
-- consistencia entre `category.type` e `transaction.type`
+- nome e descrição com `trim`
+- unicidade de categoria por usuário e tipo
+- unicidade de reserva mensal por usuário e competência
+- categoria da transação restrita ao usuário autenticado
+- consistência entre `category.type` e `transaction.type`
 
-## Otimizacoes aplicadas
+## Otimizações aplicadas
 
-- eager loading com colunas especificas
-- agregacoes do dashboard nos repositories
-- consultas em lote para evolucao mensal e comparacoes
-- indices de banco voltados para `user_id`, `competency`, `type` e `status`
+- eager loading com colunas específicas
+- agregações do dashboard nos repositories
+- consultas em lote para evolução mensal e comparações
+- índices de banco voltados para `user_id`, `competency`, `type` e `status`
 
-## Documentacao local complementar
+## Documentação local complementar
 
-Existem dois arquivos locais de apoio que nao sobem para o GitHub por estarem no `.gitignore`:
+Existem dois arquivos locais de apoio que não sobem para o GitHub por estarem no `.gitignore`:
 
 - `local-docs/USO_API_LOCAL.md`
 - `local-docs/EXPLICACAO_SISTEMA_LOCAL.md`
 
 Eles foram criados para uso local e estudo do projeto.
 
-## Comandos uteis
+## Comandos úteis
 
 ### Rodar migrations
 
@@ -252,7 +252,7 @@ Eles foram criados para uso local e estudo do projeto.
 docker compose exec app php artisan migrate --force
 ```
 
-### Limpar cache de configuracao
+### Limpar cache de configuração
 
 ```bash
 docker compose exec app php artisan config:clear
@@ -264,7 +264,7 @@ docker compose exec app php artisan config:clear
 docker compose exec app php artisan test
 ```
 
-### Abrir shell no container da aplicacao
+### Abrir shell no container da aplicação
 
 ```bash
 docker compose exec app sh
@@ -274,11 +274,11 @@ docker compose exec app sh
 
 - testes automatizados
 - policies
-- handler global para excecoes de dominio
+- handler global para exceções de domínio
 - cache no dashboard
-- paginacao e filtros adicionais
+- paginação e filtros adicionais
 - versionamento de API
 
-## Licenca
+## Licença
 
-Este projeto utiliza a licenca MIT.
+Este projeto utiliza a licença MIT.
