@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Dashboard\CategoryComparisonRequest;
+use App\Http\Requests\Dashboard\MonthComparisonRequest;
+use App\Http\Requests\Dashboard\MonthlyEvolutionRequest;
+use App\Http\Requests\Dashboard\MonthlySummaryRequest;
 use App\Http\Resources\DashboardCategoryComparisonResource;
 use App\Http\Resources\DashboardMonthComparisonResource;
 use App\Http\Resources\DashboardMonthlyEvolutionResource;
@@ -10,7 +14,6 @@ use App\Http\Resources\DashboardResource;
 use App\Services\DashboardService;
 use DomainException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 
 class DashboardController extends Controller
 {
@@ -18,45 +21,31 @@ class DashboardController extends Controller
         protected DashboardService $dashboardService,
     ) {}
 
-    public function resumoMensal(Request $request): DashboardResource
+    public function resumoMensal(MonthlySummaryRequest $request): DashboardResource
     {
-        $dados = $request->validate([
-            'competency' => ['required', 'string', 'size:7', 'regex:/^\d{4}-\d{2}$/'],
-        ]);
-
         return new DashboardResource(
-            $this->dashboardService->obterResumoMensal($this->usuarioIdAutenticado(), $dados['competency'])
+            $this->dashboardService->obterResumoMensal($this->usuarioIdAutenticado(), $request->validated('competency'))
         );
     }
 
-    public function comparativoCategorias(Request $request): DashboardCategoryComparisonResource
+    public function comparativoCategorias(CategoryComparisonRequest $request): DashboardCategoryComparisonResource
     {
-        $dados = $request->validate([
-            'current_competency' => ['required', 'string', 'size:7', 'regex:/^\d{4}-\d{2}$/'],
-            'previous_competency' => ['required', 'string', 'size:7', 'regex:/^\d{4}-\d{2}$/'],
-        ]);
-
         return new DashboardCategoryComparisonResource(
             $this->dashboardService->obterComparativoDeCategorias(
                 $this->usuarioIdAutenticado(),
-                $dados['current_competency'],
-                $dados['previous_competency'],
+                $request->validated('current_competency'),
+                $request->validated('previous_competency'),
             )
         );
     }
 
-    public function evolucaoMensal(Request $request): DashboardMonthlyEvolutionResource|JsonResponse
+    public function evolucaoMensal(MonthlyEvolutionRequest $request): DashboardMonthlyEvolutionResource|JsonResponse
     {
-        $dados = $request->validate([
-            'start_competency' => ['required', 'string', 'size:7', 'regex:/^\d{4}-\d{2}$/'],
-            'end_competency' => ['required', 'string', 'size:7', 'regex:/^\d{4}-\d{2}$/'],
-        ]);
-
         try {
             $evolucao = $this->dashboardService->obterEvolucaoMensal(
                 $this->usuarioIdAutenticado(),
-                $dados['start_competency'],
-                $dados['end_competency'],
+                $request->validated('start_competency'),
+                $request->validated('end_competency'),
             );
         } catch (DomainException $exception) {
             return response()->json([
@@ -67,18 +56,13 @@ class DashboardController extends Controller
         return new DashboardMonthlyEvolutionResource($evolucao);
     }
 
-    public function comparacaoEntreMeses(Request $request): DashboardMonthComparisonResource
+    public function comparacaoEntreMeses(MonthComparisonRequest $request): DashboardMonthComparisonResource
     {
-        $dados = $request->validate([
-            'first_competency' => ['required', 'string', 'size:7', 'regex:/^\d{4}-\d{2}$/'],
-            'second_competency' => ['required', 'string', 'size:7', 'regex:/^\d{4}-\d{2}$/'],
-        ]);
-
         return new DashboardMonthComparisonResource(
             $this->dashboardService->obterComparacaoEntreMeses(
                 $this->usuarioIdAutenticado(),
-                $dados['first_competency'],
-                $dados['second_competency'],
+                $request->validated('first_competency'),
+                $request->validated('second_competency'),
             )
         );
     }

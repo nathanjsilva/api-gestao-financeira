@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Transaction\ListTransactionRequest;
 use App\Http\Requests\Transaction\StoreTransactionRequest;
 use App\Http\Requests\Transaction\UpdateTransactionRequest;
 use App\Http\Resources\TransactionResource;
 use App\Services\TransactionService;
 use DomainException;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 
 class TransactionController extends Controller
@@ -18,14 +18,10 @@ class TransactionController extends Controller
         protected TransactionService $transactionService,
     ) {}
 
-    public function index(Request $request): AnonymousResourceCollection
+    public function index(ListTransactionRequest $request): AnonymousResourceCollection
     {
-        $dados = $request->validate([
-            'competency' => ['required', 'string', 'size:7', 'regex:/^\d{4}-\d{2}$/'],
-        ]);
-
         return TransactionResource::collection(
-            $this->transactionService->listar($this->usuarioIdAutenticado(), $dados['competency'])
+            $this->transactionService->listar($this->usuarioIdAutenticado(), $request->validated('competency'))
         );
     }
 
