@@ -20,13 +20,13 @@ class MonthlyReserveController extends Controller
     public function index(): AnonymousResourceCollection
     {
         return MonthlyReserveResource::collection(
-            $this->monthlyReserveService->listar((int) auth()->id())
+            $this->monthlyReserveService->listar($this->usuarioIdAutenticado())
         );
     }
 
     public function show(int $id): MonthlyReserveResource|JsonResponse
     {
-        $reservaMensal = $this->monthlyReserveService->buscarPorId($id, (int) auth()->id());
+        $reservaMensal = $this->monthlyReserveService->buscarPorId($id, $this->usuarioIdAutenticado());
 
         if ($reservaMensal === null) {
             return response()->json([
@@ -40,7 +40,7 @@ class MonthlyReserveController extends Controller
     public function store(StoreMonthlyReserveRequest $request): MonthlyReserveResource|JsonResponse
     {
         try {
-            $reservaMensal = $this->monthlyReserveService->criar((int) auth()->id(), $request->validated());
+            $reservaMensal = $this->monthlyReserveService->criar($this->usuarioIdAutenticado(), $request->validated());
         } catch (DomainException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
@@ -55,7 +55,7 @@ class MonthlyReserveController extends Controller
     public function update(UpdateMonthlyReserveRequest $request, int $id): MonthlyReserveResource|JsonResponse
     {
         try {
-            $reservaMensal = $this->monthlyReserveService->atualizar($id, (int) auth()->id(), $request->validated());
+            $reservaMensal = $this->monthlyReserveService->atualizar($id, $this->usuarioIdAutenticado(), $request->validated());
         } catch (DomainException $exception) {
             $status = str_contains($exception->getMessage(), 'nao encontrada') ? 404 : 422;
 
@@ -70,7 +70,7 @@ class MonthlyReserveController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
-            $this->monthlyReserveService->excluir($id, (int) auth()->id());
+            $this->monthlyReserveService->excluir($id, $this->usuarioIdAutenticado());
         } catch (DomainException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),

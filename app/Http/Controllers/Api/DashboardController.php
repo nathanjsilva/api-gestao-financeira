@@ -25,7 +25,7 @@ class DashboardController extends Controller
         ]);
 
         return new DashboardResource(
-            $this->dashboardService->obterResumoMensal((int) auth()->id(), $dados['competency'])
+            $this->dashboardService->obterResumoMensal($this->usuarioIdAutenticado(), $dados['competency'])
         );
     }
 
@@ -38,7 +38,7 @@ class DashboardController extends Controller
 
         return new DashboardCategoryComparisonResource(
             $this->dashboardService->obterComparativoDeCategorias(
-                (int) auth()->id(),
+                $this->usuarioIdAutenticado(),
                 $dados['current_competency'],
                 $dados['previous_competency'],
             )
@@ -54,7 +54,7 @@ class DashboardController extends Controller
 
         try {
             $evolucao = $this->dashboardService->obterEvolucaoMensal(
-                (int) auth()->id(),
+                $this->usuarioIdAutenticado(),
                 $dados['start_competency'],
                 $dados['end_competency'],
             );
@@ -76,7 +76,7 @@ class DashboardController extends Controller
 
         return new DashboardMonthComparisonResource(
             $this->dashboardService->obterComparacaoEntreMeses(
-                (int) auth()->id(),
+                $this->usuarioIdAutenticado(),
                 $dados['first_competency'],
                 $dados['second_competency'],
             )

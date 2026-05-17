@@ -20,13 +20,13 @@ class CategoryController extends Controller
     public function index(): AnonymousResourceCollection
     {
         return CategoryResource::collection(
-            $this->categoryService->listar((int) auth()->id())
+            $this->categoryService->listar($this->usuarioIdAutenticado())
         );
     }
 
     public function show(int $id): CategoryResource|JsonResponse
     {
-        $categoria = $this->categoryService->buscarPorId($id, (int) auth()->id());
+        $categoria = $this->categoryService->buscarPorId($id, $this->usuarioIdAutenticado());
 
         if ($categoria === null) {
             return response()->json([
@@ -40,7 +40,7 @@ class CategoryController extends Controller
     public function store(StoreCategoryRequest $request): CategoryResource|JsonResponse
     {
         try {
-            $categoria = $this->categoryService->criar((int) auth()->id(), $request->validated());
+            $categoria = $this->categoryService->criar($this->usuarioIdAutenticado(), $request->validated());
         } catch (DomainException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
@@ -55,7 +55,7 @@ class CategoryController extends Controller
     public function update(UpdateCategoryRequest $request, int $id): CategoryResource|JsonResponse
     {
         try {
-            $categoria = $this->categoryService->atualizar((int) $id, (int) auth()->id(), $request->validated());
+            $categoria = $this->categoryService->atualizar((int) $id, $this->usuarioIdAutenticado(), $request->validated());
         } catch (DomainException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
@@ -68,7 +68,7 @@ class CategoryController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
-            $this->categoryService->excluir($id, (int) auth()->id());
+            $this->categoryService->excluir($id, $this->usuarioIdAutenticado());
         } catch (DomainException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),

@@ -25,13 +25,13 @@ class TransactionController extends Controller
         ]);
 
         return TransactionResource::collection(
-            $this->transactionService->listar((int) auth()->id(), $dados['competency'])
+            $this->transactionService->listar($this->usuarioIdAutenticado(), $dados['competency'])
         );
     }
 
     public function show(int $id): TransactionResource|JsonResponse
     {
-        $transacao = $this->transactionService->buscarPorId($id, (int) auth()->id());
+        $transacao = $this->transactionService->buscarPorId($id, $this->usuarioIdAutenticado());
 
         if ($transacao === null) {
             return response()->json([
@@ -45,7 +45,7 @@ class TransactionController extends Controller
     public function store(StoreTransactionRequest $request): TransactionResource|JsonResponse
     {
         try {
-            $transacao = $this->transactionService->criar((int) auth()->id(), $request->validated());
+            $transacao = $this->transactionService->criar($this->usuarioIdAutenticado(), $request->validated());
         } catch (DomainException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
@@ -60,7 +60,7 @@ class TransactionController extends Controller
     public function update(UpdateTransactionRequest $request, int $id): TransactionResource|JsonResponse
     {
         try {
-            $transacao = $this->transactionService->atualizar($id, (int) auth()->id(), $request->validated());
+            $transacao = $this->transactionService->atualizar($id, $this->usuarioIdAutenticado(), $request->validated());
         } catch (DomainException $exception) {
             $status = $exception->getMessage() === 'Transacao nao encontrada para este usuario.' ? 404 : 422;
 
@@ -75,7 +75,7 @@ class TransactionController extends Controller
     public function destroy(int $id): JsonResponse
     {
         try {
-            $this->transactionService->excluir($id, (int) auth()->id());
+            $this->transactionService->excluir($id, $this->usuarioIdAutenticado());
         } catch (DomainException $exception) {
             return response()->json([
                 'message' => $exception->getMessage(),
