@@ -1,58 +1,284 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# API Gestao Financeira
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+API RESTful para controle financeiro pessoal multiusuario, com autenticacao via Sanctum, competencia mensal no formato `YYYY-MM` e endpoints de dashboard para consolidacao financeira.
 
-## About Laravel
+## Stack
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- PHP 8.3+
+- Laravel 13
+- MySQL 8
+- Redis
+- Laravel Sanctum
+- Docker
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Objetivo do sistema
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+O sistema foi construido para controlar:
 
-## Learning Laravel
+- usuarios
+- categorias por usuario
+- transacoes financeiras
+- reservas mensais
+- dashboard com indicadores e comparativos
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Cada usuario acessa apenas os seus proprios dados.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Principais regras de negocio
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+- a competencia mensal usa o formato `YYYY-MM`
+- categorias pertencem ao usuario autenticado
+- transacoes centralizam entradas e saidas
+- nao existe parcelamento
+- nao existe pagamento parcial
+- nao existe vencimento
+- exclusao e permanente
+- recorrencia e controlada por `boolean`
 
-## Agentic Development
+## Arquitetura
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+O projeto segue arquitetura em camadas:
 
-```bash
-composer require laravel/boost --dev
+`Route -> Middleware -> FormRequest -> Controller -> Service -> Repository -> Model -> Resource`
 
-php artisan boost:install
+### Camadas
+
+- `Controller`: recebe a requisicao HTTP
+- `Service`: aplica regra de negocio
+- `Repository`: consulta e persiste dados
+- `Request`: valida e normaliza entrada
+- `Resource`: padroniza a saida JSON
+- `Middleware`: trata responsabilidades transversais
+- `Model`: representa as entidades do dominio
+
+## Estrutura principal
+
+```text
+app/
+|-- Http/
+|   |-- Controllers/Api
+|   |-- Middleware
+|   |-- Requests
+|   `-- Resources
+|-- Models
+|-- Providers
+|-- Repositories
+|-- Rules
+`-- Services
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Modulos implementados
 
-## Contributing
+- autenticacao
+- categorias
+- transacoes
+- reservas mensais
+- dashboard
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## Ambiente com Docker
 
-## Code of Conduct
+O projeto foi preparado para rodar com:
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- `gestao_app`
+- `gestao_db`
+- `gestao_redis`
 
-## Security Vulnerabilities
+### Subir os containers
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+docker compose up -d
+```
 
-## License
+### Instalar dependencias no container
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```bash
+docker compose exec app composer install
+```
+
+### Rodar migrations
+
+```bash
+docker compose exec app php artisan migrate --force
+```
+
+### Listar rotas
+
+```bash
+docker compose exec app php artisan route:list
+```
+
+## Configuracao de ambiente
+
+Exemplo de variaveis importantes:
+
+```env
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=mysql
+DB_HOST=db
+DB_PORT=3306
+DB_DATABASE=gestao_financeira
+DB_USERNAME=gestao
+DB_PASSWORD=secret
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+SANCTUM_STATEFUL_DOMAINS=localhost:5173
+SANCTUM_TOKEN_EXPIRATION=1440
+```
+
+## Autenticacao
+
+A API utiliza Sanctum com Bearer Token.
+
+Header esperado nas rotas protegidas:
+
+```http
+Authorization: Bearer SEU_TOKEN
+Accept: application/json
+Content-Type: application/json
+```
+
+### Fluxo recomendado
+
+1. registrar usuario em `/api/auth/register`
+2. armazenar o token retornado
+3. enviar o token nas rotas protegidas
+4. fazer logout em `/api/auth/logout` quando necessario
+
+## Endpoints principais
+
+### Auth
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+
+### Categories
+
+- `GET /api/categories`
+- `GET /api/categories/{id}`
+- `POST /api/categories`
+- `PUT/PATCH /api/categories/{id}`
+- `DELETE /api/categories/{id}`
+
+### Transactions
+
+- `GET /api/transactions?competency=2026-05`
+- `GET /api/transactions/{id}`
+- `POST /api/transactions`
+- `PUT/PATCH /api/transactions/{id}`
+- `DELETE /api/transactions/{id}`
+
+### Monthly Reserves
+
+- `GET /api/monthly-reserves`
+- `GET /api/monthly-reserves/{id}`
+- `POST /api/monthly-reserves`
+- `PUT/PATCH /api/monthly-reserves/{id}`
+- `DELETE /api/monthly-reserves/{id}`
+
+### Dashboard
+
+- `GET /api/dashboard/monthly-summary?competency=2026-05`
+- `GET /api/dashboard/category-comparison?current_competency=2026-05&previous_competency=2026-04`
+- `GET /api/dashboard/monthly-evolution?start_competency=2026-01&end_competency=2026-05`
+- `GET /api/dashboard/month-comparison?first_competency=2026-04&second_competency=2026-05`
+
+## Indicadores do dashboard
+
+O dashboard foi preparado para retornar:
+
+- total de entradas do mes
+- total de gastos do mes
+- valor restante
+- reserva atual
+- total guardado
+- categoria com maior gasto
+- categoria com menor gasto
+- gastos por categoria
+- comparativo de categorias entre meses
+- evolucao mensal
+- comparacao entre meses
+
+## Formulas utilizadas
+
+```text
+valor_restante = total_entradas - total_gastos
+reserva_atual = reserva_anterior + valor_restante
+total_guardado = reserva_atual + investimento
+```
+
+## Seguranca aplicada
+
+- autenticacao com Sanctum
+- ownership por usuario nas consultas
+- middleware para forcar JSON
+- throttle em login e registro
+- expiracao configurada para tokens
+- validacoes contextuais por usuario
+
+## Validacoes implementadas
+
+- `competency` com regra customizada
+- email normalizado em auth
+- nome e descricao com `trim`
+- unicidade de categoria por usuario e tipo
+- unicidade de reserva mensal por usuario e competencia
+- categoria da transacao restrita ao usuario autenticado
+- consistencia entre `category.type` e `transaction.type`
+
+## Otimizacoes aplicadas
+
+- eager loading com colunas especificas
+- agregacoes do dashboard nos repositories
+- consultas em lote para evolucao mensal e comparacoes
+- indices de banco voltados para `user_id`, `competency`, `type` e `status`
+
+## Documentacao local complementar
+
+Existem dois arquivos locais de apoio que nao sobem para o GitHub por estarem no `.gitignore`:
+
+- `local-docs/USO_API_LOCAL.md`
+- `local-docs/EXPLICACAO_SISTEMA_LOCAL.md`
+
+Eles foram criados para uso local e estudo do projeto.
+
+## Comandos uteis
+
+### Rodar migrations
+
+```bash
+docker compose exec app php artisan migrate --force
+```
+
+### Limpar cache de configuracao
+
+```bash
+docker compose exec app php artisan config:clear
+```
+
+### Rodar testes
+
+```bash
+docker compose exec app php artisan test
+```
+
+### Abrir shell no container da aplicacao
+
+```bash
+docker compose exec app sh
+```
+
+## Melhorias futuras
+
+- testes automatizados
+- policies
+- handler global para excecoes de dominio
+- cache no dashboard
+- paginacao e filtros adicionais
+- versionamento de API
+
+## Licenca
+
+Este projeto utiliza a licenca MIT.
