@@ -1,0 +1,44 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gestao_app
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - gestao_net
+
+  db:
+    image: mysql:8.0
+    container_name: gestao_db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: gestao_financeira
+      MYSQL_USER: gestao
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - gestao_net
+
+  redis:
+    image: redis:alpine
+    container_name: gestao_redis
+    restart: unless-stopped
+    networks:
+      - gestao_net
+
+volumes:
+  db_data:
+
+networks:
+  gestao_net:
