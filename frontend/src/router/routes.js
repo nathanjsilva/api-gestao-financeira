@@ -1,4 +1,5 @@
 import { ROUTE_NAMES } from '../constants/routeNames'
+import { LAYOUTS } from '../constants/layouts'
 
 const LoginPage = () => import('../pages/auth/LoginPage.vue')
 const RegisterPage = () => import('../pages/auth/RegisterPage.vue')
@@ -17,6 +18,7 @@ export const routes = [
     name: ROUTE_NAMES.LOGIN,
     component: LoginPage,
     meta: {
+      layout: LAYOUTS.PUBLIC,
       public: true,
       guestOnly: true,
     },
@@ -26,6 +28,7 @@ export const routes = [
     name: ROUTE_NAMES.REGISTER,
     component: RegisterPage,
     meta: {
+      layout: LAYOUTS.PUBLIC,
       public: true,
       guestOnly: true,
     },
@@ -35,6 +38,7 @@ export const routes = [
     name: ROUTE_NAMES.DASHBOARD,
     component: DashboardPage,
     meta: {
+      layout: LAYOUTS.AUTHENTICATED,
       requiresAuth: true,
     },
   },
@@ -43,6 +47,7 @@ export const routes = [
     name: ROUTE_NAMES.CATEGORIES,
     component: CategoriesPage,
     meta: {
+      layout: LAYOUTS.AUTHENTICATED,
       requiresAuth: true,
     },
   },
@@ -51,6 +56,7 @@ export const routes = [
     name: ROUTE_NAMES.TRANSACTIONS,
     component: TransactionsPage,
     meta: {
+      layout: LAYOUTS.AUTHENTICATED,
       requiresAuth: true,
     },
   },
@@ -59,6 +65,7 @@ export const routes = [
     name: ROUTE_NAMES.MONTHLY_RESERVE,
     component: MonthlyReservePage,
     meta: {
+      layout: LAYOUTS.AUTHENTICATED,
       requiresAuth: true,
     },
   },
