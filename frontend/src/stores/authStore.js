@@ -31,6 +31,7 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref(storedAuth.token)
 
   const isAuthenticated = computed(() => Boolean(token.value))
+  const userName = computed(() => user.value?.name || '')
 
   function setSession(payload) {
     user.value = payload.user
@@ -53,6 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     token,
     isAuthenticated,
+    userName,
     setSession,
     clearSession,
   }
