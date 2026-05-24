@@ -1,5 +1,6 @@
 import { ROUTE_NAMES } from '../constants/routeNames'
 import { LAYOUTS } from '../constants/layouts'
+import { useAuthStore } from '../stores/authStore'
 
 const LoginPage = () => import('../pages/auth/LoginPage.vue')
 const RegisterPage = () => import('../pages/auth/RegisterPage.vue')
@@ -11,7 +12,15 @@ const MonthlyReservePage = () => import('../pages/monthly-reserve/MonthlyReserve
 export const routes = [
   {
     path: '/',
-    redirect: { name: ROUTE_NAMES.DASHBOARD },
+    redirect: () => {
+      const authStore = useAuthStore()
+
+      if (authStore.isAuthenticated) {
+        return { name: ROUTE_NAMES.DASHBOARD }
+      }
+
+      return { name: ROUTE_NAMES.LOGIN }
+    },
   },
   {
     path: '/login',
