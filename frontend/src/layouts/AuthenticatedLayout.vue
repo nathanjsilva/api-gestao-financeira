@@ -1,9 +1,14 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import BaseButton from '../components/base/BaseButton.vue'
 import { ROUTE_NAMES } from '../constants/routeNames'
+import { authService } from '../services/auth/authService'
 import { useAuthStore } from '../stores/authStore'
 
 const authStore = useAuthStore()
+const router = useRouter()
+const isLoggingOut = ref(false)
 
 const navigationItems = [
   { label: 'Dashboard', routeName: ROUTE_NAMES.DASHBOARD },
@@ -13,6 +18,20 @@ const navigationItems = [
 ]
 
 const displayName = computed(() => authStore.userName || 'Usuario')
+
+async function handleLogout() {
+  isLoggingOut.value = true
+
+  try {
+    await authService.logout()
+  } catch {
+    // If the token already expired, the local session still needs to be cleared.
+  } finally {
+    authStore.clearSession()
+    isLoggingOut.value = false
+    router.push({ name: ROUTE_NAMES.LOGIN })
+  }
+}
 </script>
 
 <template>
@@ -56,6 +75,10 @@ const displayName = computed(() => authStore.userName || 'Usuario')
                 {{ item.label }}
               </RouterLink>
             </nav>
+
+            <BaseButton variant="secondary" :loading="isLoggingOut" @click="handleLogout">
+              Sair
+            </BaseButton>
           </div>
         </header>
 
