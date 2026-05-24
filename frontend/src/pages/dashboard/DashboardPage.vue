@@ -1,25 +1,38 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
-import BaseCard from '../../components/base/BaseCard.vue'
 import BaseInput from '../../components/base/BaseInput.vue'
-import EmptyState from '../../components/data-display/EmptyState.vue'
-import MetricCard from '../../components/data-display/MetricCard.vue'
+import CashFlowChart from '../../components/dashboard/CashFlowChart.vue'
+import CategoryRanking from '../../components/dashboard/CategoryRanking.vue'
+import ExpenseChart from '../../components/dashboard/ExpenseChart.vue'
+import FinancialCard from '../../components/dashboard/FinancialCard.vue'
+import FinancialHeatmap from '../../components/dashboard/FinancialHeatmap.vue'
+import FinancialInsights from '../../components/dashboard/FinancialInsights.vue'
+import MonthlyComparison from '../../components/dashboard/MonthlyComparison.vue'
+import ReserveEvolution from '../../components/dashboard/ReserveEvolution.vue'
 import PageHeader from '../../components/layout/PageHeader.vue'
 import { useFormErrors } from '../../composables/useFormErrors'
 import { useLoading } from '../../composables/useLoading'
 import { getCurrentCompetency } from '../../helpers/competency'
 import { formatCurrency } from '../../helpers/currency'
+import { formatPercentage } from '../../helpers/percentage'
 import { dashboardService } from '../../services/dashboard/dashboardService'
 
 const competency = ref(getCurrentCompetency())
-const summary = ref(null)
+const months = ref(6)
+const analytics = ref(null)
 const { isLoading, withLoading } = useLoading()
 const { generalError, clearErrors, setErrorsFromApi } = useFormErrors()
 
-const expensesByCategory = computed(() => summary.value?.expenses_by_category || [])
-const biggestExpense = computed(() => Number(expensesByCategory.value[0]?.total || 0))
+const overview = computed(() => analytics.value?.overview || {})
+const comparison = computed(() => analytics.value?.comparison || {})
+const kpis = computed(() => analytics.value?.kpis || {})
+const categories = computed(() => analytics.value?.categories?.ranking || [])
+const insights = computed(() => analytics.value?.insights || [])
+const reserveEvolution = computed(() => analytics.value?.reserve_evolution || [])
+const cashFlow = computed(() => analytics.value?.cash_flow || [])
+const heatmap = computed(() => analytics.value?.heatmap || [])
 
-async function loadSummary() {
+async function loadAnalytics() {
   if (!competency.value) {
     return
   }
@@ -28,123 +41,129 @@ async function loadSummary() {
 
   await withLoading(async () => {
     try {
-      summary.value = await dashboardService.monthlySummary(competency.value)
+      analytics.value = await dashboardService.analytics({
+        competency: competency.value,
+        months: months.value,
+      })
     } catch (error) {
       setErrorsFromApi(error)
     }
   })
 }
 
-function expenseBarWidth(total) {
-  if (!biggestExpense.value) {
-    return '0%'
-  }
-
-  return `${Math.max((Number(total) / biggestExpense.value) * 100, 6)}%`
-}
-
-watch(competency, loadSummary)
-onMounted(loadSummary)
+watch([competency, months], loadAnalytics)
+onMounted(loadAnalytics)
 </script>
 
 <template>
-  <section class="mx-auto max-w-7xl px-6 py-10">
-    <PageHeader
-      eyebrow="Visao geral"
-      title="Dashboard"
-      description="Resumo da competencia mensal com entradas, gastos, reserva e categorias mais relevantes."
-    >
-      <template #actions>
-        <BaseInput
-          id="dashboard-competency"
-          v-model="competency"
-          label="Competencia"
-          type="month"
-        />
-      </template>
-    </PageHeader>
+  <section class="dashboard-shell mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div class="dashboard-hero">
+      <PageHeader
+        eyebrow="Inteligencia financeira"
+        title="Dashboard analitico"
+        description="Entenda para onde seu dinheiro esta indo, compare meses e acompanhe a evolucao da sua reserva."
+      >
+        <template #actions>
+          <div class="grid gap-3 sm:grid-cols-[180px_150px]">
+            <BaseInput id="dashboard-competency" v-model="competency" label="Competencia" type="month" />
+            <BaseInput id="dashboard-months" v-model="months" label="Periodo" type="number" />
+          </div>
+        </template>
+      </PageHeader>
+    </div>
 
-    <p v-if="generalError" class="mb-5 rounded-md bg-rose-500/10 p-3 text-sm text-rose-200">
+    <p v-if="generalError" class="mb-5 rounded-2xl bg-rose-500/10 p-4 text-sm text-rose-200">
       {{ generalError }}
     </p>
 
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <MetricCard
-        label="Entradas"
-        :value="formatCurrency(summary?.total_income)"
-        tone="positive"
-      />
-      <MetricCard
-        label="Gastos"
-        :value="formatCurrency(summary?.total_expense)"
-        tone="negative"
-      />
-      <MetricCard
-        label="Saldo restante"
-        :value="formatCurrency(summary?.remaining_amount)"
-        tone="info"
-      />
-      <MetricCard
-        label="Total guardado"
-        :value="formatCurrency(summary?.total_saved)"
-      />
+    <div v-if="isLoading && !analytics" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div v-for="item in 4" :key="item" class="skeleton-card" />
     </div>
 
-    <div class="mt-6 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-      <BaseCard>
-        <div class="mb-5 flex items-center justify-between">
-          <div>
-            <h2 class="text-xl font-black text-slate-50">Gastos por categoria</h2>
-            <p class="text-sm text-slate-400">Distribuicao visual dos gastos no mes.</p>
-          </div>
-          <span v-if="isLoading" class="text-sm text-slate-400">Carregando...</span>
-        </div>
-
-        <EmptyState
-          v-if="!expensesByCategory.length"
-          title="Nenhum gasto encontrado"
-          description="Cadastre transacoes de saida para alimentar este grafico."
+    <template v-else>
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <FinancialCard
+          label="Entradas do mes"
+          :value="formatCurrency(overview.total_income)"
+          hint="Renda e recebimentos confirmados"
+          accent="emerald"
+          trend="up"
         />
+        <FinancialCard
+          label="Gastos do mes"
+          :value="formatCurrency(overview.total_expense)"
+          :hint="`${formatPercentage(kpis.income_commitment_rate)} da renda comprometida`"
+          accent="rose"
+          :trend="comparison.expense_difference > 0 ? 'down' : 'up'"
+        />
+        <FinancialCard
+          label="Saldo restante"
+          :value="formatCurrency(overview.remaining_amount)"
+          :hint="`Taxa de economia: ${formatPercentage(kpis.savings_rate)}`"
+          accent="sky"
+          :trend="overview.remaining_amount >= 0 ? 'up' : 'down'"
+        />
+        <FinancialCard
+          label="Total guardado"
+          :value="formatCurrency(overview.total_saved)"
+          hint="Reserva atual + investimento"
+          accent="violet"
+          :trend="comparison.reserve_difference >= 0 ? 'up' : 'down'"
+        />
+      </div>
 
-        <div v-else class="space-y-4">
-          <div v-for="item in expensesByCategory" :key="item.category_id">
-            <div class="mb-2 flex items-center justify-between gap-4 text-sm">
-              <span class="font-semibold text-slate-200">{{ item.category_name }}</span>
-              <span class="text-slate-400">{{ formatCurrency(item.total) }}</span>
-            </div>
-            <div class="h-3 overflow-hidden rounded-full bg-slate-800">
-              <div
-                class="h-full rounded-full bg-gradient-to-r from-rose-400 to-orange-300"
-                :style="{ width: expenseBarWidth(item.total) }"
-              />
-            </div>
-          </div>
-        </div>
-      </BaseCard>
+      <div class="mt-5 grid gap-4 lg:grid-cols-3">
+        <MonthlyComparison :comparison="comparison" />
+        <FinancialInsights class="lg:col-span-2" :insights="insights" />
+      </div>
 
-      <BaseCard>
-        <h2 class="text-xl font-black text-slate-50">Leitura rapida</h2>
-        <dl class="mt-5 space-y-4">
-          <div class="rounded-md bg-white/[0.03] p-4">
-            <dt class="text-sm text-slate-400">Categoria com maior gasto</dt>
-            <dd class="mt-1 text-lg font-bold text-rose-200">
-              {{ summary?.highest_expense_category || 'Sem dados' }}
-            </dd>
+      <div class="mt-5 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <ExpenseChart :categories="categories" />
+        <CategoryRanking :categories="categories" />
+      </div>
+
+      <div class="mt-5 grid gap-4 xl:grid-cols-[1fr_1fr]">
+        <CashFlowChart :items="cashFlow" />
+        <ReserveEvolution :items="reserveEvolution" />
+      </div>
+
+      <div class="mt-5 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+        <FinancialHeatmap :items="heatmap" />
+
+        <section class="analytics-panel">
+          <div class="mb-5">
+            <p class="text-sm font-bold uppercase text-sky-300">KPIs avancados</p>
+            <h2 class="mt-2 text-2xl font-black text-slate-50">Comportamento financeiro</h2>
           </div>
-          <div class="rounded-md bg-white/[0.03] p-4">
-            <dt class="text-sm text-slate-400">Categoria com menor gasto</dt>
-            <dd class="mt-1 text-lg font-bold text-emerald-200">
-              {{ summary?.lowest_expense_category || 'Sem dados' }}
-            </dd>
+
+          <div class="grid gap-3 sm:grid-cols-2">
+            <div class="kpi-tile">
+              <span>Media mensal de gastos</span>
+              <strong>{{ formatCurrency(kpis.average_monthly_expense) }}</strong>
+            </div>
+            <div class="kpi-tile">
+              <span>Media mensal de entradas</span>
+              <strong>{{ formatCurrency(kpis.average_monthly_income) }}</strong>
+            </div>
+            <div class="kpi-tile">
+              <span>Melhor mes</span>
+              <strong>{{ kpis.best_month?.competency || '-' }}</strong>
+            </div>
+            <div class="kpi-tile">
+              <span>Pior mes</span>
+              <strong>{{ kpis.worst_month?.competency || '-' }}</strong>
+            </div>
+            <div class="kpi-tile">
+              <span>Saldo medio</span>
+              <strong>{{ formatCurrency(kpis.average_remaining) }}</strong>
+            </div>
+            <div class="kpi-tile">
+              <span>Previsao fechamento</span>
+              <strong>{{ formatCurrency(kpis.projected_closing) }}</strong>
+            </div>
           </div>
-          <div class="rounded-md bg-white/[0.03] p-4">
-            <dt class="text-sm text-slate-400">Reserva atual</dt>
-            <dd class="mt-1 text-lg font-bold text-sky-200">
-              {{ formatCurrency(summary?.current_reserve) }}
-            </dd>
-          </div>
-        </dl>
-      </BaseCard>
-    </div>
+        </section>
+      </div>
+    </template>
   </section>
 </template>

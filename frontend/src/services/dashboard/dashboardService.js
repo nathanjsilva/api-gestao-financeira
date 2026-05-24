@@ -5,6 +5,10 @@ function getData(response) {
 }
 
 export const dashboardService = {
+  async analytics(params) {
+    return getData(await httpClient.get('/dashboard/analytics', { params }))
+  },
+
   async monthlySummary(competency) {
     return getData(await httpClient.get('/dashboard/monthly-summary', {
       params: { competency },
@@ -23,4 +27,3 @@ export const dashboardService = {
     return getData(await httpClient.get('/dashboard/month-comparison', { params }))
   },
 }
-

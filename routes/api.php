@@ -18,6 +18,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('transactions', TransactionController::class);
     Route::apiResource('monthly-reserves', MonthlyReserveController::class);
 
+    Route::get('/dashboard/analytics', [DashboardController::class, 'analytics']);
     Route::get('/dashboard/monthly-summary', [DashboardController::class, 'resumoMensal']);
     Route::get('/dashboard/category-comparison', [DashboardController::class, 'comparativoCategorias']);
     Route::get('/dashboard/monthly-evolution', [DashboardController::class, 'evolucaoMensal']);
