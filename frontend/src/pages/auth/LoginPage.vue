@@ -41,14 +41,14 @@ async function handleSubmit() {
     <p class="mb-3 text-sm font-bold uppercase text-sky-300">Acesso</p>
     <h1 class="mb-4 text-5xl font-black leading-none text-slate-50">Login</h1>
     <p class="text-lg leading-8 text-slate-300">
-      Entre com seu email e senha para acessar seus lancamentos financeiros.
+      Entre com seu e-mail e senha para acessar seus lançamentos financeiros.
     </p>
 
     <form class="mt-8 space-y-5" @submit.prevent="handleSubmit">
       <BaseInput
         id="email"
         v-model="form.email"
-        label="Email"
+        label="E-mail"
         type="email"
         placeholder="voce@email.com"
         :error="fieldError('email')"
@@ -73,11 +73,10 @@ async function handleSubmit() {
     </form>
 
     <p class="mt-6 text-sm text-slate-400">
-      Ainda nao tem conta?
+      Ainda não tem conta?
       <RouterLink :to="{ name: ROUTE_NAMES.REGISTER }" class="font-bold text-sky-300">
         Criar cadastro
       </RouterLink>
     </p>
   </section>
 </template>
-

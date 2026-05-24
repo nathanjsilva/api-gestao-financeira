@@ -47,8 +47,7 @@ defineProps({
         'bg-rose-400/10 text-rose-200': trend === 'down',
       }"
     >
-      {{ trend === 'up' ? 'Tendencia positiva' : 'Ponto de atencao' }}
+      {{ trend === 'up' ? 'Tendência positiva' : 'Ponto de atenção' }}
     </p>
   </article>
 </template>
-

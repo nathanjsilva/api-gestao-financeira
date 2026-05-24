@@ -26,7 +26,7 @@ const form = reactive({
 })
 
 const latestReserve = computed(() => reserves.value[0] || null)
-const submitLabel = computed(() => editingId.value ? 'Salvar alteracoes' : 'Cadastrar reserva')
+const submitLabel = computed(() => editingId.value ? 'Salvar alterações' : 'Cadastrar reserva')
 
 function resetForm() {
   editingId.value = null
@@ -84,7 +84,7 @@ function startEdit(reserve) {
 }
 
 async function removeReserve(reserve) {
-  if (!confirm(`Excluir a reserva da competencia ${reserve.competency}?`)) {
+  if (!confirm(`Excluir a reserva da competência ${reserve.competency}?`)) {
     return
   }
 
@@ -106,7 +106,7 @@ onMounted(loadReserves)
     <PageHeader
       eyebrow="Reserva financeira"
       title="Reserva mensal"
-      description="Registre reserva anterior, investimento e observacoes por competencia mensal."
+      description="Registre reserva anterior, investimento e observações por competência mensal."
     />
 
     <p v-if="generalError" class="mb-5 rounded-md bg-rose-500/10 p-3 text-sm text-rose-200">
@@ -115,7 +115,7 @@ onMounted(loadReserves)
 
     <div class="mb-6 grid gap-4 md:grid-cols-2">
       <MetricCard
-        label="Ultima reserva anterior"
+        label="Última reserva anterior"
         :value="formatCurrency(latestReserve?.reserva_anterior)"
         tone="info"
       />
@@ -136,7 +136,7 @@ onMounted(loadReserves)
           <BaseInput
             id="reserve-competency"
             v-model="form.competency"
-            label="Competencia"
+            label="Competência"
             type="month"
             :error="fieldError('competency')"
           />
@@ -162,8 +162,8 @@ onMounted(loadReserves)
           <BaseTextarea
             id="observations"
             v-model="form.observations"
-            label="Observacoes"
-            placeholder="Anotacoes opcionais sobre o mes"
+            label="Observações"
+            placeholder="Anotações opcionais sobre o mês"
             :error="fieldError('observations')"
           />
 
@@ -194,11 +194,11 @@ onMounted(loadReserves)
           <table class="w-full min-w-[720px] text-left text-sm">
             <thead class="text-slate-400">
               <tr class="border-b border-white/10">
-                <th class="py-3 font-semibold">Competencia</th>
+                <th class="py-3 font-semibold">Competência</th>
                 <th class="py-3 text-right font-semibold">Reserva anterior</th>
                 <th class="py-3 text-right font-semibold">Investimento</th>
-                <th class="py-3 font-semibold">Observacoes</th>
-                <th class="py-3 text-right font-semibold">Acoes</th>
+                <th class="py-3 font-semibold">Observações</th>
+                <th class="py-3 text-right font-semibold">Ações</th>
               </tr>
             </thead>
             <tbody>

@@ -1,4 +1,4 @@
-export function getApiErrorMessage(error, fallbackMessage = 'Nao foi possivel concluir a operacao.') {
+export function getApiErrorMessage(error, fallbackMessage = 'Não foi possível concluir a operação.') {
   if (error.response?.data?.message) {
     return error.response.data.message
   }

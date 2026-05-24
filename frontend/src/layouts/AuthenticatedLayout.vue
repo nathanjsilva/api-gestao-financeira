@@ -13,11 +13,11 @@ const isLoggingOut = ref(false)
 const navigationItems = [
   { label: 'Dashboard', routeName: ROUTE_NAMES.DASHBOARD },
   { label: 'Categorias', routeName: ROUTE_NAMES.CATEGORIES },
-  { label: 'Transacoes', routeName: ROUTE_NAMES.TRANSACTIONS },
+  { label: 'Transações', routeName: ROUTE_NAMES.TRANSACTIONS },
   { label: 'Reserva mensal', routeName: ROUTE_NAMES.MONTHLY_RESERVE },
 ]
 
-const displayName = computed(() => authStore.userName || 'Usuario')
+const displayName = computed(() => authStore.userName || 'Usuário')
 
 async function handleLogout() {
   isLoggingOut.value = true
@@ -39,7 +39,7 @@ async function handleLogout() {
     <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
       <aside class="hidden border-r border-white/10 bg-slate-900/60 px-5 py-6 lg:block">
         <RouterLink :to="{ name: ROUTE_NAMES.DASHBOARD }" class="block rounded-lg px-3 py-2">
-          <span class="block text-sm font-bold uppercase text-sky-300">Gestao Financeira</span>
+          <span class="block text-sm font-bold uppercase text-sky-300">Gestão Financeira</span>
           <span class="mt-2 block text-2xl font-black leading-none">Painel</span>
         </RouterLink>
 
@@ -60,7 +60,7 @@ async function handleLogout() {
         <header class="sticky top-0 z-10 border-b border-white/10 bg-slate-950/85 px-6 py-4 backdrop-blur">
           <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
             <div>
-              <p class="text-xs font-bold uppercase text-slate-500">Area autenticada</p>
+              <p class="text-xs font-bold uppercase text-slate-500">Área autenticada</p>
               <p class="text-sm font-semibold text-slate-200">{{ displayName }}</p>
             </div>
 

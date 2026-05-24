@@ -55,7 +55,7 @@ const filteredTransactions = computed(() => {
   })
 })
 
-const submitLabel = computed(() => editingId.value ? 'Salvar alteracoes' : 'Cadastrar transacao')
+const submitLabel = computed(() => editingId.value ? 'Salvar alterações' : 'Cadastrar transação')
 
 function typeLabel(type) {
   return TRANSACTION_TYPES.find((item) => item.value === type)?.label || type
@@ -146,7 +146,7 @@ function startEdit(transaction) {
 }
 
 async function removeTransaction(transaction) {
-  if (!confirm(`Excluir a transacao "${transaction.description}"?`)) {
+  if (!confirm(`Excluir a transação "${transaction.description}"?`)) {
     return
   }
 
@@ -167,14 +167,14 @@ onMounted(loadInitialData)
   <section class="mx-auto max-w-7xl px-6 py-10">
     <PageHeader
       eyebrow="Lancamentos"
-      title="Transacoes"
-      description="Controle entradas e saidas por competencia mensal, categoria, status e recorrencia."
+      title="Transações"
+      description="Controle entradas e saídas por competência mensal, categoria, status e recorrência."
     >
       <template #actions>
         <BaseInput
           id="transactions-competency"
           v-model="filters.competency"
-          label="Competencia"
+          label="Competência"
           type="month"
         />
         <BaseButton class="mt-7" :loading="isLoading" @click="loadTransactions">
@@ -190,7 +190,7 @@ onMounted(loadInitialData)
     <div class="grid gap-6 xl:grid-cols-[420px_1fr]">
       <BaseCard>
         <h2 class="text-xl font-black text-slate-50">
-          {{ editingId ? 'Editar transacao' : 'Nova transacao' }}
+          {{ editingId ? 'Editar transação' : 'Nova transação' }}
         </h2>
 
         <form class="mt-5 space-y-4" @submit.prevent="handleSubmit">
@@ -213,7 +213,7 @@ onMounted(loadInitialData)
           <BaseInput
             id="transaction-description"
             v-model="form.description"
-            label="Descricao"
+            label="Descrição"
             placeholder="Ex: Supermercado"
             :error="fieldError('description')"
           />
@@ -239,7 +239,7 @@ onMounted(loadInitialData)
             <BaseInput
               id="transaction-form-competency"
               v-model="form.competency"
-              label="Competencia"
+              label="Competência"
               type="month"
               :error="fieldError('competency')"
             />
@@ -263,7 +263,7 @@ onMounted(loadInitialData)
 
       <BaseCard>
         <div class="mb-5 grid gap-4 lg:grid-cols-3">
-          <BaseInput id="search" v-model="search" label="Buscar" placeholder="Descricao" />
+          <BaseInput id="search" v-model="search" label="Buscar" placeholder="Descrição" />
           <BaseSelect
             id="filter-category"
             v-model="filters.category_id"
@@ -282,20 +282,20 @@ onMounted(loadInitialData)
 
         <EmptyState
           v-if="!filteredTransactions.length"
-          title="Nenhuma transacao encontrada"
-          description="Cadastre uma transacao ou ajuste os filtros."
+          title="Nenhuma transação encontrada"
+          description="Cadastre uma transação ou ajuste os filtros."
         />
 
         <div v-else class="overflow-x-auto">
           <table class="w-full min-w-[820px] text-left text-sm">
             <thead class="text-slate-400">
               <tr class="border-b border-white/10">
-                <th class="py-3 font-semibold">Descricao</th>
+                <th class="py-3 font-semibold">Descrição</th>
                 <th class="py-3 font-semibold">Categoria</th>
                 <th class="py-3 font-semibold">Tipo</th>
                 <th class="py-3 font-semibold">Status</th>
                 <th class="py-3 text-right font-semibold">Valor</th>
-                <th class="py-3 text-right font-semibold">Acoes</th>
+                <th class="py-3 text-right font-semibold">Ações</th>
               </tr>
             </thead>
             <tbody>

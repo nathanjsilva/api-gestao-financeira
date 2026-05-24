@@ -34,8 +34,11 @@ const gradient = computed(() => {
 <template>
   <section class="analytics-panel">
     <div class="mb-5">
-      <p class="text-sm font-bold uppercase text-sky-300">Distribuicao</p>
+      <p class="text-sm font-bold uppercase text-sky-300">Distribuição</p>
       <h2 class="mt-2 text-2xl font-black text-slate-50">Gastos por categoria</h2>
+      <p class="mt-3 text-sm leading-6 text-slate-400">
+        Mostra a participação de cada categoria no total gasto. Ajuda a enxergar para onde o dinheiro está indo.
+      </p>
     </div>
 
     <div class="grid gap-6 lg:grid-cols-[220px_1fr] lg:items-center">
@@ -49,8 +52,8 @@ const gradient = computed(() => {
       <div class="space-y-3">
         <div v-for="item in categories.slice(0, 6)" :key="item.category_id" class="rounded-2xl bg-white/[0.04] p-4">
           <div class="flex items-center justify-between gap-4">
-            <span class="font-semibold text-slate-100">{{ item.category_name }}</span>
-            <span class="text-sm text-slate-400">{{ item.percentage_of_expenses }}%</span>
+            <span class="break-words font-semibold leading-5 text-slate-100">{{ item.category_name }}</span>
+            <span class="shrink-0 text-sm text-slate-400">{{ item.percentage_of_expenses }}%</span>
           </div>
           <div class="mt-3 h-2 rounded-full bg-slate-800">
             <div class="h-full rounded-full bg-sky-300" :style="{ width: `${item.percentage_of_expenses}%` }" />
@@ -58,6 +61,9 @@ const gradient = computed(() => {
         </div>
       </div>
     </div>
+
+    <p class="mt-5 rounded-2xl bg-white/[0.04] p-4 text-sm leading-6 text-slate-400">
+      Cálculo: somamos todos os gastos do mês e depois calculamos a porcentagem de cada categoria sobre esse total.
+    </p>
   </section>
 </template>
-

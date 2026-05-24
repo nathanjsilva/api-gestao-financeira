@@ -21,7 +21,7 @@ const form = reactive({
   type: 'expense',
 })
 
-const submitLabel = computed(() => editingId.value ? 'Salvar alteracoes' : 'Cadastrar categoria')
+const submitLabel = computed(() => editingId.value ? 'Salvar alterações' : 'Cadastrar categoria')
 
 function resetForm() {
   editingId.value = null
@@ -91,9 +91,9 @@ onMounted(loadCategories)
 <template>
   <section class="mx-auto max-w-7xl px-6 py-10">
     <PageHeader
-      eyebrow="Organizacao"
+      eyebrow="Organização"
       title="Categorias"
-      description="Cadastre suas categorias de entrada e saida. Elas serao usadas nos filtros e graficos."
+      description="Cadastre suas categorias de entrada e saída. Elas serão usadas nos filtros e gráficos."
     />
 
     <p v-if="generalError" class="mb-5 rounded-md bg-rose-500/10 p-3 text-sm text-rose-200">
@@ -143,7 +143,7 @@ onMounted(loadCategories)
         <EmptyState
           v-if="!categories.length"
           title="Nenhuma categoria cadastrada"
-          description="Crie categorias para organizar suas entradas e saidas."
+          description="Crie categorias para organizar suas entradas e saídas."
         />
 
         <div v-else class="overflow-x-auto">
@@ -152,7 +152,7 @@ onMounted(loadCategories)
               <tr class="border-b border-white/10">
                 <th class="py-3 font-semibold">Nome</th>
                 <th class="py-3 font-semibold">Tipo</th>
-                <th class="py-3 text-right font-semibold">Acoes</th>
+                <th class="py-3 text-right font-semibold">Ações</th>
               </tr>
             </thead>
             <tbody>

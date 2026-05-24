@@ -24,6 +24,9 @@ function height(value) {
     <div class="mb-5">
       <p class="text-sm font-bold uppercase text-sky-300">Fluxo do dinheiro</p>
       <h2 class="mt-2 text-2xl font-black text-slate-50">Entradas vs gastos</h2>
+      <p class="mt-3 text-sm leading-6 text-slate-400">
+        Compara, mês a mês, quanto entrou e quanto saiu. Verde representa entradas e rosa representa gastos.
+      </p>
     </div>
 
     <div class="flex h-72 items-end gap-4 overflow-x-auto rounded-3xl bg-slate-950/60 p-5">
@@ -35,5 +38,10 @@ function height(value) {
         <span class="text-xs font-bold text-slate-400">{{ item.competency }}</span>
       </div>
     </div>
+
+    <p class="mt-5 rounded-2xl bg-white/[0.04] p-4 text-sm leading-6 text-slate-400">
+      Cálculo: para cada competência, somamos todas as transações de entrada e todas as transações de gasto.
+      A diferença entre elas forma o saldo restante do mês.
+    </p>
   </section>
 </template>

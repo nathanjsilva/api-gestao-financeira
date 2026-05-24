@@ -41,12 +41,12 @@ async function handleSubmit() {
     <p class="mb-3 text-sm font-bold uppercase text-sky-300">Nova conta</p>
     <h1 class="mb-4 text-5xl font-black leading-none text-slate-50">Cadastro</h1>
     <p class="text-lg leading-8 text-slate-300">
-      Crie seu acesso para manter os dados financeiros separados por usuario.
+      Crie seu acesso para manter os dados financeiros separados por usuário.
     </p>
 
     <form class="mt-8 space-y-5" @submit.prevent="handleSubmit">
       <BaseInput id="name" v-model="form.name" label="Nome" :error="fieldError('name')" />
-      <BaseInput id="email" v-model="form.email" label="Email" type="email" :error="fieldError('email')" />
+      <BaseInput id="email" v-model="form.email" label="E-mail" type="email" :error="fieldError('email')" />
       <BaseInput id="password" v-model="form.password" label="Senha" type="password" :error="fieldError('password')" />
       <BaseInput
         id="password_confirmation"
@@ -66,7 +66,7 @@ async function handleSubmit() {
     </form>
 
     <p class="mt-6 text-sm text-slate-400">
-      Ja tem conta?
+      Já tem conta?
       <RouterLink :to="{ name: ROUTE_NAMES.LOGIN }" class="font-bold text-sky-300">
         Entrar
       </RouterLink>

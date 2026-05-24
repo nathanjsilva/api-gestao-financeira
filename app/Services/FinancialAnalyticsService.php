@@ -165,8 +165,8 @@ class FinancialAnalyticsService
             'type' => $comparacao['expense_difference'] > 0 ? 'warning' : 'success',
             'title' => $comparacao['expense_difference'] > 0 ? 'Gastos em alta' : 'Gastos controlados',
             'description' => $comparacao['expense_difference'] > 0
-                ? "Voce gastou {$comparacao['expense_percentage']}% a mais que no mes anterior."
-                : "Voce reduziu seus gastos em {$comparacao['expense_percentage']}% versus o mes anterior.",
+                ? "Você gastou {$comparacao['expense_percentage']}% a mais que no mês anterior."
+                : "Você reduziu seus gastos em {$comparacao['expense_percentage']}% versus o mês anterior.",
         ];
 
         $insights[] = [
@@ -174,7 +174,7 @@ class FinancialAnalyticsService
             'title' => $comparacao['reserve_difference'] >= 0 ? 'Reserva crescendo' : 'Reserva caiu',
             'description' => $comparacao['reserve_difference'] >= 0
                 ? 'Sua reserva financeira aumentou no comparativo mensal.'
-                : 'Sua reserva financeira reduziu. Vale revisar gastos ou investimentos do mes.',
+                : 'Sua reserva financeira reduziu. Vale revisar gastos ou investimentos do mês.',
         ];
 
         if (! empty($ranking)) {
@@ -182,7 +182,7 @@ class FinancialAnalyticsService
             $insights[] = [
                 'type' => $principalCategoria['percentage_of_expenses'] >= 40 ? 'warning' : 'info',
                 'title' => 'Categoria dominante',
-                'description' => "{$principalCategoria['category_name']} representa {$principalCategoria['percentage_of_expenses']}% dos gastos do mes.",
+                'description' => "{$principalCategoria['category_name']} representa {$principalCategoria['percentage_of_expenses']}% dos gastos do mês.",
             ];
         }
 
@@ -190,13 +190,13 @@ class FinancialAnalyticsService
             $insights[] = [
                 'type' => 'danger',
                 'title' => 'Fechamento negativo',
-                'description' => 'Seu saldo do mes esta negativo. O dashboard indica consumo acima das entradas.',
+                'description' => 'Seu saldo do mês está negativo. O dashboard indica consumo acima das entradas.',
             ];
         } elseif ($kpis['savings_rate'] >= 20) {
             $insights[] = [
                 'type' => 'success',
                 'title' => 'Boa taxa de economia',
-                'description' => 'Voce esta guardando uma parcela relevante da renda deste mes.',
+                'description' => 'Você está guardando uma parcela relevante da renda deste mês.',
             ];
         }
 
@@ -217,4 +217,3 @@ class FinancialAnalyticsService
         ];
     }
 }
-

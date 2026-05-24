@@ -24,8 +24,11 @@ const linePoints = computed(() => props.items.map((item, index) => point(index, 
 <template>
   <section class="analytics-panel">
     <div class="mb-5">
-      <p class="text-sm font-bold uppercase text-sky-300">Patrimonio</p>
-      <h2 class="mt-2 text-2xl font-black text-slate-50">Evolucao da reserva</h2>
+      <p class="text-sm font-bold uppercase text-sky-300">Patrimônio</p>
+      <h2 class="mt-2 text-2xl font-black text-slate-50">Evolução da reserva</h2>
+      <p class="mt-3 text-sm leading-6 text-slate-400">
+        Acompanha se sua reserva e seus investimentos estão crescendo ou diminuindo ao longo dos meses.
+      </p>
     </div>
 
     <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="h-56 w-full overflow-visible">
@@ -46,6 +49,9 @@ const linePoints = computed(() => props.items.map((item, index) => point(index, 
         <strong class="mt-1 block text-slate-50">{{ formatCurrency(item.total_saved) }}</strong>
       </div>
     </div>
+
+    <p class="mt-5 rounded-2xl bg-white/[0.04] p-4 text-sm leading-6 text-slate-400">
+      Cálculo: reserva atual = reserva anterior + saldo restante do mês. Total guardado = reserva atual + investimento.
+    </p>
   </section>
 </template>
-

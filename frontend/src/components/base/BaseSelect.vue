@@ -53,4 +53,3 @@ defineEmits(['update:modelValue'])
     <p v-if="error" class="mt-2 text-sm text-rose-300">{{ error }}</p>
   </div>
 </template>
-
