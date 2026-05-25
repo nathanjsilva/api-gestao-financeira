@@ -35,11 +35,10 @@ defineEmits(['update:modelValue'])
       :value="modelValue"
       :placeholder="placeholder"
       rows="4"
-      class="w-full rounded-md border bg-slate-950/70 px-3 py-3 text-sm text-slate-50 outline-none transition placeholder:text-slate-600 focus:border-sky-400"
+      class="w-full rounded-2xl border bg-slate-950/70 px-4 py-3 text-sm text-slate-50 outline-none transition placeholder:text-slate-600 focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
       :class="error ? 'border-rose-400/70' : 'border-white/10'"
       @input="$emit('update:modelValue', $event.target.value)"
     />
     <p v-if="error" class="mt-2 text-sm text-rose-300">{{ error }}</p>
   </div>
 </template>
-

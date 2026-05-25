@@ -1,5 +1,5 @@
 <template>
-  <main class="min-h-screen bg-slate-950 text-slate-50">
+  <main class="min-h-screen bg-transparent text-slate-50 relative overflow-hidden">
     <div class="grid min-h-screen lg:grid-cols-[1fr_520px]">
       <section class="hidden border-r border-white/10 bg-slate-900/40 px-10 py-12 lg:flex lg:flex-col lg:justify-between">
         <div>
@@ -23,3 +23,22 @@
     </div>
   </main>
 </template>
+
+<style scoped>
+main {
+  background: transparent;
+}
+
+main::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.28) 0%, rgba(15, 23, 42, 0.28) 100%);
+  pointer-events: none;
+}
+
+main > .grid {
+  position: relative;
+  z-index: 1;
+}
+</style>

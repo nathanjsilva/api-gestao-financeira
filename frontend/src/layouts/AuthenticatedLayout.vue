@@ -1,6 +1,6 @@
 <script setup>
-import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import BaseButton from '../components/base/BaseButton.vue'
 import { ROUTE_NAMES } from '../constants/routeNames'
 import { authService } from '../services/auth/authService'
@@ -8,7 +8,9 @@ import { useAuthStore } from '../stores/authStore'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const isLoggingOut = ref(false)
+const isMenuOpen = ref(false)
 
 const navigationItems = [
   { label: 'Dashboard', routeName: ROUTE_NAMES.DASHBOARD },
@@ -18,6 +20,10 @@ const navigationItems = [
 ]
 
 const displayName = computed(() => authStore.userName || 'Usuário')
+
+watch(() => route.fullPath, () => {
+  isMenuOpen.value = false
+})
 
 async function handleLogout() {
   isLoggingOut.value = true
@@ -35,9 +41,9 @@ async function handleLogout() {
 </script>
 
 <template>
-  <main class="min-h-screen bg-slate-950 text-slate-50">
+  <main class="min-h-screen bg-slate-950/80 text-slate-50 backdrop-blur-sm">
     <div class="min-h-screen lg:grid lg:grid-cols-[280px_1fr]">
-      <aside class="hidden border-r border-white/10 bg-slate-900/60 px-5 py-6 lg:block">
+      <aside class="hidden border-r border-white/10 bg-slate-900/55 px-5 py-6 lg:block">
         <RouterLink :to="{ name: ROUTE_NAMES.DASHBOARD }" class="block rounded-lg px-3 py-2">
           <span class="block text-sm font-bold uppercase text-sky-300">Gestão Financeira</span>
           <span class="mt-2 block text-2xl font-black leading-none">Painel</span>
@@ -57,30 +63,71 @@ async function handleLogout() {
       </aside>
 
       <section class="min-w-0">
-        <header class="sticky top-0 z-10 border-b border-white/10 bg-slate-950/85 px-6 py-4 backdrop-blur">
+        <header class="sticky top-0 z-30 border-b border-white/10 bg-slate-950/75 px-4 py-4 backdrop-blur sm:px-6">
           <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
-            <div>
+            <div class="min-w-0">
               <p class="text-xs font-bold uppercase text-slate-500">Área autenticada</p>
-              <p class="text-sm font-semibold text-slate-200">{{ displayName }}</p>
+              <p class="truncate text-sm font-semibold text-slate-200">{{ displayName }}</p>
             </div>
 
-            <nav class="flex gap-2 overflow-x-auto lg:hidden">
-              <RouterLink
-                v-for="item in navigationItems"
-                :key="item.routeName"
-                :to="{ name: item.routeName }"
-                class="whitespace-nowrap rounded-md px-3 py-2 text-sm font-semibold text-slate-300"
-                active-class="bg-sky-500/15 text-sky-200"
-              >
-                {{ item.label }}
-              </RouterLink>
-            </nav>
+            <div class="hidden items-center gap-3 lg:flex">
+              <BaseButton variant="secondary" :loading="isLoggingOut" @click="handleLogout">
+                Sair
+              </BaseButton>
+            </div>
 
-            <BaseButton variant="secondary" :loading="isLoggingOut" @click="handleLogout">
-              Sair
-            </BaseButton>
+            <button
+              type="button"
+              class="inline-flex size-11 items-center justify-center rounded-2xl border border-white/10 bg-white/4 text-slate-100 lg:hidden"
+              aria-label="Abrir menu"
+              @click="isMenuOpen = true"
+            >
+              ☰
+            </button>
           </div>
         </header>
+
+        <div
+          v-if="isMenuOpen"
+          class="fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm lg:hidden"
+          @click="isMenuOpen = false"
+        />
+
+        <aside
+          class="fixed bottom-0 right-0 top-0 z-50 w-[min(86vw,340px)] border-l border-white/10 bg-slate-950 p-5 shadow-2xl shadow-black/40 transition lg:hidden"
+          :class="isMenuOpen ? 'translate-x-0' : 'translate-x-full'"
+        >
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <p class="text-sm font-bold uppercase text-sky-300">Gestão Financeira</p>
+              <strong class="text-2xl text-slate-50">Menu</strong>
+            </div>
+            <button
+              type="button"
+              class="grid size-10 place-items-center rounded-2xl bg-white/6 text-slate-200"
+              aria-label="Fechar menu"
+              @click="isMenuOpen = false"
+            >
+              ×
+            </button>
+          </div>
+
+          <nav class="mt-8 space-y-2">
+            <RouterLink
+              v-for="item in navigationItems"
+              :key="item.routeName"
+              :to="{ name: item.routeName }"
+              class="block rounded-2xl px-4 py-3 text-sm font-bold text-slate-300 transition hover:bg-white/6 hover:text-white"
+              active-class="bg-sky-500/15 text-sky-200"
+            >
+              {{ item.label }}
+            </RouterLink>
+          </nav>
+
+          <BaseButton class="mt-8 w-full" variant="secondary" :loading="isLoggingOut" @click="handleLogout">
+            Sair
+          </BaseButton>
+        </aside>
 
         <RouterView />
       </section>

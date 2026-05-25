@@ -68,6 +68,12 @@ a {
   padding: 1.25rem;
 }
 
+@media (min-width: 640px) {
+  .analytics-panel {
+    padding: 1.5rem;
+  }
+}
+
 .financial-card {
   position: relative;
   min-height: 11.5rem;
@@ -159,6 +165,87 @@ a {
     rgba(255, 255, 255, 0.04);
   background-size: 200% 100%;
   animation: skeleton-loading 1.2s ease-in-out infinite;
+}
+
+.premium-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 0.65rem;
+  color: #cbd5e1;
+  font-size: 0.875rem;
+}
+
+.premium-table thead th {
+  padding: 0.75rem 1rem;
+  color: #94a3b8;
+  font-weight: 800;
+  text-align: left;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+}
+
+.premium-table tbody tr {
+  background: rgba(255, 255, 255, 0.04);
+  transition: background 180ms ease, transform 180ms ease;
+}
+
+.premium-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.07);
+  transform: translateY(-1px);
+}
+
+.premium-table tbody td {
+  padding: 1rem;
+  vertical-align: middle;
+}
+
+.premium-table tbody td:first-child {
+  border-bottom-left-radius: 1.1rem;
+  border-top-left-radius: 1.1rem;
+}
+
+.premium-table tbody td:last-child {
+  border-bottom-right-radius: 1.1rem;
+  border-top-right-radius: 1.1rem;
+}
+
+.value-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.value-badge--info {
+  background: rgba(56, 189, 248, 0.12);
+  color: #bae6fd;
+}
+
+.value-badge--success {
+  background: rgba(52, 211, 153, 0.12);
+  color: #bbf7d0;
+}
+
+.value-badge--danger {
+  background: rgba(251, 113, 133, 0.12);
+  color: #fecdd3;
+}
+
+@media (max-width: 639px) {
+  .dashboard-hero {
+    border-radius: 1.5rem;
+    padding: 1rem;
+  }
+
+  .financial-card {
+    min-height: auto;
+  }
 }
 
 @keyframes dashboard-enter {

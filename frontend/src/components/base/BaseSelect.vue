@@ -37,7 +37,7 @@ defineEmits(['update:modelValue'])
     <select
       :id="id"
       :value="modelValue"
-      class="h-11 w-full rounded-md border bg-slate-950/70 px-3 text-sm text-slate-50 outline-none transition focus:border-sky-400"
+      class="h-12 w-full rounded-2xl border bg-slate-950/70 px-4 text-sm text-slate-50 outline-none transition focus:border-sky-400 focus:ring-4 focus:ring-sky-400/10"
       :class="error ? 'border-rose-400/70' : 'border-white/10'"
       @change="$emit('update:modelValue', $event.target.value)"
     >

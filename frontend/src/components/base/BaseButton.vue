@@ -23,7 +23,7 @@ defineProps({
   <button
     :type="type"
     :disabled="disabled || loading"
-    class="inline-flex h-11 items-center justify-center rounded-md px-4 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-60"
+    class="inline-flex h-12 items-center justify-center rounded-2xl px-4 text-sm font-bold transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:translate-y-0"
     :class="{
       'bg-sky-400 text-slate-950 hover:bg-sky-300': variant === 'primary',
       'border border-white/10 bg-white/5 text-slate-100 hover:bg-white/10': variant === 'secondary',
