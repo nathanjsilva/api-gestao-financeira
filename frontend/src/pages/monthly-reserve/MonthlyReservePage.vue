@@ -86,7 +86,7 @@ function parseReserveObservations(observations = '') {
       return 0
     }
 
-    return Number(match[1].replace(/\./g, '').replace(',', '.'))
+    return parseMoneyValue(match[1])
   }
 
   return {
@@ -96,6 +96,27 @@ function parseReserveObservations(observations = '') {
     total_gasto: getValue('Total a Pagar'),
     saldo_final: getValue('Sobrou'),
   }
+}
+
+function parseMoneyValue(value) {
+  const normalizedValue = String(value).trim()
+
+  if (!normalizedValue) {
+    return 0
+  }
+
+  const hasComma = normalizedValue.includes(',')
+  const hasDot = normalizedValue.includes('.')
+
+  if (hasComma && hasDot) {
+    return Number(normalizedValue.replace(/\./g, '').replace(',', '.'))
+  }
+
+  if (hasComma) {
+    return Number(normalizedValue.replace(',', '.'))
+  }
+
+  return Number(normalizedValue)
 }
 
 function percentageChange(current, previous) {
@@ -250,7 +271,7 @@ onMounted(loadReserves)
       </article>
     </div>
 
-    <div class="mt-5 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+    <div class="mt-5 grid min-w-0 gap-4 xl:grid-cols-[minmax(360px,0.9fr)_minmax(0,1.1fr)]">
       <BaseCard>
         <h2 class="text-2xl font-black text-slate-50">
           {{ editingId ? 'Editar reserva' : 'Nova reserva' }}
@@ -322,8 +343,8 @@ onMounted(loadReserves)
         description="Cadastre a reserva mensal para completar a análise financeira."
       />
 
-      <div v-else class="hidden overflow-x-auto lg:block">
-        <table class="premium-table min-w-[980px]">
+      <div v-else class="hidden xl:block">
+        <table class="premium-table">
           <thead>
             <tr>
               <th>Competência</th>

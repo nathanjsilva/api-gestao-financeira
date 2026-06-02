@@ -31,7 +31,8 @@ const linePoints = computed(() => props.items.map((item, index) => point(index, 
       </p>
     </div>
 
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="h-56 w-full overflow-visible">
+    <div class="responsive-chart-frame rounded-3xl bg-slate-950/50 p-3">
+      <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="h-48 w-full overflow-hidden sm:h-56">
       <polyline :points="linePoints" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
       <circle
         v-for="(item, index) in items"
@@ -41,7 +42,8 @@ const linePoints = computed(() => props.items.map((item, index) => point(index, 
         r="2.5"
         fill="#f8fafc"
       />
-    </svg>
+      </svg>
+    </div>
 
     <div class="mt-5 grid gap-3 sm:grid-cols-3">
       <div v-for="item in items.slice(-3)" :key="item.competency" class="rounded-2xl bg-white/[0.04] p-4">

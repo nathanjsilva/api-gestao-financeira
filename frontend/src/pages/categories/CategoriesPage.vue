@@ -89,7 +89,7 @@ onMounted(loadCategories)
 </script>
 
 <template>
-  <section class="mx-auto max-w-7xl px-6 py-10">
+  <section class="dashboard-shell mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
     <PageHeader
       eyebrow="Organização"
       title="Categorias"
@@ -100,7 +100,7 @@ onMounted(loadCategories)
       {{ generalError }}
     </p>
 
-    <div class="grid gap-6 lg:grid-cols-[380px_1fr]">
+    <div class="grid min-w-0 gap-6 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
       <BaseCard>
         <h2 class="text-xl font-black text-slate-50">
           {{ editingId ? 'Editar categoria' : 'Nova categoria' }}
@@ -146,8 +146,8 @@ onMounted(loadCategories)
           description="Crie categorias para organizar suas entradas e saídas."
         />
 
-        <div v-else class="overflow-x-auto">
-          <table class="w-full min-w-[560px] text-left text-sm">
+        <div v-else class="hidden md:block">
+          <table class="premium-table">
             <thead class="text-slate-400">
               <tr class="border-b border-white/10">
                 <th class="py-3 font-semibold">Nome</th>
@@ -168,6 +168,26 @@ onMounted(loadCategories)
               </tr>
             </tbody>
           </table>
+        </div>
+
+        <div v-if="categories.length" class="grid gap-3 md:hidden">
+          <article
+            v-for="category in categories"
+            :key="category.id"
+            class="rounded-3xl border border-white/10 bg-white/[0.04] p-4"
+          >
+            <div class="flex items-start justify-between gap-4">
+              <div class="min-w-0">
+                <p class="text-xs font-bold uppercase text-slate-500">Categoria</p>
+                <strong class="mt-1 block break-words text-lg text-slate-50">{{ category.name }}</strong>
+              </div>
+              <span class="value-badge">{{ typeLabel(category.type) }}</span>
+            </div>
+            <div class="mt-4 grid grid-cols-2 gap-2">
+              <BaseButton variant="secondary" @click="startEdit(category)">Editar</BaseButton>
+              <BaseButton variant="danger" @click="removeCategory(category)">Excluir</BaseButton>
+            </div>
+          </article>
         </div>
       </BaseCard>
     </div>

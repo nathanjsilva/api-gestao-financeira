@@ -66,7 +66,7 @@ onMounted(loadAnalytics)
         <template #actions>
           <div class="grid gap-3 sm:grid-cols-[180px_150px]">
             <BaseInput id="dashboard-competency" v-model="competency" label="Competência" type="month" />
-            <BaseInput id="dashboard-months" v-model="months" label="Periodo" type="number" />
+            <BaseInput id="dashboard-months" v-model="months" label="Período" type="number" />
           </div>
         </template>
       </PageHeader>
@@ -161,7 +161,7 @@ onMounted(loadAnalytics)
               <small>Mês com menor saldo restante no período analisado.</small>
             </div>
             <div class="kpi-tile">
-              <span>Saldo medio</span>
+              <span>Saldo médio</span>
               <strong>{{ formatCurrency(kpis.average_remaining) }}</strong>
               <small>Média do dinheiro que sobrou em cada mês.</small>
             </div>

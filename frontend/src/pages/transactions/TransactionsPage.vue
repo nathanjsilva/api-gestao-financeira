@@ -281,7 +281,7 @@ onMounted(loadInitialData)
       </article>
     </div>
 
-    <div class="mt-5 grid gap-4 xl:grid-cols-[420px_1fr]">
+    <div class="mt-5 grid min-w-0 gap-4 xl:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]">
       <BaseCard>
         <h2 class="text-2xl font-black text-slate-50">{{ editingId ? 'Editar transação' : 'Nova transação' }}</h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">Cadastre lançamentos com categoria, status e impacto financeiro visível antes de salvar.</p>
@@ -405,8 +405,8 @@ onMounted(loadInitialData)
         description="Cadastre uma transação ou ajuste os filtros."
       />
 
-      <div v-else class="hidden overflow-x-auto xl:block">
-        <table class="premium-table min-w-[980px]">
+      <div v-else class="hidden xl:block">
+        <table class="premium-table">
           <thead>
             <tr>
               <th>Descrição</th>
