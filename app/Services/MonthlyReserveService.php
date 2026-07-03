@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\DadosFinanceirosAlterados;
 use App\Models\MonthlyReserve;
 use App\Repositories\MonthlyReserveRepository;
 use DomainException;
@@ -36,13 +37,17 @@ class MonthlyReserveService
             throw new DomainException('Ja existe uma reserva mensal cadastrada para esta competencia.');
         }
 
-        return $this->monthlyReserveRepository->criar([
+        $reserva = $this->monthlyReserveRepository->criar([
             'user_id' => $usuarioId,
             'competency' => $dados['competency'],
             'reserva_anterior' => $dados['reserva_anterior'],
             'investimento' => $dados['investimento'],
             'observations' => $dados['observations'] ?? null,
         ]);
+
+        event(new DadosFinanceirosAlterados($usuarioId));
+
+        return $reserva;
     }
 
     public function atualizar(int $id, int $usuarioId, array $dados): MonthlyReserve
@@ -59,6 +64,8 @@ class MonthlyReserveService
 
         $this->monthlyReserveRepository->atualizar($reservaMensal, $dados);
 
+        event(new DadosFinanceirosAlterados($usuarioId));
+
         return $reservaMensal->refresh();
     }
 
@@ -67,6 +74,8 @@ class MonthlyReserveService
         $reservaMensal = $this->buscarPorIdOuFalhar($id, $usuarioId);
 
         $this->monthlyReserveRepository->excluir($reservaMensal);
+
+        event(new DadosFinanceirosAlterados($usuarioId));
     }
 
     protected function buscarPorIdOuFalhar(int $id, int $usuarioId): MonthlyReserve

@@ -24,6 +24,8 @@
 /storage/pail
 /vendor
 /local-docs
+/deploy
+docs/deploy-oracle-cloud.md
 _ide_helper.php
 Homestead.json
 Homestead.yaml

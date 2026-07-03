@@ -1,24 +1,80 @@
 <script setup>
 import { computed } from 'vue'
+import EmptyState from '../data-display/EmptyState.vue'
+import { formatCompetencyLabel } from '../../helpers/competency'
 import { formatCurrency } from '../../helpers/currency'
 
 const props = defineProps({
-  items: {
-    type: Array,
-    default: () => [],
-  },
+  items: { type: Array, default: () => [] },
 })
 
-const maxValue = computed(() => Math.max(...props.items.map((item) => Number(item.total_saved || 0)), 1))
-
-function point(index, item) {
-  const x = props.items.length <= 1 ? 0 : (index / (props.items.length - 1)) * 100
-  const y = 100 - ((Number(item.total_saved || 0) / maxValue.value) * 82 + 8)
-
-  return `${x},${y}`
+function formatShort(val) {
+  if (Math.abs(val) >= 1000) return `R$ ${(val / 1000).toFixed(1)}k`
+  return `R$ ${Number(val).toFixed(0)}`
 }
 
-const linePoints = computed(() => props.items.map((item, index) => point(index, item)).join(' '))
+const series = computed(() => [
+  { name: 'Total guardado', data: props.items.map((i) => Number(i.total_saved || 0)) },
+  { name: 'Investimento',   data: props.items.map((i) => Number(i.investment || 0)) },
+])
+
+const chartOptions = computed(() => ({
+  chart: {
+    type: 'area',
+    background: 'transparent',
+    fontFamily: 'inherit',
+    toolbar: {
+      show: true,
+      tools: { download: false, selection: false, zoom: true, zoomin: true, zoomout: true, pan: false, reset: true },
+    },
+    animations: { enabled: true, easing: 'easeinout', speed: 400 },
+  },
+  theme: { mode: 'dark' },
+  colors: ['#38bdf8', '#a78bfa'],
+  stroke: { curve: 'smooth', width: 2 },
+  fill: {
+    type: 'gradient',
+    gradient: {
+      shadeIntensity: 1,
+      opacityFrom: 0.25,
+      opacityTo: 0.01,
+      stops: [0, 100],
+    },
+  },
+  dataLabels: { enabled: false },
+  markers: {
+    size: 4,
+    strokeWidth: 0,
+    hover: { size: 6 },
+  },
+  grid: {
+    borderColor: 'rgba(148,163,184,0.08)',
+    strokeDashArray: 4,
+    xaxis: { lines: { show: false } },
+  },
+  xaxis: {
+    categories: props.items.map((i) => formatCompetencyLabel(i.competency)),
+    labels: { style: { colors: '#94a3b8', fontSize: '11px' } },
+    axisBorder: { show: false },
+    axisTicks: { show: false },
+  },
+  yaxis: {
+    labels: {
+      style: { colors: '#94a3b8', fontSize: '11px' },
+      formatter: formatShort,
+    },
+  },
+  tooltip: {
+    theme: 'dark',
+    y: { formatter: (val) => formatCurrency(val) },
+  },
+  legend: {
+    position: 'top',
+    horizontalAlign: 'right',
+    labels: { colors: '#cbd5e1' },
+    markers: { size: 6, shape: 'circle' },
+  },
+}))
 </script>
 
 <template>
@@ -31,28 +87,10 @@ const linePoints = computed(() => props.items.map((item, index) => point(index, 
       </p>
     </div>
 
-    <div class="responsive-chart-frame rounded-3xl bg-slate-950/50 p-3">
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" class="h-48 w-full overflow-hidden sm:h-56">
-      <polyline :points="linePoints" fill="none" stroke="#38bdf8" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-      <circle
-        v-for="(item, index) in items"
-        :key="item.competency"
-        :cx="point(index, item).split(',')[0]"
-        :cy="point(index, item).split(',')[1]"
-        r="2.5"
-        fill="#f8fafc"
-      />
-      </svg>
-    </div>
+    <EmptyState v-if="!items.length" title="Sem dados de reserva" description="Cadastre reservas mensais para visualizar a evolução." />
+    <apexchart v-else type="area" height="280" :options="chartOptions" :series="series" />
 
-    <div class="mt-5 grid gap-3 sm:grid-cols-3">
-      <div v-for="item in items.slice(-3)" :key="item.competency" class="rounded-2xl bg-white/[0.04] p-4">
-        <p class="text-sm text-slate-400">{{ item.competency }}</p>
-        <strong class="mt-1 block text-slate-50">{{ formatCurrency(item.total_saved) }}</strong>
-      </div>
-    </div>
-
-    <p class="mt-5 rounded-2xl bg-white/[0.04] p-4 text-sm leading-6 text-slate-400">
+    <p class="mt-5 rounded-2xl bg-white/4 p-4 text-sm leading-6 text-slate-400">
       Cálculo: reserva atual = reserva anterior + saldo restante do mês. Total guardado = reserva atual + investimento.
     </p>
   </section>

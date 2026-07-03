@@ -18,10 +18,17 @@ class FinancialAnalyticsService
     public function obterPainelAnalitico(int $usuarioId, string $competencia, int $meses = 6): array
     {
         return Cache::remember(
-            "dashboard:analytics:user:{$usuarioId}:{$competencia}:{$meses}",
+            $this->chaveDeCache($usuarioId, $competencia, $meses),
             now()->addMinutes(5),
             fn (): array => $this->montarPainel($usuarioId, $competencia, $meses)
         );
+    }
+
+    private function chaveDeCache(int $usuarioId, string $competencia, int $meses): string
+    {
+        $versao = Cache::get("dashboard:user:{$usuarioId}:version", 1);
+
+        return "dashboard:analytics:user:{$usuarioId}:{$competencia}:{$meses}:v{$versao}";
     }
 
     protected function montarPainel(int $usuarioId, string $competencia, int $meses): array

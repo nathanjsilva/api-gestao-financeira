@@ -1,22 +1,68 @@
 <script setup>
 import { computed } from 'vue'
+import EmptyState from '../data-display/EmptyState.vue'
+import { formatCompetencyLabel } from '../../helpers/competency'
 import { formatCurrency } from '../../helpers/currency'
 
 const props = defineProps({
-  items: {
-    type: Array,
-    default: () => [],
-  },
+  items: { type: Array, default: () => [] },
 })
 
-const maxValue = computed(() => Math.max(
-  ...props.items.flatMap((item) => [Number(item.income || 0), Number(item.expense || 0)]),
-  1,
-))
-
-function height(value) {
-  return `${Math.max((Number(value || 0) / maxValue.value) * 100, 4)}%`
+function formatShort(val) {
+  if (Math.abs(val) >= 1000) return `R$ ${(val / 1000).toFixed(1)}k`
+  return `R$ ${Number(val).toFixed(0)}`
 }
+
+const series = computed(() => [
+  { name: 'Entradas', data: props.items.map((i) => Number(i.income || 0)) },
+  { name: 'Gastos',   data: props.items.map((i) => Number(i.expense || 0)) },
+])
+
+const chartOptions = computed(() => ({
+  chart: {
+    type: 'bar',
+    background: 'transparent',
+    fontFamily: 'inherit',
+    toolbar: {
+      show: true,
+      tools: { download: false, selection: false, zoom: true, zoomin: true, zoomout: true, pan: false, reset: true },
+    },
+    animations: { enabled: true, easing: 'easeinout', speed: 400 },
+  },
+  theme: { mode: 'dark' },
+  colors: ['#6ee7b7', '#fda4af'],
+  plotOptions: {
+    bar: { columnWidth: '55%', borderRadius: 4, borderRadiusApplication: 'end' },
+  },
+  dataLabels: { enabled: false },
+  grid: {
+    borderColor: 'rgba(148,163,184,0.08)',
+    strokeDashArray: 4,
+    xaxis: { lines: { show: false } },
+  },
+  xaxis: {
+    categories: props.items.map((i) => formatCompetencyLabel(i.competency)),
+    labels: { style: { colors: '#94a3b8', fontSize: '11px' } },
+    axisBorder: { show: false },
+    axisTicks: { show: false },
+  },
+  yaxis: {
+    labels: {
+      style: { colors: '#94a3b8', fontSize: '11px' },
+      formatter: formatShort,
+    },
+  },
+  tooltip: {
+    theme: 'dark',
+    y: { formatter: (val) => formatCurrency(val) },
+  },
+  legend: {
+    position: 'top',
+    horizontalAlign: 'right',
+    labels: { colors: '#cbd5e1' },
+    markers: { size: 6, shape: 'circle' },
+  },
+}))
 </script>
 
 <template>
@@ -29,17 +75,10 @@ function height(value) {
       </p>
     </div>
 
-    <div class="responsive-chart-frame flex h-64 items-end gap-2 rounded-3xl bg-slate-950/60 p-3 sm:h-72 sm:gap-4 sm:p-5">
-      <div v-for="item in items" :key="item.competency" class="flex min-w-0 flex-1 basis-0 flex-col items-center justify-end gap-3">
-        <div class="flex h-40 w-full min-w-0 items-end justify-center gap-1.5 sm:h-48 sm:gap-2">
-          <span class="w-3 rounded-t-full bg-emerald-300 sm:w-5" :style="{ height: height(item.income) }" :title="formatCurrency(item.income)" />
-          <span class="w-3 rounded-t-full bg-rose-300 sm:w-5" :style="{ height: height(item.expense) }" :title="formatCurrency(item.expense)" />
-        </div>
-        <span class="max-w-full truncate text-[10px] font-bold text-slate-400 sm:text-xs">{{ item.competency }}</span>
-      </div>
-    </div>
+    <EmptyState v-if="!items.length" title="Sem dados de fluxo de caixa" description="Registre transações para visualizar o gráfico." />
+    <apexchart v-else type="bar" height="280" :options="chartOptions" :series="series" />
 
-    <p class="mt-5 rounded-2xl bg-white/[0.04] p-4 text-sm leading-6 text-slate-400">
+    <p class="mt-5 rounded-2xl bg-white/4 p-4 text-sm leading-6 text-slate-400">
       Cálculo: para cada competência, somamos todas as transações de entrada e todas as transações de gasto.
       A diferença entre elas forma o saldo restante do mês.
     </p>

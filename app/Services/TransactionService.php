@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Events\DadosFinanceirosAlterados;
 use App\Models\Category;
 use App\Models\Transaction;
 use App\Repositories\CategoryRepository;
@@ -34,7 +35,7 @@ class TransactionService
             $dados['type'],
         );
 
-        return $this->transactionRepository->criar([
+        $transacao = $this->transactionRepository->criar([
             'user_id' => $usuarioId,
             'category_id' => $categoria->id,
             'description' => $dados['description'],
@@ -44,6 +45,10 @@ class TransactionService
             'competency' => $dados['competency'],
             'is_recurring' => $dados['is_recurring'],
         ])->load('category:id,name,type');
+
+        event(new DadosFinanceirosAlterados($usuarioId));
+
+        return $transacao;
     }
 
     public function atualizar(int $id, int $usuarioId, array $dados): Transaction
@@ -62,6 +67,8 @@ class TransactionService
 
         $this->transactionRepository->atualizar($transacao, $dadosAtualizados);
 
+        event(new DadosFinanceirosAlterados($usuarioId));
+
         return $transacao->refresh()->load('category:id,name,type');
     }
 
@@ -70,6 +77,8 @@ class TransactionService
         $transacao = $this->buscarTransacaoOuFalhar($id, $usuarioId);
 
         $this->transactionRepository->excluir($transacao);
+
+        event(new DadosFinanceirosAlterados($usuarioId));
     }
 
     protected function buscarTransacaoOuFalhar(int $id, int $usuarioId): Transaction
