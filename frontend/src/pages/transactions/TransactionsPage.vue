@@ -1,8 +1,10 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import BaseButton from '../../components/base/BaseButton.vue'
 import BaseCard from '../../components/base/BaseCard.vue'
 import BaseInput from '../../components/base/BaseInput.vue'
+import BaseMonthPicker from '../../components/base/BaseMonthPicker.vue'
+import BasePagination from '../../components/base/BasePagination.vue'
 import BaseSelect from '../../components/base/BaseSelect.vue'
 import EmptyState from '../../components/data-display/EmptyState.vue'
 import PageHeader from '../../components/layout/PageHeader.vue'
@@ -11,6 +13,7 @@ import TransactionCard from '../../components/transactions/TransactionCard.vue'
 import TransactionStatusBadge from '../../components/transactions/TransactionStatusBadge.vue'
 import { useFormErrors } from '../../composables/useFormErrors'
 import { useLoading } from '../../composables/useLoading'
+import { usePagination } from '../../composables/usePagination'
 import { TRANSACTION_STATUS, TRANSACTION_TYPES } from '../../constants/transactions'
 import { getCurrentCompetency } from '../../helpers/competency'
 import { formatCurrency } from '../../helpers/currency'
@@ -110,6 +113,12 @@ const filteredTransactions = computed(() => {
 
     return matchesSearch && matchesCategory && matchesStatus && matchesType && matchesRecurring
   })
+})
+
+const { currentPage, totalPages, paginatedItems: paginatedTransactions, pageNumbers, nextPage, prevPage, goToPage } = usePagination(filteredTransactions)
+
+watch([search, () => filters.category_id, () => filters.status, () => filters.type, () => filters.recurring], () => {
+  goToPage(1)
 })
 
 const submitLabel = computed(() => editingId.value ? 'Salvar alterações' : 'Cadastrar transação')
@@ -244,8 +253,8 @@ onMounted(loadInitialData)
         description="Controle entradas, saídas, filtros e comportamento financeiro por competência."
       >
         <template #actions>
-          <div class="grid gap-3 sm:grid-cols-[180px_120px]">
-            <BaseInput id="transactions-competency" v-model="filters.competency" label="Competência" type="month" />
+          <div class="grid gap-3 sm:grid-cols-[1fr_120px]">
+            <BaseMonthPicker id="transactions-competency" v-model="filters.competency" label="Competência" />
             <BaseButton class="sm:mt-7" :loading="isLoading" @click="loadTransactions">Filtrar</BaseButton>
           </div>
         </template>
@@ -307,7 +316,7 @@ onMounted(loadInitialData)
 
           <div class="grid gap-4 sm:grid-cols-2">
             <BaseSelect id="transaction-status" v-model="form.status" label="Status" :options="TRANSACTION_STATUS" :error="fieldError('status')" />
-            <BaseInput id="transaction-form-competency" v-model="form.competency" label="Competência" type="month" :error="fieldError('competency')" />
+            <BaseMonthPicker id="transaction-form-competency" v-model="form.competency" label="Competência" :error="fieldError('competency')" />
           </div>
 
           <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200">
@@ -396,7 +405,7 @@ onMounted(loadInitialData)
           <h2 class="text-2xl font-black text-slate-50">Lançamentos</h2>
           <p class="mt-2 text-sm text-slate-400">Tabela no desktop e cards financeiros no mobile.</p>
         </div>
-        <span class="rounded-full bg-white/[0.06] px-3 py-1 text-sm text-slate-300">{{ filteredTransactions.length }} itens</span>
+        <span class="rounded-full bg-white/6 px-3 py-1 text-sm text-slate-300">{{ filteredTransactions.length }} itens</span>
       </div>
 
       <EmptyState
@@ -418,7 +427,7 @@ onMounted(loadInitialData)
             </tr>
           </thead>
           <tbody>
-            <tr v-for="transaction in filteredTransactions" :key="transaction.id">
+            <tr v-for="transaction in paginatedTransactions" :key="transaction.id">
               <td>
                 <div class="flex items-center gap-3">
                   <span
@@ -452,13 +461,23 @@ onMounted(loadInitialData)
 
       <div class="grid gap-3 xl:hidden">
         <TransactionCard
-          v-for="transaction in filteredTransactions"
+          v-for="transaction in paginatedTransactions"
           :key="transaction.id"
           :transaction="transaction"
           @edit="startEdit"
           @remove="removeTransaction"
         />
       </div>
+
+      <BasePagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total="filteredTransactions.length"
+        :page-numbers="pageNumbers"
+        @prev="prevPage"
+        @next="nextPage"
+        @go="goToPage"
+      />
     </BaseCard>
   </section>
 </template>

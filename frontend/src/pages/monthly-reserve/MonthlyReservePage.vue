@@ -3,6 +3,8 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import BaseButton from '../../components/base/BaseButton.vue'
 import BaseCard from '../../components/base/BaseCard.vue'
 import BaseInput from '../../components/base/BaseInput.vue'
+import BaseMonthPicker from '../../components/base/BaseMonthPicker.vue'
+import BasePagination from '../../components/base/BasePagination.vue'
 import BaseTextarea from '../../components/base/BaseTextarea.vue'
 import EmptyState from '../../components/data-display/EmptyState.vue'
 import ReserveChart from '../../components/reserve/ReserveChart.vue'
@@ -10,6 +12,7 @@ import FinancialInsight from '../../components/shared/FinancialInsight.vue'
 import PageHeader from '../../components/layout/PageHeader.vue'
 import { useFormErrors } from '../../composables/useFormErrors'
 import { useLoading } from '../../composables/useLoading'
+import { usePagination } from '../../composables/usePagination'
 import { getCurrentCompetency } from '../../helpers/competency'
 import { formatCurrency } from '../../helpers/currency'
 import { monthlyReserveService } from '../../services/monthly-reserves/monthlyReserveService'
@@ -30,6 +33,8 @@ const enrichedReserves = computed(() => reserves.value.map((reserve) => ({
   ...reserve,
   ...parseReserveObservations(reserve.observations),
 })))
+
+const { currentPage, totalPages, paginatedItems, pageNumbers, nextPage, prevPage, goToPage } = usePagination(enrichedReserves)
 
 const latestReserve = computed(() => enrichedReserves.value[0] || null)
 const previousReserve = computed(() => enrichedReserves.value[1] || null)
@@ -281,7 +286,7 @@ onMounted(loadReserves)
         </p>
 
         <form class="mt-6 space-y-5" @submit.prevent="handleSubmit">
-          <BaseInput id="reserve-competency" v-model="form.competency" label="Competência" type="month" :error="fieldError('competency')" />
+          <BaseMonthPicker id="reserve-competency" v-model="form.competency" label="Competência" :error="fieldError('competency')" />
           <BaseInput id="previous-reserve" v-model="form.reserva_anterior" label="Reserva anterior" type="number" placeholder="Ex: 13500.00" :error="fieldError('reserva_anterior')" />
           <BaseInput id="investment" v-model="form.investimento" label="Investimento" type="number" placeholder="Ex: 357.97" :error="fieldError('investimento')" />
           <BaseTextarea id="observations" v-model="form.observations" label="Observações" placeholder="Resumo opcional do mês" :error="fieldError('observations')" />
@@ -358,7 +363,7 @@ onMounted(loadReserves)
             </tr>
           </thead>
           <tbody>
-            <tr v-for="reserve in enrichedReserves" :key="reserve.id">
+            <tr v-for="reserve in paginatedItems" :key="reserve.id">
               <td class="font-black text-slate-50">{{ reserve.competency }}</td>
               <td>{{ formatCurrency(reserve.reserva_anterior) }}</td>
               <td><span class="value-badge value-badge--info">{{ formatCurrency(reserve.reserva_atual || reserve.reserva_anterior) }}</span></td>
@@ -381,7 +386,7 @@ onMounted(loadReserves)
 
       <div class="grid gap-3 lg:hidden">
         <article
-          v-for="reserve in enrichedReserves"
+          v-for="reserve in paginatedItems"
           :key="reserve.id"
           class="rounded-3xl border border-white/10 bg-white/[0.04] p-4"
         >
@@ -406,6 +411,16 @@ onMounted(loadReserves)
           </div>
         </article>
       </div>
+
+      <BasePagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total="enrichedReserves.length"
+        :page-numbers="pageNumbers"
+        @prev="prevPage"
+        @next="nextPage"
+        @go="goToPage"
+      />
     </BaseCard>
   </section>
 </template>

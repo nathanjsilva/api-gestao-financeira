@@ -3,15 +3,18 @@ import { computed, onMounted, reactive, ref } from 'vue'
 import BaseButton from '../../components/base/BaseButton.vue'
 import BaseCard from '../../components/base/BaseCard.vue'
 import BaseInput from '../../components/base/BaseInput.vue'
+import BasePagination from '../../components/base/BasePagination.vue'
 import BaseSelect from '../../components/base/BaseSelect.vue'
 import EmptyState from '../../components/data-display/EmptyState.vue'
 import PageHeader from '../../components/layout/PageHeader.vue'
 import { useFormErrors } from '../../composables/useFormErrors'
 import { useLoading } from '../../composables/useLoading'
+import { usePagination } from '../../composables/usePagination'
 import { TRANSACTION_TYPES } from '../../constants/transactions'
 import { categoryService } from '../../services/categories/categoryService'
 
 const categories = ref([])
+const { currentPage, totalPages, paginatedItems, pageNumbers, nextPage, prevPage, goToPage } = usePagination(categories)
 const editingId = ref(null)
 const { isLoading, withLoading } = useLoading()
 const { generalError, clearErrors, setErrorsFromApi, fieldError } = useFormErrors()
@@ -156,7 +159,7 @@ onMounted(loadCategories)
               </tr>
             </thead>
             <tbody>
-              <tr v-for="category in categories" :key="category.id" class="border-b border-white/5">
+              <tr v-for="category in paginatedItems" :key="category.id" class="border-b border-white/5">
                 <td class="py-4 font-semibold text-slate-100">{{ category.name }}</td>
                 <td class="py-4 text-slate-300">{{ typeLabel(category.type) }}</td>
                 <td class="py-4">
@@ -172,7 +175,7 @@ onMounted(loadCategories)
 
         <div v-if="categories.length" class="grid gap-3 md:hidden">
           <article
-            v-for="category in categories"
+            v-for="category in paginatedItems"
             :key="category.id"
             class="rounded-3xl border border-white/10 bg-white/[0.04] p-4"
           >
@@ -189,6 +192,16 @@ onMounted(loadCategories)
             </div>
           </article>
         </div>
+
+        <BasePagination
+          :current-page="currentPage"
+          :total-pages="totalPages"
+          :total="categories.length"
+          :page-numbers="pageNumbers"
+          @prev="prevPage"
+          @next="nextPage"
+          @go="goToPage"
+        />
       </BaseCard>
     </div>
   </section>
