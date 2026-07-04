@@ -44,13 +44,13 @@ const impactPreview = computed(() => {
 </script>
 
 <template>
-  <form class="space-y-5" @submit.prevent="$emit('submit')">
-    <div class="grid grid-cols-2 gap-3">
+  <form class="space-y-4" @submit.prevent="$emit('submit')">
+    <div class="grid grid-cols-2 gap-2">
       <button
         v-for="type in TRANSACTION_TYPES"
         :key="type.value"
         type="button"
-        class="rounded-2xl border p-4 text-left transition"
+        class="rounded-2xl border p-3 text-left transition"
         :class="form.type === type.value ? 'border-sky-300 bg-sky-400/10 text-sky-100' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'"
         @click="form.type = type.value; form.category_id = ''"
       >
@@ -63,19 +63,19 @@ const impactPreview = computed(() => {
     <BaseInput id="transaction-description" v-model="form.description" label="Descrição" placeholder="Ex: Supermercado" :error="fieldError('description')" />
     <BaseInput id="transaction-amount" v-model="form.amount" label="Valor" type="number" placeholder="Ex: 250.90" :error="fieldError('amount')" />
 
-    <div class="grid gap-4 sm:grid-cols-2">
+    <div class="grid gap-3 sm:grid-cols-2">
       <BaseSelect id="transaction-status" v-model="form.status" label="Status" :options="TRANSACTION_STATUS" :error="fieldError('status')" />
       <BaseMonthPicker id="transaction-form-competency" v-model="form.competency" label="Competência" :error="fieldError('competency')" />
     </div>
 
-    <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200">
+    <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-sm text-slate-200">
       <input v-model="form.is_recurring" type="checkbox" class="size-4 accent-sky-400">
       Lançamento recorrente
     </label>
 
-    <div class="rounded-3xl border border-white/10 bg-slate-950/60 p-4">
-      <p class="text-sm font-bold uppercase text-sky-300">Impacto financeiro</p>
-      <strong class="mt-2 block text-2xl" :class="impactPreview >= 0 ? 'text-emerald-300' : 'text-rose-300'">
+    <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-3">
+      <p class="text-xs font-bold uppercase text-sky-300">Impacto financeiro</p>
+      <strong class="mt-1 block text-xl" :class="impactPreview >= 0 ? 'text-emerald-300' : 'text-rose-300'">
         {{ impactPreview >= 0 ? '+' : '-' }} {{ formatCurrency(Math.abs(impactPreview)) }}
       </strong>
     </div>
