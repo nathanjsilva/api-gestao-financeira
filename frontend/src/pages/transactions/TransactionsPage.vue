@@ -3,6 +3,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue'
 import BaseButton from '../../components/base/BaseButton.vue'
 import BaseCard from '../../components/base/BaseCard.vue'
 import BaseInput from '../../components/base/BaseInput.vue'
+import BaseModal from '../../components/base/BaseModal.vue'
 import BaseMonthPicker from '../../components/base/BaseMonthPicker.vue'
 import BasePagination from '../../components/base/BasePagination.vue'
 import BaseSelect from '../../components/base/BaseSelect.vue'
@@ -10,6 +11,7 @@ import EmptyState from '../../components/data-display/EmptyState.vue'
 import PageHeader from '../../components/layout/PageHeader.vue'
 import FinancialInsight from '../../components/shared/FinancialInsight.vue'
 import TransactionCard from '../../components/transactions/TransactionCard.vue'
+import TransactionForm from '../../components/transactions/TransactionForm.vue'
 import TransactionStatusBadge from '../../components/transactions/TransactionStatusBadge.vue'
 import { useFormErrors } from '../../composables/useFormErrors'
 import { useLoading } from '../../composables/useLoading'
@@ -45,6 +47,16 @@ const form = reactive({
   is_recurring: false,
 })
 
+const editForm = reactive({
+  category_id: '',
+  description: '',
+  amount: '',
+  type: 'expense',
+  status: 'paid',
+  competency: getCurrentCompetency(),
+  is_recurring: false,
+})
+
 const categoryOptions = computed(() => categories.value.map((category) => ({
   label: `${category.name} (${typeLabel(category.type)})`,
   value: category.id,
@@ -52,6 +64,8 @@ const categoryOptions = computed(() => categories.value.map((category) => ({
 })))
 
 const formCategoryOptions = computed(() => categoryOptions.value.filter((category) => category.type === form.type))
+const editFormCategoryOptions = computed(() => categoryOptions.value.filter((category) => category.type === editForm.type))
+const isEditModalOpen = computed(() => editingId.value !== null)
 const totalIncome = computed(() => sumByType(filteredTransactions.value, 'income'))
 const totalExpense = computed(() => sumByType(filteredTransactions.value, 'expense'))
 const remainingAmount = computed(() => totalIncome.value - totalExpense.value)
@@ -121,13 +135,6 @@ watch([search, () => filters.category_id, () => filters.status, () => filters.ty
   goToPage(1)
 })
 
-const submitLabel = computed(() => editingId.value ? 'Salvar alterações' : 'Cadastrar transação')
-const impactPreview = computed(() => {
-  const amount = Number(form.amount || 0)
-
-  return form.type === 'income' ? amount : -amount
-})
-
 function sumByType(items, type) {
   return items
     .filter((transaction) => transaction.type === type)
@@ -147,7 +154,6 @@ function categoryBarWidth(total) {
 }
 
 function resetForm() {
-  editingId.value = null
   form.category_id = ''
   form.description = ''
   form.amount = ''
@@ -200,12 +206,7 @@ async function handleSubmit() {
 
   await withLoading(async () => {
     try {
-      if (editingId.value) {
-        await transactionService.update(editingId.value, payload)
-      } else {
-        await transactionService.create(payload)
-      }
-
+      await transactionService.create(payload)
       resetForm()
       await loadTransactions()
     } catch (error) {
@@ -216,14 +217,38 @@ async function handleSubmit() {
 
 function startEdit(transaction) {
   editingId.value = transaction.id
-  form.category_id = transaction.category_id
-  form.description = transaction.description
-  form.amount = transaction.amount
-  form.type = transaction.type
-  form.status = transaction.status
-  form.competency = transaction.competency
-  form.is_recurring = Boolean(transaction.is_recurring)
+  editForm.category_id = transaction.category_id
+  editForm.description = transaction.description
+  editForm.amount = transaction.amount
+  editForm.type = transaction.type
+  editForm.status = transaction.status
+  editForm.competency = transaction.competency
+  editForm.is_recurring = Boolean(transaction.is_recurring)
   clearErrors()
+}
+
+function closeEditModal() {
+  editingId.value = null
+  clearErrors()
+}
+
+async function handleEditSubmit() {
+  clearErrors()
+
+  const payload = {
+    ...editForm,
+    amount: Number(editForm.amount),
+  }
+
+  await withLoading(async () => {
+    try {
+      await transactionService.update(editingId.value, payload)
+      closeEditModal()
+      await loadTransactions()
+    } catch (error) {
+      setErrorsFromApi(error)
+    }
+  })
 }
 
 async function removeTransaction(transaction) {
@@ -292,50 +317,19 @@ onMounted(loadInitialData)
 
     <div class="mt-5 grid min-w-0 gap-4 xl:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]">
       <BaseCard>
-        <h2 class="text-2xl font-black text-slate-50">{{ editingId ? 'Editar transação' : 'Nova transação' }}</h2>
+        <h2 class="text-2xl font-black text-slate-50">Nova transação</h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">Cadastre lançamentos com categoria, status e impacto financeiro visível antes de salvar.</p>
 
-        <form class="mt-6 space-y-5" @submit.prevent="handleSubmit">
-          <div class="grid grid-cols-2 gap-3">
-            <button
-              v-for="type in TRANSACTION_TYPES"
-              :key="type.value"
-              type="button"
-              class="rounded-2xl border p-4 text-left transition"
-              :class="form.type === type.value ? 'border-sky-300 bg-sky-400/10 text-sky-100' : 'border-white/10 bg-white/[0.03] text-slate-300 hover:bg-white/[0.06]'"
-              @click="form.type = type.value; form.category_id = ''"
-            >
-              <span class="block text-sm font-bold">{{ type.label }}</span>
-              <span class="mt-1 block text-xs text-slate-400">{{ type.value === 'income' ? 'Aumenta o saldo' : 'Reduz o saldo' }}</span>
-            </button>
-          </div>
-
-          <BaseSelect id="transaction-category" v-model="form.category_id" label="Categoria" :options="formCategoryOptions" :error="fieldError('category_id')" />
-          <BaseInput id="transaction-description" v-model="form.description" label="Descrição" placeholder="Ex: Supermercado" :error="fieldError('description')" />
-          <BaseInput id="transaction-amount" v-model="form.amount" label="Valor" type="number" placeholder="Ex: 250.90" :error="fieldError('amount')" />
-
-          <div class="grid gap-4 sm:grid-cols-2">
-            <BaseSelect id="transaction-status" v-model="form.status" label="Status" :options="TRANSACTION_STATUS" :error="fieldError('status')" />
-            <BaseMonthPicker id="transaction-form-competency" v-model="form.competency" label="Competência" :error="fieldError('competency')" />
-          </div>
-
-          <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/70 p-4 text-sm text-slate-200">
-            <input v-model="form.is_recurring" type="checkbox" class="size-4 accent-sky-400">
-            Lançamento recorrente
-          </label>
-
-          <div class="rounded-3xl border border-white/10 bg-slate-950/60 p-4">
-            <p class="text-sm font-bold uppercase text-sky-300">Impacto financeiro</p>
-            <strong class="mt-2 block text-2xl" :class="impactPreview >= 0 ? 'text-emerald-300' : 'text-rose-300'">
-              {{ impactPreview >= 0 ? '+' : '-' }} {{ formatCurrency(Math.abs(impactPreview)) }}
-            </strong>
-          </div>
-
-          <div class="grid gap-3 sm:grid-cols-2">
-            <BaseButton type="submit" class="w-full" :loading="isLoading">{{ submitLabel }}</BaseButton>
-            <BaseButton v-if="editingId" class="w-full" variant="secondary" @click="resetForm">Cancelar</BaseButton>
-          </div>
-        </form>
+        <div class="mt-6">
+          <TransactionForm
+            :form="form"
+            :category-options="formCategoryOptions"
+            :field-error="fieldError"
+            :is-loading="isLoading"
+            submit-label="Cadastrar transação"
+            @submit="handleSubmit"
+          />
+        </div>
       </BaseCard>
 
       <div class="space-y-4">
@@ -479,5 +473,18 @@ onMounted(loadInitialData)
         @go="goToPage"
       />
     </BaseCard>
+
+    <BaseModal :open="isEditModalOpen" title="Editar transação" @close="closeEditModal">
+      <TransactionForm
+        :form="editForm"
+        :category-options="editFormCategoryOptions"
+        :field-error="fieldError"
+        :is-loading="isLoading"
+        submit-label="Salvar alterações"
+        show-cancel
+        @submit="handleEditSubmit"
+        @cancel="closeEditModal"
+      />
+    </BaseModal>
   </section>
 </template>
