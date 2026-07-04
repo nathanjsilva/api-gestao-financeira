@@ -63,7 +63,7 @@ const impactPreview = computed(() => {
     <BaseInput id="transaction-description" v-model="form.description" label="Descrição" placeholder="Ex: Supermercado" :error="fieldError('description')" />
     <BaseInput id="transaction-amount" v-model="form.amount" label="Valor" type="number" placeholder="Ex: 250.90" :error="fieldError('amount')" />
 
-    <div class="grid gap-3 sm:grid-cols-2">
+    <div class="grid gap-3">
       <BaseSelect id="transaction-status" v-model="form.status" label="Status" :options="TRANSACTION_STATUS" :error="fieldError('status')" />
       <BaseMonthPicker id="transaction-form-competency" v-model="form.competency" label="Competência" :error="fieldError('competency')" />
     </div>
@@ -80,7 +80,7 @@ const impactPreview = computed(() => {
       </strong>
     </div>
 
-    <div class="grid gap-3 sm:grid-cols-2">
+    <div class="grid gap-3">
       <BaseButton type="submit" class="w-full" :loading="isLoading">{{ submitLabel }}</BaseButton>
       <BaseButton v-if="showCancel" type="button" class="w-full" variant="secondary" @click="$emit('cancel')">Cancelar</BaseButton>
     </div>

@@ -160,12 +160,12 @@ onMounted(loadCategories)
             </thead>
             <tbody>
               <tr v-for="category in paginatedItems" :key="category.id" class="border-b border-white/5">
-                <td class="py-4 font-semibold text-slate-100">{{ category.name }}</td>
+                <td class="max-w-55 truncate py-4 font-semibold text-slate-100">{{ category.name }}</td>
                 <td class="py-4 text-slate-300">{{ typeLabel(category.type) }}</td>
                 <td class="py-4">
                   <div class="flex justify-end gap-2">
-                    <BaseButton variant="secondary" @click="startEdit(category)">Editar</BaseButton>
-                    <BaseButton variant="danger" @click="removeCategory(category)">Excluir</BaseButton>
+                    <BaseButton variant="secondary" :disabled="isLoading" @click="startEdit(category)">Editar</BaseButton>
+                    <BaseButton variant="danger" :disabled="isLoading" @click="removeCategory(category)">Excluir</BaseButton>
                   </div>
                 </td>
               </tr>
@@ -187,8 +187,8 @@ onMounted(loadCategories)
               <span class="value-badge">{{ typeLabel(category.type) }}</span>
             </div>
             <div class="mt-4 grid grid-cols-2 gap-2">
-              <BaseButton variant="secondary" @click="startEdit(category)">Editar</BaseButton>
-              <BaseButton variant="danger" @click="removeCategory(category)">Excluir</BaseButton>
+              <BaseButton variant="secondary" :disabled="isLoading" @click="startEdit(category)">Editar</BaseButton>
+              <BaseButton variant="danger" :disabled="isLoading" @click="removeCategory(category)">Excluir</BaseButton>
             </div>
           </article>
         </div>

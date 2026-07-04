@@ -46,7 +46,7 @@ function emit_value(month, year) {
 
     <div class="flex items-center gap-2">
       <select
-        class="flex-1 rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50 focus:ring-1 focus:ring-sky-400/30"
+        class="min-w-0 flex-1 rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50 focus:ring-1 focus:ring-sky-400/30"
         :class="error ? 'border-rose-400/50' : ''"
         :value="selectedMonth"
         @change="emit_value(Number($event.target.value), selectedYear)"

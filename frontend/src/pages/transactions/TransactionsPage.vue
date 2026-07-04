@@ -423,17 +423,17 @@ onMounted(loadInitialData)
           <tbody>
             <tr v-for="transaction in paginatedTransactions" :key="transaction.id">
               <td>
-                <div class="flex items-center gap-3">
+                <div class="flex min-w-0 items-center gap-3">
                   <span
-                    class="grid size-10 place-items-center rounded-2xl"
+                    class="grid size-10 shrink-0 place-items-center rounded-2xl"
                     :class="transaction.type === 'income' ? 'bg-emerald-400/10 text-emerald-200' : 'bg-rose-400/10 text-rose-200'"
                   >
                     {{ transaction.type === 'income' ? '↑' : '↓' }}
                   </span>
-                  <strong class="text-slate-50">{{ transaction.description }}</strong>
+                  <strong class="max-w-55 truncate text-slate-50">{{ transaction.description }}</strong>
                 </div>
               </td>
-              <td>{{ transaction.category?.name || 'Sem categoria' }}</td>
+              <td><span class="block max-w-40 truncate">{{ transaction.category?.name || 'Sem categoria' }}</span></td>
               <td>{{ typeLabel(transaction.type) }}</td>
               <td><TransactionStatusBadge :status="transaction.status" :recurring="Boolean(transaction.is_recurring)" /></td>
               <td
@@ -444,8 +444,8 @@ onMounted(loadInitialData)
               </td>
               <td>
                 <div class="flex justify-end gap-2">
-                  <BaseButton variant="secondary" title="Editar" @click="startEdit(transaction)">Editar</BaseButton>
-                  <BaseButton variant="danger" title="Excluir" @click="removeTransaction(transaction)">Excluir</BaseButton>
+                  <BaseButton variant="secondary" title="Editar" :disabled="isLoading" @click="startEdit(transaction)">Editar</BaseButton>
+                  <BaseButton variant="danger" title="Excluir" :disabled="isLoading" @click="removeTransaction(transaction)">Excluir</BaseButton>
                 </div>
               </td>
             </tr>

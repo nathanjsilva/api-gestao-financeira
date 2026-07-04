@@ -293,7 +293,7 @@ onMounted(loadReserves)
 
           <div class="rounded-3xl border border-white/10 bg-slate-950/60 p-4">
             <p class="text-sm font-bold uppercase text-sky-300">Prévia automática</p>
-            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <div class="mt-4 grid gap-3">
               <div>
                 <span class="text-sm text-slate-400">Reserva atual</span>
                 <strong class="block text-lg text-slate-50">{{ formatCurrency(previewCurrentReserve) }}</strong>
@@ -305,7 +305,7 @@ onMounted(loadReserves)
             </div>
           </div>
 
-          <div class="grid gap-3 sm:grid-cols-2">
+          <div class="grid gap-3">
             <BaseButton type="submit" class="w-full" :loading="isLoading">{{ submitLabel }}</BaseButton>
             <BaseButton v-if="editingId" class="w-full" variant="secondary" @click="resetForm">Cancelar</BaseButton>
           </div>
@@ -375,8 +375,8 @@ onMounted(loadReserves)
               </td>
               <td>
                 <div class="flex justify-end gap-2">
-                  <BaseButton variant="secondary" @click="startEdit(reserve)">Editar</BaseButton>
-                  <BaseButton variant="danger" @click="removeReserve(reserve)">Excluir</BaseButton>
+                  <BaseButton variant="secondary" :disabled="isLoading" @click="startEdit(reserve)">Editar</BaseButton>
+                  <BaseButton variant="danger" :disabled="isLoading" @click="removeReserve(reserve)">Excluir</BaseButton>
                 </div>
               </td>
             </tr>
@@ -406,8 +406,8 @@ onMounted(loadReserves)
             <span class="value-badge value-badge--danger">Gastos: {{ formatCurrency(reserve.total_gasto) }}</span>
           </div>
           <div class="mt-4 grid grid-cols-2 gap-2">
-            <BaseButton variant="secondary" @click="startEdit(reserve)">Editar</BaseButton>
-            <BaseButton variant="danger" @click="removeReserve(reserve)">Excluir</BaseButton>
+            <BaseButton variant="secondary" :disabled="isLoading" @click="startEdit(reserve)">Editar</BaseButton>
+            <BaseButton variant="danger" :disabled="isLoading" @click="removeReserve(reserve)">Excluir</BaseButton>
           </div>
         </article>
       </div>
