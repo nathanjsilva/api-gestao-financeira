@@ -10,7 +10,7 @@ const props = defineProps({
 })
 
 const orderedItems = computed(() => [...props.items].reverse())
-const maxValue = computed(() => Math.max(...orderedItems.value.map((item) => Number(item.total_saved || item.investimento || 0)), 1))
+const maxValue = computed(() => Math.max(...orderedItems.value.map((item) => Number(item.total_saved || 0)), 1))
 
 function barHeight(value) {
   return `${Math.max((Number(value || 0) / maxValue.value) * 100, 8)}%`
@@ -36,8 +36,8 @@ function barHeight(value) {
         <div class="flex h-40 w-full min-w-0 items-end justify-center gap-1.5 sm:h-48 sm:gap-2">
           <span
             class="w-3 rounded-t-full bg-sky-300 sm:w-5"
-            :style="{ height: barHeight(item.total_saved || item.reserva_anterior) }"
-            :title="formatCurrency(item.total_saved || item.reserva_anterior)"
+            :style="{ height: barHeight(item.total_saved) }"
+            :title="formatCurrency(item.total_saved)"
           />
           <span
             class="w-3 rounded-t-full bg-emerald-300 sm:w-5"

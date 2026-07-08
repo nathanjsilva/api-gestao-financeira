@@ -16,11 +16,16 @@ class MonthlyReserveService
     public function __construct(
         protected MonthlyReserveRepository $monthlyReserveRepository,
         protected MonthlyReserveEntryRepository $monthlyReserveEntryRepository,
+        protected DashboardService $dashboardService,
     ) {}
 
     public function listar(int $usuarioId): Collection
     {
-        return $this->monthlyReserveRepository->listarPorUsuarioId($usuarioId);
+        $reservas = $this->monthlyReserveRepository->listarPorUsuarioId($usuarioId);
+
+        $this->anexarSaldos($usuarioId, $reservas);
+
+        return $reservas;
     }
 
     public function buscarPorCompetencia(int $usuarioId, string $competencia): ?MonthlyReserve
@@ -30,7 +35,13 @@ class MonthlyReserveService
 
     public function buscarPorId(int $id, int $usuarioId): ?MonthlyReserve
     {
-        return $this->monthlyReserveRepository->buscarPorIdEUsuarioId($id, $usuarioId);
+        $reservaMensal = $this->monthlyReserveRepository->buscarPorIdEUsuarioId($id, $usuarioId);
+
+        if ($reservaMensal !== null) {
+            $this->anexarSaldos($usuarioId, [$reservaMensal]);
+        }
+
+        return $reservaMensal;
     }
 
     public function criar(int $usuarioId, array $dados): MonthlyReserve
@@ -51,6 +62,8 @@ class MonthlyReserveService
 
         event(new DadosFinanceirosAlterados($usuarioId));
 
+        $this->anexarSaldos($usuarioId, [$reserva]);
+
         return $reserva;
     }
 
@@ -70,7 +83,11 @@ class MonthlyReserveService
 
         event(new DadosFinanceirosAlterados($usuarioId));
 
-        return $reservaMensal->refresh();
+        $reservaMensal->refresh();
+
+        $this->anexarSaldos($usuarioId, [$reservaMensal]);
+
+        return $reservaMensal;
     }
 
     public function excluir(int $id, int $usuarioId): void
@@ -94,7 +111,9 @@ class MonthlyReserveService
             return 0.0;
         }
 
-        return (float) $reservaDoMesAnterior->reserva_anterior + (float) $reservaDoMesAnterior->investimento;
+        $saldoAnterior = $this->dashboardService->obterSaldoDaCompetencia($usuarioId, $competenciaAnterior);
+
+        return (float) $saldoAnterior['total_saved'];
     }
 
     public function listarLancamentos(int $reservaId, int $usuarioId): Collection
@@ -141,6 +160,24 @@ class MonthlyReserveService
         $this->recalcularInvestimento($reservaMensal);
 
         event(new DadosFinanceirosAlterados($usuarioId));
+    }
+
+    /**
+     * @param  iterable<MonthlyReserve>  $reservas
+     */
+    protected function anexarSaldos(int $usuarioId, iterable $reservas): void
+    {
+        $competencias = collect($reservas)->pluck('competency')->all();
+
+        if (empty($competencias)) {
+            return;
+        }
+
+        $saldos = $this->dashboardService->obterSaldosIndexadosPorCompetencia($usuarioId, $competencias);
+
+        foreach ($reservas as $reserva) {
+            $reserva->setAttribute('saldo_calculado', $saldos[$reserva->competency] ?? null);
+        }
     }
 
     protected function recalcularInvestimento(MonthlyReserve $reservaMensal): void

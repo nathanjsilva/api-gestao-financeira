@@ -113,6 +113,20 @@ class DashboardService
         ];
     }
 
+    public function obterSaldoDaCompetencia(int $usuarioId, string $competencia): array
+    {
+        return $this->obterResumosBaseIndexados($usuarioId, [$competencia])[$competencia];
+    }
+
+    /**
+     * @param  list<string>  $competencias
+     * @return array<string, array<string, float|string>>
+     */
+    public function obterSaldosIndexadosPorCompetencia(int $usuarioId, array $competencias): array
+    {
+        return $this->obterResumosBaseIndexados($usuarioId, $competencias);
+    }
+
     /**
      * @param  list<string>  $competencias
      * @return array<string, array<string, float|string>>

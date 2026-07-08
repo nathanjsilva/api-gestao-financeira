@@ -15,6 +15,7 @@ import { useLoading } from '../../composables/useLoading'
 import { usePagination } from '../../composables/usePagination'
 import { getCurrentCompetency } from '../../helpers/competency'
 import { formatCurrency } from '../../helpers/currency'
+import { dashboardService } from '../../services/dashboard/dashboardService'
 import { monthlyReserveService } from '../../services/monthly-reserves/monthlyReserveService'
 
 const reserves = ref([])
@@ -43,22 +44,19 @@ const form = reactive({
   observations: '',
 })
 
-const enrichedReserves = computed(() => reserves.value.map((reserve) => ({
-  ...reserve,
-  ...parseReserveObservations(reserve.observations),
-})))
+const competencySummary = ref(null)
 
-const { currentPage, totalPages, paginatedItems, pageNumbers, nextPage, prevPage, goToPage } = usePagination(enrichedReserves)
+const { currentPage, totalPages, paginatedItems, pageNumbers, nextPage, prevPage, goToPage } = usePagination(reserves)
 
-const latestReserve = computed(() => enrichedReserves.value[0] || null)
-const previousReserve = computed(() => enrichedReserves.value[1] || null)
+const latestReserve = computed(() => reserves.value[0] || null)
+const previousReserve = computed(() => reserves.value[1] || null)
 const reserveDifference = computed(() => Number(latestReserve.value?.reserva_anterior || 0) - Number(previousReserve.value?.reserva_anterior || 0))
 const investmentDifference = computed(() => Number(latestReserve.value?.investimento || 0) - Number(previousReserve.value?.investimento || 0))
 const reserveGrowthPercentage = computed(() => percentageChange(Number(latestReserve.value?.reserva_anterior || 0), Number(previousReserve.value?.reserva_anterior || 0)))
 const submitLabel = computed(() => editingId.value ? 'Salvar alterações' : 'Cadastrar reserva')
-const previewCurrentReserve = computed(() => Number(form.reserva_anterior || 0))
 const entriesTotal = computed(() => entries.value.reduce((sum, entry) => sum + Number(entry.amount || 0), 0))
-const currentReserveTotal = computed(() => Number(form.reserva_anterior || 0) + entriesTotal.value)
+const previewRemainingAmount = computed(() => Number(competencySummary.value?.remaining_amount || 0))
+const currentReserveTotal = computed(() => Number(form.reserva_anterior || 0) + previewRemainingAmount.value + entriesTotal.value)
 const entrySubmitLabel = computed(() => editingEntryId.value ? 'Salvar lançamento' : 'Adicionar lançamento')
 
 const reserveInsights = computed(() => {
@@ -88,7 +86,7 @@ const reserveInsights = computed(() => {
     tone: investmentDifference.value >= 0 ? 'success' : 'warning',
   })
 
-  if (Number(latestReserve.value.saldo_final || 0) < 0) {
+  if (Number(latestReserve.value.remaining_amount || 0) < 0) {
     insights.push({
       title: 'Saldo final negativo',
       description: 'O mês fechou com mais gastos do que entradas. Vale revisar gastos recorrentes.',
@@ -98,47 +96,6 @@ const reserveInsights = computed(() => {
 
   return insights
 })
-
-function parseReserveObservations(observations = '') {
-  const getValue = (label) => {
-    const match = observations.match(new RegExp(`${label}:\\s*(-?\\d+[\\d.,]*)`, 'i'))
-
-    if (!match) {
-      return 0
-    }
-
-    return parseMoneyValue(match[1])
-  }
-
-  return {
-    reserva_atual: getValue('Reserva Atual'),
-    total_guardado: getValue('Total Guardado'),
-    total_mes: getValue('Total Dinheiro Mes'),
-    total_gasto: getValue('Total a Pagar'),
-    saldo_final: getValue('Sobrou'),
-  }
-}
-
-function parseMoneyValue(value) {
-  const normalizedValue = String(value).trim()
-
-  if (!normalizedValue) {
-    return 0
-  }
-
-  const hasComma = normalizedValue.includes(',')
-  const hasDot = normalizedValue.includes('.')
-
-  if (hasComma && hasDot) {
-    return Number(normalizedValue.replace(/\./g, '').replace(',', '.'))
-  }
-
-  if (hasComma) {
-    return Number(normalizedValue.replace(',', '.'))
-  }
-
-  return Number(normalizedValue)
-}
 
 function percentageChange(current, previous) {
   if (!previous) {
@@ -159,6 +116,7 @@ function resetForm() {
   form.competency = getCurrentCompetency()
   form.reserva_anterior = ''
   form.observations = ''
+  competencySummary.value = null
   clearErrors()
   resetEntryForm()
   entries.value = []
@@ -177,7 +135,23 @@ async function fetchSuggestedPreviousReserve(competency) {
   }
 }
 
-watch(() => form.competency, (competency) => fetchSuggestedPreviousReserve(competency), { immediate: true })
+async function fetchCompetencySummary(competency) {
+  if (!competency) {
+    competencySummary.value = null
+    return
+  }
+
+  try {
+    competencySummary.value = await dashboardService.monthlySummary(competency)
+  } catch {
+    competencySummary.value = null
+  }
+}
+
+watch(() => form.competency, (competency) => {
+  fetchSuggestedPreviousReserve(competency)
+  fetchCompetencySummary(competency)
+}, { immediate: true })
 
 async function loadReserves() {
   clearErrors()
@@ -359,18 +333,18 @@ onMounted(loadReserves)
       <article class="financial-card financial-card--violet">
         <p class="text-sm font-semibold text-slate-400">Total guardado</p>
         <strong class="mt-3 block text-3xl font-black text-slate-50">
-          {{ formatCurrency(latestReserve?.total_guardado || latestReserve?.reserva_anterior) }}
+          {{ formatCurrency(latestReserve?.total_saved) }}
         </strong>
-        <p class="mt-3 text-sm text-slate-400">Reserva atual + investimento do mês.</p>
+        <p class="mt-3 text-sm text-slate-400">Reserva atual + lançamentos do mês.</p>
       </article>
 
       <article class="financial-card financial-card--rose">
         <p class="text-sm font-semibold text-slate-400">Saldo final</p>
         <strong
           class="mt-3 block text-3xl font-black"
-          :class="Number(latestReserve?.saldo_final || 0) >= 0 ? 'text-emerald-300' : 'text-rose-300'"
+          :class="Number(latestReserve?.remaining_amount || 0) >= 0 ? 'text-emerald-300' : 'text-rose-300'"
         >
-          {{ formatCurrency(latestReserve?.saldo_final) }}
+          {{ formatCurrency(latestReserve?.remaining_amount) }}
         </strong>
         <p class="mt-3 text-sm text-slate-400">Entradas menos gastos do mês.</p>
       </article>
@@ -398,10 +372,16 @@ onMounted(loadReserves)
             <div class="mt-4 grid gap-3">
               <div>
                 <span class="text-sm text-slate-400">Reserva anterior</span>
-                <strong class="block text-lg text-slate-50">{{ formatCurrency(previewCurrentReserve) }}</strong>
+                <strong class="block text-lg text-slate-50">{{ formatCurrency(form.reserva_anterior) }}</strong>
               </div>
-              <div v-if="editingId">
-                <span class="text-sm text-slate-400">Reserva atual (anterior + lançamentos)</span>
+              <div>
+                <span class="text-sm text-slate-400">Saldo das transações do mês (automático)</span>
+                <strong class="block text-lg" :class="previewRemainingAmount >= 0 ? 'text-emerald-300' : 'text-rose-300'">
+                  {{ formatCurrency(previewRemainingAmount) }}
+                </strong>
+              </div>
+              <div>
+                <span class="text-sm text-slate-400">Reserva atual (anterior + saldo do mês + lançamentos)</span>
                 <strong class="block text-lg text-emerald-300">{{ formatCurrency(currentReserveTotal) }}</strong>
               </div>
             </div>
@@ -460,7 +440,7 @@ onMounted(loadReserves)
       </BaseCard>
 
       <div class="space-y-4">
-        <ReserveChart :items="enrichedReserves" />
+        <ReserveChart :items="reserves" />
 
         <section class="analytics-panel">
           <div class="mb-5">
@@ -486,11 +466,11 @@ onMounted(loadReserves)
           <h2 class="text-2xl font-black text-slate-50">Histórico de reservas</h2>
           <p class="mt-2 text-sm text-slate-400">Informações organizadas por competência.</p>
         </div>
-        <span class="rounded-full bg-white/[0.06] px-3 py-1 text-sm text-slate-300">{{ enrichedReserves.length }} registros</span>
+        <span class="rounded-full bg-white/[0.06] px-3 py-1 text-sm text-slate-300">{{ reserves.length }} registros</span>
       </div>
 
       <EmptyState
-        v-if="!enrichedReserves.length"
+        v-if="!reserves.length"
         title="Nenhuma reserva cadastrada"
         description="Cadastre a reserva mensal para completar a análise financeira."
       />
@@ -513,12 +493,12 @@ onMounted(loadReserves)
             <tr v-for="reserve in paginatedItems" :key="reserve.id">
               <td class="font-black text-slate-50">{{ reserve.competency }}</td>
               <td>{{ formatCurrency(reserve.reserva_anterior) }}</td>
-              <td><span class="value-badge value-badge--info">{{ formatCurrency(reserve.reserva_atual || reserve.reserva_anterior) }}</span></td>
-              <td><span class="value-badge value-badge--success">{{ formatCurrency(reserve.total_guardado || reserve.reserva_anterior) }}</span></td>
-              <td>{{ formatCurrency(reserve.total_mes) }}</td>
-              <td>{{ formatCurrency(reserve.total_gasto) }}</td>
-              <td :class="Number(reserve.saldo_final || 0) >= 0 ? 'text-emerald-300' : 'text-rose-300'">
-                {{ formatCurrency(reserve.saldo_final) }}
+              <td><span class="value-badge value-badge--info">{{ formatCurrency(reserve.current_reserve) }}</span></td>
+              <td><span class="value-badge value-badge--success">{{ formatCurrency(reserve.total_saved) }}</span></td>
+              <td>{{ formatCurrency(reserve.total_income) }}</td>
+              <td>{{ formatCurrency(reserve.total_expense) }}</td>
+              <td :class="Number(reserve.remaining_amount || 0) >= 0 ? 'text-emerald-300' : 'text-rose-300'">
+                {{ formatCurrency(reserve.remaining_amount) }}
               </td>
               <td>
                 <div class="flex justify-end gap-2">
@@ -542,15 +522,15 @@ onMounted(loadReserves)
               <p class="text-xs font-bold uppercase text-slate-500">Competência</p>
               <strong class="text-xl text-slate-50">{{ reserve.competency }}</strong>
             </div>
-            <strong :class="Number(reserve.saldo_final || 0) >= 0 ? 'text-emerald-300' : 'text-rose-300'">
-              {{ formatCurrency(reserve.saldo_final) }}
+            <strong :class="Number(reserve.remaining_amount || 0) >= 0 ? 'text-emerald-300' : 'text-rose-300'">
+              {{ formatCurrency(reserve.remaining_amount) }}
             </strong>
           </div>
           <div class="mt-4 grid gap-3 sm:grid-cols-2">
-            <span class="value-badge value-badge--info">Reserva: {{ formatCurrency(reserve.reserva_atual || reserve.reserva_anterior) }}</span>
-            <span class="value-badge value-badge--success">Guardado: {{ formatCurrency(reserve.total_guardado || reserve.reserva_anterior) }}</span>
-            <span class="value-badge">Entradas: {{ formatCurrency(reserve.total_mes) }}</span>
-            <span class="value-badge value-badge--danger">Gastos: {{ formatCurrency(reserve.total_gasto) }}</span>
+            <span class="value-badge value-badge--info">Reserva: {{ formatCurrency(reserve.current_reserve) }}</span>
+            <span class="value-badge value-badge--success">Guardado: {{ formatCurrency(reserve.total_saved) }}</span>
+            <span class="value-badge">Entradas: {{ formatCurrency(reserve.total_income) }}</span>
+            <span class="value-badge value-badge--danger">Gastos: {{ formatCurrency(reserve.total_expense) }}</span>
           </div>
           <div class="mt-4 grid grid-cols-2 gap-2">
             <BaseButton variant="secondary" :disabled="isLoading" @click="startEdit(reserve)">Editar</BaseButton>
@@ -562,7 +542,7 @@ onMounted(loadReserves)
       <BasePagination
         :current-page="currentPage"
         :total-pages="totalPages"
-        :total="enrichedReserves.length"
+        :total="reserves.length"
         :page-numbers="pageNumbers"
         @prev="prevPage"
         @next="nextPage"

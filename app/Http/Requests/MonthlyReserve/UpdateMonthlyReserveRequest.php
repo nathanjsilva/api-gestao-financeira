@@ -18,7 +18,7 @@ class UpdateMonthlyReserveRequest extends FormRequest
      */
     public function rules(): array
     {
-        $reservaMensalId = (int) $this->route('monthly_reserf');
+        $reservaMensalId = (int) $this->route('monthly_reserve');
 
         return [
             'competency' => [
