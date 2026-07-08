@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\MonthlyReserveController;
+use App\Http\Controllers\Api\MonthlyReserveEntryController;
 use App\Http\Controllers\Api\TransactionController;
 use Illuminate\Support\Facades\Route;
 
@@ -16,7 +17,10 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::post('/auth/logout', [AuthController::class, 'logout']);
     Route::apiResource('categories', CategoryController::class);
     Route::apiResource('transactions', TransactionController::class);
+    Route::get('/monthly-reserves/reserva-anterior-sugerida', [MonthlyReserveController::class, 'reservaAnteriorSugerida']);
     Route::apiResource('monthly-reserves', MonthlyReserveController::class);
+    Route::apiResource('monthly-reserves.entries', MonthlyReserveEntryController::class)
+        ->only(['index', 'store', 'update', 'destroy']);
 
     Route::get('/dashboard/analytics', [DashboardController::class, 'analytics']);
     Route::get('/dashboard/monthly-summary', [DashboardController::class, 'resumoMensal']);

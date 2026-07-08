@@ -10,6 +10,7 @@ use App\Services\CategoryService;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class CategoryController extends Controller
 {
@@ -65,7 +66,7 @@ class CategoryController extends Controller
         return new CategoryResource($categoria);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(int $id): Response|JsonResponse
     {
         try {
             $this->categoryService->excluir($id, $this->usuarioIdAutenticado());

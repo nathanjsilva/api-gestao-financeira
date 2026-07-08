@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import BaseButton from '../../components/base/BaseButton.vue'
 import BaseCard from '../../components/base/BaseCard.vue'
 import BaseInput from '../../components/base/BaseInput.vue'
@@ -22,10 +22,24 @@ const editingId = ref(null)
 const { isLoading, withLoading } = useLoading()
 const { generalError, clearErrors, setErrorsFromApi, fieldError } = useFormErrors()
 
+const entries = ref([])
+const editingEntryId = ref(null)
+const { isLoading: isEntryLoading, withLoading: withEntryLoading } = useLoading()
+const {
+  generalError: entryGeneralError,
+  clearErrors: clearEntryErrors,
+  setErrorsFromApi: setEntryErrorsFromApi,
+  fieldError: entryFieldError,
+} = useFormErrors()
+
+const entryForm = reactive({
+  description: '',
+  amount: '',
+})
+
 const form = reactive({
   competency: getCurrentCompetency(),
   reserva_anterior: '',
-  investimento: '',
   observations: '',
 })
 
@@ -43,7 +57,9 @@ const investmentDifference = computed(() => Number(latestReserve.value?.investim
 const reserveGrowthPercentage = computed(() => percentageChange(Number(latestReserve.value?.reserva_anterior || 0), Number(previousReserve.value?.reserva_anterior || 0)))
 const submitLabel = computed(() => editingId.value ? 'Salvar alterações' : 'Cadastrar reserva')
 const previewCurrentReserve = computed(() => Number(form.reserva_anterior || 0))
-const previewTotalSaved = computed(() => Number(form.reserva_anterior || 0) + Number(form.investimento || 0))
+const entriesTotal = computed(() => entries.value.reduce((sum, entry) => sum + Number(entry.amount || 0), 0))
+const currentReserveTotal = computed(() => Number(form.reserva_anterior || 0) + entriesTotal.value)
+const entrySubmitLabel = computed(() => editingEntryId.value ? 'Salvar lançamento' : 'Adicionar lançamento')
 
 const reserveInsights = computed(() => {
   const insights = []
@@ -142,10 +158,26 @@ function resetForm() {
   editingId.value = null
   form.competency = getCurrentCompetency()
   form.reserva_anterior = ''
-  form.investimento = ''
   form.observations = ''
   clearErrors()
+  resetEntryForm()
+  entries.value = []
 }
+
+async function fetchSuggestedPreviousReserve(competency) {
+  if (editingId.value || !competency) {
+    return
+  }
+
+  try {
+    const { reserva_anterior_sugerida } = await monthlyReserveService.suggestPreviousReserve(competency)
+    form.reserva_anterior = reserva_anterior_sugerida
+  } catch {
+    // sugestão é apenas um auxílio de preenchimento; falha aqui não deve travar o formulário
+  }
+}
+
+watch(() => form.competency, (competency) => fetchSuggestedPreviousReserve(competency), { immediate: true })
 
 async function loadReserves() {
   clearErrors()
@@ -162,35 +194,103 @@ async function loadReserves() {
 async function handleSubmit() {
   clearErrors()
 
-  const payload = {
-    ...form,
-    reserva_anterior: Number(form.reserva_anterior || 0),
-    investimento: Number(form.investimento || 0),
-  }
-
   await withLoading(async () => {
     try {
       if (editingId.value) {
-        await monthlyReserveService.update(editingId.value, payload)
+        await monthlyReserveService.update(editingId.value, {
+          competency: form.competency,
+          reserva_anterior: Number(form.reserva_anterior || 0),
+          observations: form.observations,
+        })
+        await loadReserves()
       } else {
-        await monthlyReserveService.create(payload)
+        const created = await monthlyReserveService.create({
+          competency: form.competency,
+          reserva_anterior: Number(form.reserva_anterior || 0),
+          investimento: 0,
+          observations: form.observations,
+        })
+        await loadReserves()
+        await startEdit(created)
       }
-
-      resetForm()
-      await loadReserves()
     } catch (error) {
       setErrorsFromApi(error)
     }
   })
 }
 
-function startEdit(reserve) {
+async function startEdit(reserve) {
   editingId.value = reserve.id
   form.competency = reserve.competency
   form.reserva_anterior = reserve.reserva_anterior
-  form.investimento = reserve.investimento
   form.observations = reserve.observations || ''
   clearErrors()
+  await loadEntries(reserve.id)
+}
+
+async function loadEntries(reserveId) {
+  clearEntryErrors()
+
+  try {
+    entries.value = await monthlyReserveService.listEntries(reserveId)
+  } catch (error) {
+    setEntryErrorsFromApi(error)
+  }
+}
+
+function resetEntryForm() {
+  editingEntryId.value = null
+  entryForm.description = ''
+  entryForm.amount = ''
+  clearEntryErrors()
+}
+
+function startEditEntry(entry) {
+  editingEntryId.value = entry.id
+  entryForm.description = entry.description
+  entryForm.amount = entry.amount
+  clearEntryErrors()
+}
+
+async function handleEntrySubmit() {
+  clearEntryErrors()
+
+  const payload = {
+    description: entryForm.description,
+    amount: Number(entryForm.amount || 0),
+  }
+
+  await withEntryLoading(async () => {
+    try {
+      if (editingEntryId.value) {
+        await monthlyReserveService.updateEntry(editingId.value, editingEntryId.value, payload)
+      } else {
+        await monthlyReserveService.createEntry(editingId.value, payload)
+      }
+
+      resetEntryForm()
+      await loadEntries(editingId.value)
+      await loadReserves()
+    } catch (error) {
+      setEntryErrorsFromApi(error)
+    }
+  })
+}
+
+async function deleteEntry(entry) {
+  if (!confirm(`Excluir o lançamento "${entry.description}"?`)) {
+    return
+  }
+
+  await withEntryLoading(async () => {
+    try {
+      await monthlyReserveService.removeEntry(editingId.value, entry.id)
+      await loadEntries(editingId.value)
+      await loadReserves()
+    } catch (error) {
+      setEntryErrorsFromApi(error)
+    }
+  })
 }
 
 async function removeReserve(reserve) {
@@ -282,25 +382,27 @@ onMounted(loadReserves)
           {{ editingId ? 'Editar reserva' : 'Nova reserva' }}
         </h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">
-          Informe a reserva anterior e o investimento. O resumo abaixo mostra uma prévia antes de salvar.
+          Informe a reserva anterior. Depois de salvar, lance os valores que sobraram no mês para compor a reserva atual.
         </p>
 
         <form class="mt-6 space-y-5" @submit.prevent="handleSubmit">
           <BaseMonthPicker id="reserve-competency" v-model="form.competency" label="Competência" :error="fieldError('competency')" />
-          <BaseInput id="previous-reserve" v-model="form.reserva_anterior" label="Reserva anterior" type="number" placeholder="Ex: 13500.00" :error="fieldError('reserva_anterior')" />
-          <BaseInput id="investment" v-model="form.investimento" label="Investimento" type="number" placeholder="Ex: 357.97" :error="fieldError('investimento')" />
+          <div>
+            <BaseInput id="previous-reserve" v-model="form.reserva_anterior" label="Reserva anterior" type="number" placeholder="Ex: 13500.00" :error="fieldError('reserva_anterior')" />
+            <p class="mt-2 text-xs text-slate-500">Sugestão automática com base no total do mês anterior — você pode ajustar antes de salvar.</p>
+          </div>
           <BaseTextarea id="observations" v-model="form.observations" label="Observações" placeholder="Resumo opcional do mês" :error="fieldError('observations')" />
 
           <div class="rounded-3xl border border-white/10 bg-slate-950/60 p-4">
             <p class="text-sm font-bold uppercase text-sky-300">Prévia automática</p>
             <div class="mt-4 grid gap-3">
               <div>
-                <span class="text-sm text-slate-400">Reserva atual</span>
+                <span class="text-sm text-slate-400">Reserva anterior</span>
                 <strong class="block text-lg text-slate-50">{{ formatCurrency(previewCurrentReserve) }}</strong>
               </div>
-              <div>
-                <span class="text-sm text-slate-400">Total guardado</span>
-                <strong class="block text-lg text-emerald-300">{{ formatCurrency(previewTotalSaved) }}</strong>
+              <div v-if="editingId">
+                <span class="text-sm text-slate-400">Reserva atual (anterior + lançamentos)</span>
+                <strong class="block text-lg text-emerald-300">{{ formatCurrency(currentReserveTotal) }}</strong>
               </div>
             </div>
           </div>
@@ -310,6 +412,51 @@ onMounted(loadReserves)
             <BaseButton v-if="editingId" class="w-full" variant="secondary" @click="resetForm">Cancelar</BaseButton>
           </div>
         </form>
+
+        <div v-if="editingId" class="mt-6 rounded-3xl border border-white/10 bg-slate-950/60 p-4">
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-sm font-bold uppercase text-sky-300">Lançamentos do mês</p>
+            <span class="rounded-full bg-white/[0.06] px-3 py-1 text-xs text-slate-300">{{ formatCurrency(entriesTotal) }}</span>
+          </div>
+
+          <p v-if="entryGeneralError" class="mt-3 text-sm text-rose-300">{{ entryGeneralError }}</p>
+
+          <EmptyState
+            v-if="!entries.length"
+            title="Nenhum lançamento neste mês"
+            description="Cadastre os valores que sobraram para somar à reserva."
+          />
+
+          <div v-else class="mt-4 space-y-2">
+            <div
+              v-for="entry in entries"
+              :key="entry.id"
+              class="flex items-center justify-between gap-3 rounded-2xl bg-white/[0.04] px-4 py-3"
+            >
+              <div class="min-w-0">
+                <p class="truncate text-sm font-semibold text-slate-100">{{ entry.description }}</p>
+                <p class="text-xs text-slate-400">{{ formatCurrency(entry.amount) }}</p>
+              </div>
+              <div class="flex shrink-0 gap-3">
+                <button type="button" class="text-xs font-bold text-sky-300 hover:text-sky-200" :disabled="isEntryLoading" @click="startEditEntry(entry)">
+                  Editar
+                </button>
+                <button type="button" class="text-xs font-bold text-rose-300 hover:text-rose-200" :disabled="isEntryLoading" @click="deleteEntry(entry)">
+                  Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <form class="mt-4 grid gap-3 sm:grid-cols-2" @submit.prevent="handleEntrySubmit">
+            <BaseInput id="entry-description" v-model="entryForm.description" label="Descrição" placeholder="Ex: Sobra do mês" :error="entryFieldError('description')" />
+            <BaseInput id="entry-amount" v-model="entryForm.amount" label="Valor" type="number" placeholder="Ex: 250.00" :error="entryFieldError('amount')" />
+            <div class="flex gap-2 sm:col-span-2">
+              <BaseButton type="submit" class="flex-1" :loading="isEntryLoading">{{ entrySubmitLabel }}</BaseButton>
+              <BaseButton v-if="editingEntryId" type="button" variant="secondary" @click="resetEntryForm">Cancelar</BaseButton>
+            </div>
+          </form>
+        </div>
       </BaseCard>
 
       <div class="space-y-4">

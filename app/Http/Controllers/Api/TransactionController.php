@@ -11,6 +11,7 @@ use App\Services\TransactionService;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class TransactionController extends Controller
 {
@@ -68,7 +69,7 @@ class TransactionController extends Controller
         return new TransactionResource($transacao);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(int $id): Response|JsonResponse
     {
         try {
             $this->transactionService->excluir($id, $this->usuarioIdAutenticado());

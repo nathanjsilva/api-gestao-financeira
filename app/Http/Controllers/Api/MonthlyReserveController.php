@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\MonthlyReserve\StoreMonthlyReserveRequest;
+use App\Http\Requests\MonthlyReserve\SugerirReservaAnteriorRequest;
 use App\Http\Requests\MonthlyReserve\UpdateMonthlyReserveRequest;
 use App\Http\Resources\MonthlyReserveResource;
 use App\Services\MonthlyReserveService;
 use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class MonthlyReserveController extends Controller
 {
@@ -22,6 +24,16 @@ class MonthlyReserveController extends Controller
         return MonthlyReserveResource::collection(
             $this->monthlyReserveService->listar($this->usuarioIdAutenticado())
         );
+    }
+
+    public function reservaAnteriorSugerida(SugerirReservaAnteriorRequest $request): JsonResponse
+    {
+        $sugestao = $this->monthlyReserveService->sugerirReservaAnterior(
+            $this->usuarioIdAutenticado(),
+            $request->validated('competency')
+        );
+
+        return response()->json(['reserva_anterior_sugerida' => $sugestao]);
     }
 
     public function show(int $id): MonthlyReserveResource|JsonResponse
@@ -67,7 +79,7 @@ class MonthlyReserveController extends Controller
         return new MonthlyReserveResource($reservaMensal);
     }
 
-    public function destroy(int $id): JsonResponse
+    public function destroy(int $id): Response|JsonResponse
     {
         try {
             $this->monthlyReserveService->excluir($id, $this->usuarioIdAutenticado());

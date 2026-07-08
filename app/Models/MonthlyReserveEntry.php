@@ -5,9 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class MonthlyReserve extends Model
+class MonthlyReserveEntry extends Model
 {
     use HasFactory;
 
@@ -17,11 +16,9 @@ class MonthlyReserve extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'user_id',
-        'competency',
-        'reserva_anterior',
-        'investimento',
-        'observations',
+        'monthly_reserve_id',
+        'description',
+        'amount',
     ];
 
     /**
@@ -32,18 +29,12 @@ class MonthlyReserve extends Model
     protected function casts(): array
     {
         return [
-            'reserva_anterior' => 'decimal:2',
-            'investimento' => 'decimal:2',
+            'amount' => 'decimal:2',
         ];
     }
 
-    public function user(): BelongsTo
+    public function monthlyReserve(): BelongsTo
     {
-        return $this->belongsTo(User::class);
-    }
-
-    public function entries(): HasMany
-    {
-        return $this->hasMany(MonthlyReserveEntry::class);
+        return $this->belongsTo(MonthlyReserve::class);
     }
 }
