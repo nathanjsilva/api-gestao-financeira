@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class MonthlyReserve extends Model
+class ReserveAccount extends Model
 {
     use HasFactory;
 
@@ -18,9 +18,8 @@ class MonthlyReserve extends Model
      */
     protected $fillable = [
         'user_id',
-        'competency',
-        'investimento',
-        'observations',
+        'name',
+        'active',
     ];
 
     /**
@@ -31,7 +30,7 @@ class MonthlyReserve extends Model
     protected function casts(): array
     {
         return [
-            'investimento' => 'decimal:2',
+            'active' => 'boolean',
         ];
     }
 
@@ -42,6 +41,6 @@ class MonthlyReserve extends Model
 
     public function entries(): HasMany
     {
-        return $this->hasMany(MonthlyReserveEntry::class);
+        return $this->hasMany(ReserveAccountEntry::class);
     }
 }

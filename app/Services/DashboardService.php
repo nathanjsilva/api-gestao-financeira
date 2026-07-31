@@ -4,6 +4,7 @@ namespace App\Services;
 
 use DomainException;
 use App\Repositories\MonthlyReserveRepository;
+use App\Repositories\ReserveAccountEntryRepository;
 use App\Repositories\TransactionRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
@@ -13,6 +14,7 @@ class DashboardService
     public function __construct(
         protected TransactionRepository $transactionRepository,
         protected MonthlyReserveRepository $monthlyReserveRepository,
+        protected ReserveAccountEntryRepository $reserveAccountEntryRepository,
     ) {}
 
     public function obterResumoMensal(int $usuarioId, string $competencia): array
@@ -142,6 +144,9 @@ class DashboardService
             ->obterPorUsuarioIdECompetencias($usuarioId, $competencias)
             ->keyBy('competency');
 
+        $reservasPorContas = $this->reserveAccountEntryRepository
+            ->obterSaldoVigenteTotalIndexadoPorCompetencia($usuarioId, $competencias);
+
         $resumos = [];
 
         foreach ($competencias as $competencia) {
@@ -151,7 +156,7 @@ class DashboardService
             $totalEntradas = (float) ($resumoPorTipo->firstWhere('type', 'income')->total ?? 0);
             $totalGastos = (float) ($resumoPorTipo->firstWhere('type', 'expense')->total ?? 0);
             $valorRestante = $totalEntradas - $totalGastos;
-            $reservaAnterior = (float) ($reservaMensal->reserva_anterior ?? 0);
+            $reservaAnterior = (float) ($reservasPorContas[$competencia] ?? 0);
             $investimento = (float) ($reservaMensal->investimento ?? 0);
             $reservaAtual = $reservaAnterior + $valorRestante;
             $totalGuardado = $reservaAtual + $investimento;

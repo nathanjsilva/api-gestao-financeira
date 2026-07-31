@@ -29,7 +29,6 @@ class UpdateMonthlyReserveRequest extends FormRequest
                     ->ignore($reservaMensalId)
                     ->where(fn ($query) => $query->where('user_id', $this->user()?->id)),
             ],
-            'reserva_anterior' => ['sometimes', 'required', 'numeric', 'min:0'],
             'investimento' => ['sometimes', 'required', 'numeric', 'min:0'],
             'observations' => ['nullable', 'string'],
         ];

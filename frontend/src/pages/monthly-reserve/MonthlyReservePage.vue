@@ -7,6 +7,7 @@ import BaseMonthPicker from '../../components/base/BaseMonthPicker.vue'
 import BasePagination from '../../components/base/BasePagination.vue'
 import BaseTextarea from '../../components/base/BaseTextarea.vue'
 import EmptyState from '../../components/data-display/EmptyState.vue'
+import ReserveAccountRow from '../../components/reserve/ReserveAccountRow.vue'
 import ReserveChart from '../../components/reserve/ReserveChart.vue'
 import FinancialInsight from '../../components/shared/FinancialInsight.vue'
 import PageHeader from '../../components/layout/PageHeader.vue'
@@ -17,6 +18,7 @@ import { getCurrentCompetency } from '../../helpers/competency'
 import { formatCurrency } from '../../helpers/currency'
 import { dashboardService } from '../../services/dashboard/dashboardService'
 import { monthlyReserveService } from '../../services/monthly-reserves/monthlyReserveService'
+import { reserveAccountService } from '../../services/reserve-accounts/reserveAccountService'
 
 const reserves = ref([])
 const editingId = ref(null)
@@ -40,23 +42,31 @@ const entryForm = reactive({
 
 const form = reactive({
   competency: getCurrentCompetency(),
-  reserva_anterior: '',
   observations: '',
 })
 
 const competencySummary = ref(null)
 
+// Contas de reserva (Nathan, Esposa, Viagem etc.) da competência selecionada.
+const reserveAccounts = ref([])
+const accountDrafts = reactive({})
+const newAccountName = ref('')
+const { isLoading: isAccountsLoading, withLoading: withAccountsLoading } = useLoading()
+const { generalError: accountGeneralError, clearErrors: clearAccountErrors, setErrorsFromApi: setAccountErrorsFromApi } = useFormErrors()
+
 const { currentPage, totalPages, paginatedItems, pageNumbers, nextPage, prevPage, goToPage } = usePagination(reserves)
 
 const latestReserve = computed(() => reserves.value[0] || null)
 const previousReserve = computed(() => reserves.value[1] || null)
-const reserveDifference = computed(() => Number(latestReserve.value?.reserva_anterior || 0) - Number(previousReserve.value?.reserva_anterior || 0))
+const reserveDifference = computed(() => Number(latestReserve.value?.current_reserve || 0) - Number(previousReserve.value?.current_reserve || 0))
 const investmentDifference = computed(() => Number(latestReserve.value?.investimento || 0) - Number(previousReserve.value?.investimento || 0))
-const reserveGrowthPercentage = computed(() => percentageChange(Number(latestReserve.value?.reserva_anterior || 0), Number(previousReserve.value?.reserva_anterior || 0)))
+const reserveGrowthPercentage = computed(() => percentageChange(Number(latestReserve.value?.current_reserve || 0), Number(previousReserve.value?.current_reserve || 0)))
 const submitLabel = computed(() => editingId.value ? 'Salvar alterações' : 'Cadastrar reserva')
 const entriesTotal = computed(() => entries.value.reduce((sum, entry) => sum + Number(entry.amount || 0), 0))
 const previewRemainingAmount = computed(() => Number(competencySummary.value?.remaining_amount || 0))
-const currentReserveTotal = computed(() => Number(form.reserva_anterior || 0) + previewRemainingAmount.value + entriesTotal.value)
+const reserveAccountsTotal = computed(() => reserveAccounts.value.reduce((sum, account) => sum + Number(accountDrafts[account.id]?.balance || 0), 0))
+const currentReservePreview = computed(() => reserveAccountsTotal.value + previewRemainingAmount.value)
+const totalSavedPreview = computed(() => currentReservePreview.value + entriesTotal.value)
 const entrySubmitLabel = computed(() => editingEntryId.value ? 'Salvar lançamento' : 'Adicionar lançamento')
 
 const reserveInsights = computed(() => {
@@ -114,7 +124,6 @@ function formatPercentage(value) {
 function resetForm() {
   editingId.value = null
   form.competency = getCurrentCompetency()
-  form.reserva_anterior = ''
   form.observations = ''
   competencySummary.value = null
   clearErrors()
@@ -122,17 +131,35 @@ function resetForm() {
   entries.value = []
 }
 
-async function fetchSuggestedPreviousReserve(competency) {
-  if (editingId.value || !competency) {
+function buildAccountDrafts(accounts) {
+  for (const key of Object.keys(accountDrafts)) {
+    delete accountDrafts[key]
+  }
+
+  for (const account of accounts) {
+    accountDrafts[account.id] = {
+      balance: account.current_balance ?? 0,
+      note: account.note ?? '',
+    }
+  }
+}
+
+async function loadReserveAccounts(competency) {
+  if (!competency) {
+    reserveAccounts.value = []
     return
   }
 
-  try {
-    const { reserva_anterior_sugerida } = await monthlyReserveService.suggestPreviousReserve(competency)
-    form.reserva_anterior = reserva_anterior_sugerida
-  } catch {
-    // sugestão é apenas um auxílio de preenchimento; falha aqui não deve travar o formulário
-  }
+  clearAccountErrors()
+
+  await withAccountsLoading(async () => {
+    try {
+      reserveAccounts.value = await reserveAccountService.list({ competency })
+      buildAccountDrafts(reserveAccounts.value)
+    } catch (error) {
+      setAccountErrorsFromApi(error)
+    }
+  })
 }
 
 async function fetchCompetencySummary(competency) {
@@ -149,7 +176,7 @@ async function fetchCompetencySummary(competency) {
 }
 
 watch(() => form.competency, (competency) => {
-  fetchSuggestedPreviousReserve(competency)
+  loadReserveAccounts(competency)
   fetchCompetencySummary(competency)
 }, { immediate: true })
 
@@ -165,28 +192,70 @@ async function loadReserves() {
   })
 }
 
+async function saveAccountDrafts(competency) {
+  for (const account of reserveAccounts.value) {
+    const draft = accountDrafts[account.id]
+
+    if (!draft) {
+      continue
+    }
+
+    const mudouSaldo = Number(draft.balance || 0) !== Number(account.current_balance || 0)
+    const mudouNota = (draft.note || '') !== (account.note || '')
+
+    if (!mudouSaldo && !mudouNota) {
+      continue
+    }
+
+    await reserveAccountService.setEntry(account.id, competency, {
+      balance: Number(draft.balance || 0),
+      note: draft.note || null,
+    })
+  }
+}
+
+async function createReserveAccount() {
+  if (!newAccountName.value.trim()) {
+    return
+  }
+
+  clearAccountErrors()
+
+  await withAccountsLoading(async () => {
+    try {
+      await reserveAccountService.create({ name: newAccountName.value.trim() })
+      newAccountName.value = ''
+      await loadReserveAccounts(form.competency)
+    } catch (error) {
+      setAccountErrorsFromApi(error)
+    }
+  })
+}
+
 async function handleSubmit() {
   clearErrors()
 
   await withLoading(async () => {
     try {
+      await saveAccountDrafts(form.competency)
+
       if (editingId.value) {
         await monthlyReserveService.update(editingId.value, {
           competency: form.competency,
-          reserva_anterior: Number(form.reserva_anterior || 0),
           observations: form.observations,
         })
         await loadReserves()
       } else {
         const created = await monthlyReserveService.create({
           competency: form.competency,
-          reserva_anterior: Number(form.reserva_anterior || 0),
           investimento: 0,
           observations: form.observations,
         })
         await loadReserves()
         await startEdit(created)
       }
+
+      await loadReserveAccounts(form.competency)
     } catch (error) {
       setErrorsFromApi(error)
     }
@@ -196,7 +265,6 @@ async function handleSubmit() {
 async function startEdit(reserve) {
   editingId.value = reserve.id
   form.competency = reserve.competency
-  form.reserva_anterior = reserve.reserva_anterior
   form.observations = reserve.observations || ''
   clearErrors()
   await loadEntries(reserve.id)
@@ -303,9 +371,9 @@ onMounted(loadReserves)
       <article class="financial-card financial-card--sky">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="text-sm font-semibold text-slate-400">Última reserva</p>
+            <p class="text-sm font-semibold text-slate-400">Reserva atual</p>
             <strong class="mt-3 block text-3xl font-black text-slate-50">
-              {{ formatCurrency(latestReserve?.reserva_anterior) }}
+              {{ formatCurrency(latestReserve?.current_reserve) }}
             </strong>
             <p class="mt-3 text-sm" :class="reserveDifference >= 0 ? 'text-emerald-300' : 'text-rose-300'">
               {{ reserveDifference >= 0 ? '↑' : '↓' }} {{ formatPercentage(reserveGrowthPercentage) }} vs. registro anterior
@@ -318,7 +386,7 @@ onMounted(loadReserves)
       <article class="financial-card financial-card--emerald">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="text-sm font-semibold text-slate-400">Último investimento</p>
+            <p class="text-sm font-semibold text-slate-400">Investimentos</p>
             <strong class="mt-3 block text-3xl font-black text-slate-50">
               {{ formatCurrency(latestReserve?.investimento) }}
             </strong>
@@ -335,7 +403,7 @@ onMounted(loadReserves)
         <strong class="mt-3 block text-3xl font-black text-slate-50">
           {{ formatCurrency(latestReserve?.total_saved) }}
         </strong>
-        <p class="mt-3 text-sm text-slate-400">Reserva atual + lançamentos do mês.</p>
+        <p class="mt-3 text-sm text-slate-400">Reserva atual + investimentos.</p>
       </article>
 
       <article class="financial-card financial-card--rose">
@@ -356,23 +424,53 @@ onMounted(loadReserves)
           {{ editingId ? 'Editar reserva' : 'Nova reserva' }}
         </h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">
-          Informe a reserva anterior. Depois de salvar, lance os valores que sobraram no mês para compor a reserva atual.
+          Declare o saldo de cada conta de reserva no mês. Contas sem alteração mantêm automaticamente o valor do mês anterior.
         </p>
 
         <form class="mt-6 space-y-5" @submit.prevent="handleSubmit">
           <BaseMonthPicker id="reserve-competency" v-model="form.competency" label="Competência" :error="fieldError('competency')" />
+
           <div>
-            <BaseInput id="previous-reserve" v-model="form.reserva_anterior" label="Reserva anterior" type="number" placeholder="Ex: 13500.00" :error="fieldError('reserva_anterior')" />
-            <p class="mt-2 text-xs text-slate-500">Sugestão automática com base no total do mês anterior — você pode ajustar antes de salvar.</p>
+            <p class="mb-3 text-sm font-bold uppercase text-sky-300">Contas de reserva</p>
+
+            <p v-if="accountGeneralError" class="mb-3 text-sm text-rose-300">{{ accountGeneralError }}</p>
+
+            <EmptyState
+              v-if="!isAccountsLoading && !reserveAccounts.length"
+              title="Nenhuma conta de reserva ainda"
+              description="Crie uma conta para cada pessoa ou objetivo (ex: Nathan, Esposa, Viagem)."
+            />
+
+            <div v-else class="space-y-3">
+              <ReserveAccountRow
+                v-for="account in reserveAccounts"
+                :key="account.id"
+                :account="account"
+                v-model="accountDrafts[account.id]"
+              />
+            </div>
+
+            <div class="mt-3 flex gap-2">
+              <BaseInput
+                id="new-account-name"
+                v-model="newAccountName"
+                label="Nova conta"
+                placeholder="Ex: Reserva de emergência"
+              />
+              <BaseButton type="button" variant="secondary" class="mt-7 shrink-0" :disabled="isAccountsLoading" @click="createReserveAccount">
+                Adicionar
+              </BaseButton>
+            </div>
           </div>
+
           <BaseTextarea id="observations" v-model="form.observations" label="Observações" placeholder="Resumo opcional do mês" :error="fieldError('observations')" />
 
           <div class="rounded-3xl border border-white/10 bg-slate-950/60 p-4">
             <p class="text-sm font-bold uppercase text-sky-300">Prévia automática</p>
             <div class="mt-4 grid gap-3">
               <div>
-                <span class="text-sm text-slate-400">Reserva anterior</span>
-                <strong class="block text-lg text-slate-50">{{ formatCurrency(form.reserva_anterior) }}</strong>
+                <span class="text-sm text-slate-400">Contas de reserva</span>
+                <strong class="block text-lg text-slate-50">{{ formatCurrency(reserveAccountsTotal) }}</strong>
               </div>
               <div>
                 <span class="text-sm text-slate-400">Saldo das transações do mês (automático)</span>
@@ -381,8 +479,12 @@ onMounted(loadReserves)
                 </strong>
               </div>
               <div>
-                <span class="text-sm text-slate-400">Reserva atual (anterior + saldo do mês + lançamentos)</span>
-                <strong class="block text-lg text-emerald-300">{{ formatCurrency(currentReserveTotal) }}</strong>
+                <span class="text-sm text-slate-400">Reserva atual (contas + saldo do mês)</span>
+                <strong class="block text-lg text-emerald-300">{{ formatCurrency(currentReservePreview) }}</strong>
+              </div>
+              <div>
+                <span class="text-sm text-slate-400">Total guardado (reserva atual + investimentos)</span>
+                <strong class="block text-lg text-violet-300">{{ formatCurrency(totalSavedPreview) }}</strong>
               </div>
             </div>
           </div>
@@ -395,7 +497,7 @@ onMounted(loadReserves)
 
         <div v-if="editingId" class="mt-6 rounded-3xl border border-white/10 bg-slate-950/60 p-4">
           <div class="flex items-center justify-between gap-3">
-            <p class="text-sm font-bold uppercase text-sky-300">Lançamentos do mês</p>
+            <p class="text-sm font-bold uppercase text-sky-300">Lançamentos de investimento</p>
             <span class="rounded-full bg-white/[0.06] px-3 py-1 text-xs text-slate-300">{{ formatCurrency(entriesTotal) }}</span>
           </div>
 
@@ -404,7 +506,7 @@ onMounted(loadReserves)
           <EmptyState
             v-if="!entries.length"
             title="Nenhum lançamento neste mês"
-            description="Cadastre os valores que sobraram para somar à reserva."
+            description="Cadastre os aportes de investimento do mês — eles ficam sempre separados da reserva."
           />
 
           <div v-else class="mt-4 space-y-2">
@@ -429,7 +531,7 @@ onMounted(loadReserves)
           </div>
 
           <form class="mt-4 grid gap-3 sm:grid-cols-2" @submit.prevent="handleEntrySubmit">
-            <BaseInput id="entry-description" v-model="entryForm.description" label="Descrição" placeholder="Ex: Sobra do mês" :error="entryFieldError('description')" />
+            <BaseInput id="entry-description" v-model="entryForm.description" label="Descrição" placeholder="Ex: Aporte em fundo DI" :error="entryFieldError('description')" />
             <BaseInput id="entry-amount" v-model="entryForm.amount" label="Valor" type="number" placeholder="Ex: 250.00" :error="entryFieldError('amount')" />
             <div class="flex gap-2 sm:col-span-2">
               <BaseButton type="submit" class="flex-1" :loading="isEntryLoading">{{ entrySubmitLabel }}</BaseButton>
@@ -480,7 +582,6 @@ onMounted(loadReserves)
           <thead>
             <tr>
               <th>Competência</th>
-              <th>Reserva anterior</th>
               <th>Reserva atual</th>
               <th>Total guardado</th>
               <th>Total do mês</th>
@@ -492,7 +593,6 @@ onMounted(loadReserves)
           <tbody>
             <tr v-for="reserve in paginatedItems" :key="reserve.id">
               <td class="font-black text-slate-50">{{ reserve.competency }}</td>
-              <td>{{ formatCurrency(reserve.reserva_anterior) }}</td>
               <td><span class="value-badge value-badge--info">{{ formatCurrency(reserve.current_reserve) }}</span></td>
               <td><span class="value-badge value-badge--success">{{ formatCurrency(reserve.total_saved) }}</span></td>
               <td>{{ formatCurrency(reserve.total_income) }}</td>

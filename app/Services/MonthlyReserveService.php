@@ -7,7 +7,6 @@ use App\Models\MonthlyReserve;
 use App\Models\MonthlyReserveEntry;
 use App\Repositories\MonthlyReserveEntryRepository;
 use App\Repositories\MonthlyReserveRepository;
-use Carbon\Carbon;
 use DomainException;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -55,7 +54,6 @@ class MonthlyReserveService
         $reserva = $this->monthlyReserveRepository->criar([
             'user_id' => $usuarioId,
             'competency' => $dados['competency'],
-            'reserva_anterior' => $dados['reserva_anterior'],
             'investimento' => $dados['investimento'],
             'observations' => $dados['observations'] ?? null,
         ]);
@@ -97,23 +95,6 @@ class MonthlyReserveService
         $this->monthlyReserveRepository->excluir($reservaMensal);
 
         event(new DadosFinanceirosAlterados($usuarioId));
-    }
-
-    public function sugerirReservaAnterior(int $usuarioId, string $competencia): float
-    {
-        $competenciaAnterior = Carbon::createFromFormat('Y-m', $competencia)
-            ->subMonth()
-            ->format('Y-m');
-
-        $reservaDoMesAnterior = $this->buscarPorCompetencia($usuarioId, $competenciaAnterior);
-
-        if ($reservaDoMesAnterior === null) {
-            return 0.0;
-        }
-
-        $saldoAnterior = $this->dashboardService->obterSaldoDaCompetencia($usuarioId, $competenciaAnterior);
-
-        return (float) $saldoAnterior['total_saved'];
     }
 
     public function listarLancamentos(int $reservaId, int $usuarioId): Collection

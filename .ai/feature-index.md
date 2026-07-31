@@ -7,7 +7,7 @@
 | Autenticação (login/cadastro/logout) | Auth | `.ai/backend/contexts/auth.md` | `pages/auth/` | `authStore.js` |
 | Categorias (CRUD) | Financeiro | `.ai/backend/contexts/categories.md` | `pages/categories/CategoriesPage.vue` | — |
 | Transações (CRUD + filtro por mês) | Financeiro | `.ai/backend/contexts/transactions.md` | `pages/transactions/TransactionsPage.vue` | — |
-| Reserva Mensal (CRUD) | Financeiro | `.ai/backend/contexts/monthly-reserve.md` | `pages/monthly-reserve/MonthlyReservePage.vue` | — |
+| Reserva Mensal (contas de reserva + investimentos) | Financeiro | `.ai/backend/contexts/monthly-reserve.md` | `pages/monthly-reserve/MonthlyReservePage.vue` | — |
 | Dashboard Analítico | Analytics | `.ai/backend/contexts/dashboard.md` | `pages/dashboard/DashboardPage.vue` | — |
 
 ---
@@ -68,18 +68,32 @@ Frontend:
 
 ### Reserva Mensal
 ```
-Backend:
+Backend (investimentos, mantido):
   app/Http/Controllers/Api/MonthlyReserveController.php
+  app/Http/Controllers/Api/MonthlyReserveEntryController.php
   app/Services/MonthlyReserveService.php
   app/Repositories/MonthlyReserveRepository.php
-  app/Http/Requests/MonthlyReserve/StoreMonthlyReserveRequest.php
-  app/Http/Requests/MonthlyReserve/UpdateMonthlyReserveRequest.php
+  app/Repositories/MonthlyReserveEntryRepository.php
+  app/Http/Requests/MonthlyReserve/*.php
   app/Http/Resources/MonthlyReserveResource.php
+  app/Http/Resources/MonthlyReserveEntryResource.php
+
+Backend (contas de reserva, novo):
+  app/Http/Controllers/Api/ReserveAccountController.php
+  app/Http/Controllers/Api/ReserveAccountEntryController.php
+  app/Services/ReserveAccountService.php
+  app/Repositories/ReserveAccountRepository.php
+  app/Repositories/ReserveAccountEntryRepository.php
+  app/Http/Requests/ReserveAccount/*.php
+  app/Http/Resources/ReserveAccountResource.php
+  app/Http/Resources/ReserveAccountEntryResource.php
 
 Frontend:
   frontend/src/pages/monthly-reserve/MonthlyReservePage.vue
   frontend/src/services/monthly-reserves/monthlyReserveService.js
+  frontend/src/services/reserve-accounts/reserveAccountService.js
   frontend/src/components/reserve/ReserveChart.vue
+  frontend/src/components/reserve/ReserveAccountRow.vue
 ```
 
 ### Dashboard Analítico

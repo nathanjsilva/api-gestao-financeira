@@ -116,6 +116,18 @@ list()                    // GET /monthly-reserves
 create(payload)           // POST /monthly-reserves
 update(id, payload)       // PUT /monthly-reserves/{id}
 remove(id)                // DELETE /monthly-reserves/{id}
+listEntries(reserveId)    // GET /monthly-reserves/{id}/entries (lançamentos de investimento)
+createEntry(reserveId, payload)
+updateEntry(reserveId, entryId, payload)
+removeEntry(reserveId, entryId)
+
+// services/reserve-accounts/reserveAccountService.js
+list(params)               // GET /reserve-accounts (?competency=YYYY-MM)
+create(payload)             // POST /reserve-accounts
+update(id, payload)         // PUT /reserve-accounts/{id} (renomear/arquivar)
+listEntries(id)              // GET /reserve-accounts/{id}/entries
+setEntry(id, competency, payload)    // PUT /reserve-accounts/{id}/entries/{competency}
+removeEntry(id, competency)          // DELETE /reserve-accounts/{id}/entries/{competency}
 
 // services/dashboard/dashboardService.js
 analytics(params)         // GET /dashboard/analytics

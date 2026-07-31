@@ -2,149 +2,130 @@
 
 ## Responsabilidade
 
-CRUD de reservas financeiras mensais. Rastreia o valor poupado, investido e observações por competência.
+Acompanha a evolução patrimonial do usuário mês a mês, combinando:
+
+1. **Contas de reserva** (`reserve_accounts` + `reserve_account_entries`) — quantidade livre de contas nomeadas pelo usuário (ex: "Nathan", "Esposa", "Reserva de emergência"), cada uma com um saldo declarado por competência. Se o usuário não declarar um novo valor num mês, o saldo é **herdado automaticamente** do último valor declarado em um mês anterior.
+2. **Investimentos** (`monthly_reserves` + `monthly_reserve_entries`) — lançamentos itemizados (descrição + valor) por competência, somados automaticamente no campo `investimento` de `monthly_reserves`. Fica sempre separado da reserva.
+3. **Saldo do mês** — calculado automaticamente a partir das transações da competência (receitas − despesas), sem nenhuma entrada manual.
 
 ---
 
 ## Arquivos Envolvidos
 
+### Contas de reserva
 | Tipo | Arquivo |
 |------|---------|
-| Controller | `app/Http/Controllers/Api/MonthlyReserveController.php` |
+| Controller | `app/Http/Controllers/Api/ReserveAccountController.php` |
+| Controller (saldo por mês) | `app/Http/Controllers/Api/ReserveAccountEntryController.php` |
+| Service | `app/Services/ReserveAccountService.php` |
+| Repository | `app/Repositories/ReserveAccountRepository.php` |
+| Repository (saldos por mês) | `app/Repositories/ReserveAccountEntryRepository.php` |
+| Requests | `app/Http/Requests/ReserveAccount/*.php` |
+| Resources | `app/Http/Resources/ReserveAccountResource.php`, `ReserveAccountEntryResource.php` |
+| Models | `app/Models/ReserveAccount.php`, `app/Models/ReserveAccountEntry.php` |
+| Migrations | `database/migrations/2026_07_31_*` |
+
+### Investimentos (inalterado, itemizado)
+| Tipo | Arquivo |
+|------|---------|
+| Controller | `app/Http/Controllers/Api/MonthlyReserveController.php`, `MonthlyReserveEntryController.php` |
 | Service | `app/Services/MonthlyReserveService.php` |
-| Repository | `app/Repositories/MonthlyReserveRepository.php` |
-| Request (criar) | `app/Http/Requests/MonthlyReserve/StoreMonthlyReserveRequest.php` |
-| Request (atualizar) | `app/Http/Requests/MonthlyReserve/UpdateMonthlyReserveRequest.php` |
-| Resource | `app/Http/Resources/MonthlyReserveResource.php` |
-| Model | `app/Models/MonthlyReserve.php` |
-| Migration | `database/migrations/2026_05_17_000005_create_monthly_reserves_table.php` |
+| Repository | `app/Repositories/MonthlyReserveRepository.php`, `MonthlyReserveEntryRepository.php` |
+| Model | `app/Models/MonthlyReserve.php`, `app/Models/MonthlyReserveEntry.php` |
+
+### Saldo do mês / agregação
+| Tipo | Arquivo |
+|------|---------|
+| Service | `app/Services/DashboardService.php` (`obterResumosBaseIndexados`) |
 
 ---
 
-## Estrutura do Model (MonthlyReserve)
+## Estrutura dos Models
 
+### ReserveAccount
+```
+id          int (PK)
+user_id     int (FK → users)
+name        string(255)     — rótulo livre, sem unicidade
+active      boolean         — arquivada = false (nunca é excluída)
+```
+
+### ReserveAccountEntry
 ```
 id                  int (PK)
-user_id             int (FK → users)
-competency          string(7)      — formato YYYY-MM
-reserva_anterior    decimal(10,2)  — valor acumulado de meses anteriores
-investimento        decimal(10,2)  — valor investido no mês
-observations        text (nullable)
-created_at          timestamp
-updated_at          timestamp
+reserve_account_id  int (FK → reserve_accounts)
+competency          string(7)  — formato YYYY-MM
+balance             decimal(12,2)  — saldo DECLARADO da conta naquele mês (não é um delta/movimento)
+note                text (nullable)
 ```
+Constraint única: `(reserve_account_id, competency)` — no máximo uma declaração por conta e por mês.
 
-**Constraint única:** `(user_id, competency)` — apenas uma reserva por mês por usuário
+### MonthlyReserve (mantido, sem `reserva_anterior`)
+```
+id            int (PK)
+user_id       int (FK → users)
+competency    string(7)
+investimento  decimal(12,2)  — somado automaticamente a partir de monthly_reserve_entries
+observations  text (nullable)
+```
 
 ---
 
 ## Endpoints
 
+### Contas de reserva
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| GET | `/api/monthly-reserves` | Listar todas as reservas (desc) |
-| POST | `/api/monthly-reserves` | Criar reserva |
-| GET | `/api/monthly-reserves/{id}` | Buscar por ID |
-| PUT | `/api/monthly-reserves/{id}` | Atualizar |
-| DELETE | `/api/monthly-reserves/{id}` | Excluir |
+| GET | `/api/reserve-accounts` | Lista contas ativas do usuário. Com `?competency=YYYY-MM`, cada conta traz `current_balance`, `previous_balance`, `delta` e `is_inherited` |
+| POST | `/api/reserve-accounts` | Cria conta (`name`) |
+| PUT | `/api/reserve-accounts/{id}` | Renomeia e/ou arquiva (`name`, `active`) |
+| GET | `/api/reserve-accounts/{id}/entries` | Histórico de saldos declarados (inclui contas arquivadas) |
+| PUT | `/api/reserve-accounts/{id}/entries/{competency}` | Declara/atualiza o saldo da conta naquele mês (`balance`, `note?`) — upsert |
+| DELETE | `/api/reserve-accounts/{id}/entries/{competency}` | Remove a declaração daquele mês (volta a herdar do mês anterior) |
+
+### Investimentos (inalterado)
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET/POST/PUT/DELETE | `/api/monthly-reserves/{id}/entries` | Lançamentos de investimento do mês |
+
+### Reserva mensal (mantido, sem `reserva_anterior`)
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET/POST/PUT/DELETE | `/api/monthly-reserves` | CRUD de `investimento` + `observations` por competência |
 
 ---
 
-## Fluxo de Listagem
+## Regra central: herança automática de saldo
 
-```
-GET /api/monthly-reserves
-    → MonthlyReserveController::index()
-    → MonthlyReserveService::listar(usuarioId)
-    → MonthlyReserveRepository::listarPorUsuarioId(userId)
-        → WHERE user_id = $userId
-        → ORDER BY competency DESC
-    → MonthlyReserveResource::collection()
-```
+O "saldo vigente" de uma conta em uma competência X é o valor da `ReserveAccountEntry` mais recente com `competency <= X`. Implementado em `ReserveAccountEntryRepository::buscarSaldoVigente()` (uma conta) e `obterSaldoVigenteTotalIndexadoPorCompetencia()` (soma em lote, usado pelo `DashboardService`).
+
+Não existe cálculo de "reserva anterior + aporte" — o valor declarado em cada mês já é o saldo corrente daquela conta, exatamente como funcionava na planilha original do usuário.
 
 ---
 
-## Fluxo de Criação
+## Fórmulas (calculadas sempre no backend, nunca digitadas)
 
 ```
-POST /api/monthly-reserves
-Body: { competency, reserva_anterior, investimento, observations? }
-    → StoreMonthlyReserveRequest (validação)
-    → MonthlyReserveController::store()
-    → MonthlyReserveService::criar(usuarioId, dados)
-        → MonthlyReserveRepository::buscarPorUsuarioIdECompetencia()
-            — verifica duplicata para a competência
-        → Se já existe → lança exceção (409 Conflict)
-        → MonthlyReserveRepository::criar(userId, dados)
-    → MonthlyReserveResource (201)
+Saldo do mês       = receitas do mês − despesas do mês
+Reserva Atual       = soma do saldo vigente de todas as contas de reserva ativas + Saldo do mês
+Total Guardado       = Reserva Atual + investimento (monthly_reserves.investimento)
 ```
+
+Implementado em `DashboardService::obterResumosBaseIndexados()`, reaproveitado por `/dashboard/monthly-summary`, `/dashboard/analytics` (`reserve_evolution`) e pela listagem de `/monthly-reserves`.
 
 ---
 
 ## Regras de Negócio
 
-1. Apenas uma reserva por `(user_id, competency)` — duplicata é rejeitada
-2. `reserva_anterior` representa o patrimônio acumulado até o mês anterior
-3. `investimento` representa aportes novos feitos no mês
-4. O saldo total da reserva = `reserva_anterior + investimento`
-5. `observations` é opcional — campo livre para anotações
-6. Listagem ordenada por `competency DESC` — mês mais recente primeiro
-
----
-
-## Validações (StoreMonthlyReserveRequest)
-
-```php
-'competency'       => ['required', new CompetencyRule()],
-'reserva_anterior' => ['required', 'numeric', 'min:0'],
-'investimento'     => ['required', 'numeric', 'min:0'],
-'observations'     => ['nullable', 'string'],
-```
-
----
-
-## Resource de Resposta
-
-```json
-{
-  "id": 1,
-  "competency": "2026-07",
-  "reserva_anterior": "15000.00",
-  "investimento": "2000.00",
-  "observations": "Aporte em fundo DI",
-  "created_at": "2026-07-01T10:00:00.000000Z"
-}
-```
-
----
-
-## Repository — Métodos Especiais
-
-```php
-// Verifica duplicata antes de criar
-buscarPorUsuarioIdECompetencia(int $userId, string $competency): ?MonthlyReserve
-
-// Usado pelo DashboardService para evolução da reserva
-obterPorUsuarioIdECompetencias(int $userId, array $competencies): Collection
-```
-
----
-
-## Uso no Dashboard
-
-O `FinancialAnalyticsService` usa os dados de reserva para montar `reserve_evolution`:
-
-```json
-"reserve_evolution": [
-  { "competency": "2026-01", "reserva_anterior": 10000, "investimento": 1500, "total": 11500 },
-  { "competency": "2026-02", "reserva_anterior": 11500, "investimento": 2000, "total": 13500 }
-]
-```
+1. Uma conta de reserva pode ser criada livremente pelo usuário — não há limite nem nomes fixos.
+2. No máximo uma declaração de saldo por conta e por competência.
+3. Contas arquivadas (`active = false`) somem das somas de meses seguintes, mas o histórico continua consultável via `/entries`.
+4. Investimento continua completamente separado da reserva — nunca é somado a `current_reserve`, só a `total_saved`.
+5. Isolamento por usuário em todas as camadas (`user_id` do token autenticado).
 
 ---
 
 ## Pontos de Atenção
 
-- `reserva_anterior` deve ser preenchido manualmente pelo usuário (não é calculado automaticamente)
-- Não há auto-preenchimento do mês anterior — responsabilidade do usuário manter a consistência
-- O campo `observations` pode conter markdown ou texto livre
+- Se o usuário declarar manualmente na conta de reserva um valor que já embute a sobra do mês corrente, o saldo do mês pode ser contado duas vezes (uma vez como saldo automático, outra dentro do novo valor declarado). Orientação de uso: ajustar os saldos das contas no fechamento do mês, não no meio dele.
+- Migração de dados: o antigo campo único `reserva_anterior` de `monthly_reserves` foi migrado para uma conta chamada "Reserva" por usuário (migration `2026_07_31_000003_backfill_reserve_accounts_from_monthly_reserves.php`) antes de a coluna ser removida.

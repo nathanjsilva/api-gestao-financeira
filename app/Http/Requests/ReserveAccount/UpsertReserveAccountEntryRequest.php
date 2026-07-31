@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Http\Requests\MonthlyReserve;
+namespace App\Http\Requests\ReserveAccount;
 
-use App\Rules\CompetencyRule;
 use Illuminate\Foundation\Http\FormRequest;
 
-class SugerirReservaAnteriorRequest extends FormRequest
+class UpsertReserveAccountEntryRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -18,7 +17,8 @@ class SugerirReservaAnteriorRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'competency' => ['required', new CompetencyRule()],
+            'balance' => ['required', 'numeric', 'min:0'],
+            'note' => ['nullable', 'string'],
         ];
     }
 }

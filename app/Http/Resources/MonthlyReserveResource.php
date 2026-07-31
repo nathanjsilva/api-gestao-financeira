@@ -19,7 +19,6 @@ class MonthlyReserveResource extends JsonResource
         return [
             'id' => $this->id,
             'competency' => $this->competency,
-            'reserva_anterior' => $this->reserva_anterior,
             'investimento' => $this->investimento,
             'observations' => $this->observations,
             'total_income' => $saldo['total_income'] ?? null,

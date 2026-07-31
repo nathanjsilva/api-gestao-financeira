@@ -26,7 +26,6 @@ class StoreMonthlyReserveRequest extends FormRequest
                     fn ($query) => $query->where('user_id', $this->user()?->id)
                 ),
             ],
-            'reserva_anterior' => ['required', 'numeric', 'min:0'],
             'investimento' => ['required', 'numeric', 'min:0'],
             'observations' => ['nullable', 'string'],
         ];
