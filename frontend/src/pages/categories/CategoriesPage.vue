@@ -2,9 +2,9 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import BaseButton from '../../components/base/BaseButton.vue'
 import BaseCard from '../../components/base/BaseCard.vue'
-import BaseInput from '../../components/base/BaseInput.vue'
+import BaseModal from '../../components/base/BaseModal.vue'
 import BasePagination from '../../components/base/BasePagination.vue'
-import BaseSelect from '../../components/base/BaseSelect.vue'
+import CategoryForm from '../../components/categories/CategoryForm.vue'
 import EmptyState from '../../components/data-display/EmptyState.vue'
 import PageHeader from '../../components/layout/PageHeader.vue'
 import { useFormErrors } from '../../composables/useFormErrors'
@@ -24,10 +24,14 @@ const form = reactive({
   type: 'expense',
 })
 
-const submitLabel = computed(() => editingId.value ? 'Salvar alterações' : 'Cadastrar categoria')
+const editForm = reactive({
+  name: '',
+  type: 'expense',
+})
+
+const isEditModalOpen = computed(() => editingId.value !== null)
 
 function resetForm() {
-  editingId.value = null
   form.name = ''
   form.type = 'expense'
   clearErrors()
@@ -48,12 +52,7 @@ async function handleSubmit() {
 
   await withLoading(async () => {
     try {
-      if (editingId.value) {
-        await categoryService.update(editingId.value, form)
-      } else {
-        await categoryService.create(form)
-      }
-
+      await categoryService.create(form)
       resetForm()
       await loadCategories()
     } catch (error) {
@@ -64,9 +63,28 @@ async function handleSubmit() {
 
 function startEdit(category) {
   editingId.value = category.id
-  form.name = category.name
-  form.type = category.type
+  editForm.name = category.name
+  editForm.type = category.type
   clearErrors()
+}
+
+function closeEditModal() {
+  editingId.value = null
+  clearErrors()
+}
+
+async function handleEditSubmit() {
+  clearErrors()
+
+  await withLoading(async () => {
+    try {
+      await categoryService.update(editingId.value, editForm)
+      closeEditModal()
+      await loadCategories()
+    } catch (error) {
+      setErrorsFromApi(error)
+    }
+  })
 }
 
 async function removeCategory(category) {
@@ -105,36 +123,17 @@ onMounted(loadCategories)
 
     <div class="grid min-w-0 gap-6 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
       <BaseCard>
-        <h2 class="text-xl font-black text-slate-50">
-          {{ editingId ? 'Editar categoria' : 'Nova categoria' }}
-        </h2>
+        <h2 class="text-xl font-black text-slate-50">Nova categoria</h2>
 
-        <form class="mt-5 space-y-4" @submit.prevent="handleSubmit">
-          <BaseInput
-            id="category-name"
-            v-model="form.name"
-            label="Nome"
-            placeholder="Ex: Mercado"
-            :error="fieldError('name')"
+        <div class="mt-5">
+          <CategoryForm
+            :form="form"
+            :field-error="fieldError"
+            :is-loading="isLoading"
+            submit-label="Cadastrar categoria"
+            @submit="handleSubmit"
           />
-
-          <BaseSelect
-            id="category-type"
-            v-model="form.type"
-            label="Tipo"
-            :options="TRANSACTION_TYPES"
-            :error="fieldError('type')"
-          />
-
-          <div class="flex gap-3">
-            <BaseButton type="submit" :loading="isLoading">
-              {{ submitLabel }}
-            </BaseButton>
-            <BaseButton v-if="editingId" variant="secondary" @click="resetForm">
-              Cancelar
-            </BaseButton>
-          </div>
-        </form>
+        </div>
       </BaseCard>
 
       <BaseCard>
@@ -204,5 +203,17 @@ onMounted(loadCategories)
         />
       </BaseCard>
     </div>
+
+    <BaseModal :open="isEditModalOpen" title="Editar categoria" @close="closeEditModal">
+      <CategoryForm
+        :form="editForm"
+        :field-error="fieldError"
+        :is-loading="isLoading"
+        submit-label="Salvar alterações"
+        show-cancel
+        @submit="handleEditSubmit"
+        @cancel="closeEditModal"
+      />
+    </BaseModal>
   </section>
 </template>
