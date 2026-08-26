@@ -8,6 +8,10 @@ const DashboardPage = () => import('../pages/dashboard/DashboardPage.vue')
 const CategoriesPage = () => import('../pages/categories/CategoriesPage.vue')
 const TransactionsPage = () => import('../pages/transactions/TransactionsPage.vue')
 const MonthlyReservePage = () => import('../pages/monthly-reserve/MonthlyReservePage.vue')
+const CardPurchasesPage = () => import('../pages/card-purchases/CardPurchasesPage.vue')
+const CardsPage = () => import('../pages/cards/CardsPage.vue')
+const CardCategoriesPage = () => import('../pages/card-categories/CardCategoriesPage.vue')
+const CardDashboardPage = () => import('../pages/card-dashboard/CardDashboardPage.vue')
 
 export const routes = [
   {
@@ -73,6 +77,42 @@ export const routes = [
     path: '/reserva-mensal',
     name: ROUTE_NAMES.MONTHLY_RESERVE,
     component: MonthlyReservePage,
+    meta: {
+      layout: LAYOUTS.AUTHENTICATED,
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/cartoes/compras',
+    name: ROUTE_NAMES.CARD_PURCHASES,
+    component: CardPurchasesPage,
+    meta: {
+      layout: LAYOUTS.AUTHENTICATED,
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/cartoes/gerenciar',
+    name: ROUTE_NAMES.CARDS,
+    component: CardsPage,
+    meta: {
+      layout: LAYOUTS.AUTHENTICATED,
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/cartoes/categorias',
+    name: ROUTE_NAMES.CARD_CATEGORIES,
+    component: CardCategoriesPage,
+    meta: {
+      layout: LAYOUTS.AUTHENTICATED,
+      requiresAuth: true,
+    },
+  },
+  {
+    path: '/cartoes/analise',
+    name: ROUTE_NAMES.CARD_DASHBOARD,
+    component: CardDashboardPage,
     meta: {
       layout: LAYOUTS.AUTHENTICATED,
       requiresAuth: true,

@@ -210,7 +210,11 @@ DashboardService              — orquestra os 5 endpoints de dashboard
 FinancialAnalyticsService     — painel analítico completo (cached 5min)
 CategoryAnalyticsService      — ranking e crescimento de categorias
 MonthlyComparisonService      — comparação entre meses
+
+CardDashboardService          — painel analítico do módulo de cartões (cache próprio, 5min)
+CardAnalyticsService          — ranking/crescimento de categorias de cartão, concentração, gasto atípico
 ```
+Os serviços de `Card*` são deliberadamente independentes dos serviços acima — o módulo de cartões (`.ai/backend/contexts/cards.md`) tem cache e evento de invalidação próprios, sem acoplar com o dashboard financeiro geral.
 
 **Dados retornados pelo painel analítico (`/dashboard/analytics`):**
 - `filters` — competência e número de meses analisados

@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Events\CartaoDadosAlterados;
 use App\Events\DadosFinanceirosAlterados;
+use App\Listeners\InvalidarCacheCartoes;
 use App\Listeners\InvalidarCacheDashboard;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -26,6 +28,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(DadosFinanceirosAlterados::class, InvalidarCacheDashboard::class);
+        Event::listen(CartaoDadosAlterados::class, InvalidarCacheCartoes::class);
 
         RateLimiter::for('api', function (Request $request): Limit {
             $identificador = $request->user()?->id ?? $request->ip();

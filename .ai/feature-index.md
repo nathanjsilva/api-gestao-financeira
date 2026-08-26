@@ -9,6 +9,7 @@
 | Transações (CRUD + filtro por mês) | Financeiro | `.ai/backend/contexts/transactions.md` | `pages/transactions/TransactionsPage.vue` | — |
 | Reserva Mensal (contas de reserva + investimentos) | Financeiro | `.ai/backend/contexts/monthly-reserve.md` | `pages/monthly-reserve/MonthlyReservePage.vue` | — |
 | Dashboard Analítico | Analytics | `.ai/backend/contexts/dashboard.md` | `pages/dashboard/DashboardPage.vue` | — |
+| Cartões (cartões, categorias, compras/parcelas, dashboard) | Financeiro/Analytics | `.ai/backend/contexts/cards.md` | `pages/card-purchases/`, `pages/cards/`, `pages/card-categories/`, `pages/card-dashboard/` | — |
 
 ---
 
@@ -121,6 +122,41 @@ Frontend:
 ```
 
 ---
+
+### Cartões
+```
+Backend:
+  app/Http/Controllers/Api/CardController.php
+  app/Http/Controllers/Api/CardCategoryController.php
+  app/Http/Controllers/Api/CardPurchaseController.php
+  app/Http/Controllers/Api/CardDashboardController.php
+  app/Services/CardService.php
+  app/Services/CardCategoryService.php
+  app/Services/CardPurchaseService.php
+  app/Services/CardAnalyticsService.php
+  app/Services/CardDashboardService.php
+  app/Repositories/CardRepository.php
+  app/Repositories/CardCategoryRepository.php
+  app/Repositories/CardPurchaseRepository.php
+  app/Repositories/CardInstallmentRepository.php
+  app/Models/Card.php, CardCategory.php, CardPurchase.php, CardInstallment.php
+  app/Http/Requests/Card/*.php, CardCategory/*.php, CardPurchase/*.php, CardDashboard/*.php
+  app/Http/Resources/Card*.php
+  app/Events/CartaoDadosAlterados.php
+  app/Listeners/InvalidarCacheCartoes.php
+
+Frontend:
+  frontend/src/pages/card-purchases/CardPurchasesPage.vue
+  frontend/src/pages/cards/CardsPage.vue
+  frontend/src/pages/card-categories/CardCategoriesPage.vue
+  frontend/src/pages/card-dashboard/CardDashboardPage.vue
+  frontend/src/services/cards/cardService.js
+  frontend/src/services/card-categories/cardCategoryService.js
+  frontend/src/services/card-purchases/cardPurchaseService.js
+  frontend/src/services/card-dashboard/cardDashboardService.js
+  frontend/src/components/cards/, card-categories/, card-purchases/, card-dashboard/
+  frontend/src/helpers/cardInstallments.js
+```
 
 ## Componentes Compartilhados (Frontend)
 

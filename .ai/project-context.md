@@ -62,6 +62,18 @@ investimento (decimal:2), observations (text), created_at, updated_at
 Constraint única: `(user_id, competency)`
 Relacionamentos: `belongsTo(User)`
 
+### Card / CardCategory / CardPurchase / CardInstallment (módulo Cartões)
+```
+Card:            id, user_id, name, responsible_person, active
+CardCategory:    id, user_id, name (unique por usuário), active
+CardPurchase:    id, user_id, card_id, card_category_id, description, total_amount,
+                 purchase_date, reference_competency (YYYY-MM), payment_type (cash|installment),
+                 installments_total, starting_installment_number
+CardInstallment: id, card_purchase_id, user_id, card_id, card_category_id, payment_type,
+                 installment_number, competency (YYYY-MM), amount
+```
+Módulo aditivo e isolado — não referencia `categories`/`transactions`, não recalcula dados antigos. Ver `.ai/backend/contexts/cards.md`.
+
 ---
 
 ## Endpoints da API
@@ -111,6 +123,15 @@ Relacionamentos: `belongsTo(User)`
 | GET | `/dashboard/category-comparison` | `current_competency`, `previous_competency` | Comparativo de categorias |
 | GET | `/dashboard/monthly-evolution` | `start_competency`, `end_competency` | Evolução temporal |
 | GET | `/dashboard/month-comparison` | `first_competency`, `second_competency` | Comparação entre dois meses |
+
+### Cartões (auth:sanctum) — ver `.ai/backend/contexts/cards.md`
+| Método | Rota | Descrição |
+|--------|------|-----------|
+| GET/POST/PUT/DELETE | `/cards` | CRUD de cartões |
+| GET/POST/PUT/DELETE | `/card-categories` | CRUD de categorias de cartão |
+| GET/POST/PUT/DELETE | `/card-purchases` | CRUD de compras (`?competency=&card_id=&card_category_id=&payment_type=`) |
+| GET | `/card-dashboard/analytics` | `competency`, `months` (default 6) — painel de cartões (cached 5min) |
+| GET | `/card-dashboard/monthly-summary` | `competency` | Resumo mensal de cartões |
 
 ---
 

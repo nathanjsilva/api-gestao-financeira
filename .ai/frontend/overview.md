@@ -30,6 +30,12 @@
 | `/categorias` | `categories` | AUTHENTICATED | requiresAuth | `pages/categories/CategoriesPage.vue` |
 | `/transacoes` | `transactions` | AUTHENTICATED | requiresAuth | `pages/transactions/TransactionsPage.vue` |
 | `/reserva-mensal` | `monthly-reserve` | AUTHENTICATED | requiresAuth | `pages/monthly-reserve/MonthlyReservePage.vue` |
+| `/cartoes/compras` | `card-purchases` | AUTHENTICATED | requiresAuth | `pages/card-purchases/CardPurchasesPage.vue` |
+| `/cartoes/gerenciar` | `cards` | AUTHENTICATED | requiresAuth | `pages/cards/CardsPage.vue` |
+| `/cartoes/categorias` | `card-categories` | AUTHENTICATED | requiresAuth | `pages/card-categories/CardCategoriesPage.vue` |
+| `/cartoes/analise` | `card-dashboard` | AUTHENTICATED | requiresAuth | `pages/card-dashboard/CardDashboardPage.vue` |
+
+As 4 rotas de Cartões compartilham uma sub-navegação própria (`components/cards/CardsSubNav.vue`) e aparecem na navegação global como um único item "Cartões" — ver `.ai/frontend/cards.md`.
 
 - `/` redireciona para `/dashboard` (autenticado) ou `/login` (não autenticado)
 - Nomes das rotas em `constants/routeNames.js`
@@ -135,6 +141,11 @@ monthlySummary(competency)// GET /dashboard/monthly-summary
 categoryComparison(params)// GET /dashboard/category-comparison
 monthlyEvolution(params)  // GET /dashboard/monthly-evolution
 monthComparison(params)   // GET /dashboard/month-comparison
+
+// services/cards/cardService.js — list/create/update/remove
+// services/card-categories/cardCategoryService.js — list/create/update/remove
+// services/card-purchases/cardPurchaseService.js — list(params)/create/update/remove
+// services/card-dashboard/cardDashboardService.js — analytics(params)/monthlySummary(competency)
 ```
 
 ---
@@ -165,6 +176,9 @@ monthComparison(params)   // GET /dashboard/month-comparison
 ### Transações (`components/transactions/`)
 - `TransactionCard.vue` — exibe uma transação (description, amount, category, status)
 - `TransactionStatusBadge.vue` — badge colorido para `paid`/`pending`
+
+### Cartões (`components/cards/`, `card-categories/`, `card-purchases/`, `card-dashboard/`)
+Ver `.ai/frontend/cards.md` para a lista completa — inclui `CardsSubNav.vue`, `CardPurchaseForm.vue` (com preview ao vivo das parcelas) e os gráficos do dashboard de cartões.
 
 ---
 
@@ -233,6 +247,12 @@ export const AUTHENTICATED = 'AuthenticatedLayout'
 ### competency.js
 ```javascript
 getCurrentCompetency(date = new Date()) // → 'YYYY-MM' (ex: '2026-07')
+```
+
+### cardInstallments.js
+```javascript
+calculateInstallments(totalAmount, installmentsTotal, startingInstallmentNumber, referenceCompetency)
+// Replica no frontend o algoritmo de arredondamento do backend, só para preview no formulário de compra
 ```
 
 ### currency.js

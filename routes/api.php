@@ -1,6 +1,10 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CardCategoryController;
+use App\Http\Controllers\Api\CardController;
+use App\Http\Controllers\Api\CardDashboardController;
+use App\Http\Controllers\Api\CardPurchaseController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\MonthlyReserveController;
@@ -36,4 +40,11 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('/dashboard/category-comparison', [DashboardController::class, 'comparativoCategorias']);
     Route::get('/dashboard/monthly-evolution', [DashboardController::class, 'evolucaoMensal']);
     Route::get('/dashboard/month-comparison', [DashboardController::class, 'comparacaoEntreMeses']);
+
+    Route::apiResource('cards', CardController::class);
+    Route::apiResource('card-categories', CardCategoryController::class);
+    Route::apiResource('card-purchases', CardPurchaseController::class);
+
+    Route::get('/card-dashboard/analytics', [CardDashboardController::class, 'analytics']);
+    Route::get('/card-dashboard/monthly-summary', [CardDashboardController::class, 'resumoMensal']);
 });

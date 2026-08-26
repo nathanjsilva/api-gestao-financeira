@@ -32,11 +32,27 @@ const navigationItems = [
     routeName: ROUTE_NAMES.MONTHLY_RESERVE,
     icon: 'M12 3 3 8.5v11h18v-11L12 3Zm-3 8.5h6v7H9v-7Z',
   },
+  {
+    label: 'Cartões',
+    routeName: ROUTE_NAMES.CARD_PURCHASES,
+    icon: 'M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7Zm0 4h20M6 15h4',
+  },
+]
+
+const CARD_SECTION_ROUTES = [
+  ROUTE_NAMES.CARD_PURCHASES,
+  ROUTE_NAMES.CARDS,
+  ROUTE_NAMES.CARD_CATEGORIES,
+  ROUTE_NAMES.CARD_DASHBOARD,
 ]
 
 const displayName = computed(() => authStore.userName || 'Usuário')
 
 function isActive(routeName) {
+  if (routeName === ROUTE_NAMES.CARD_PURCHASES) {
+    return CARD_SECTION_ROUTES.includes(route.name)
+  }
+
   return route.name === routeName
 }
 
@@ -118,7 +134,7 @@ async function handleLogout() {
       style="padding-bottom: env(safe-area-inset-bottom)"
       aria-label="Navegação principal"
     >
-      <div class="mx-auto grid max-w-7xl grid-cols-4">
+      <div class="mx-auto grid max-w-7xl grid-cols-5">
         <RouterLink
           v-for="item in navigationItems"
           :key="item.routeName"
