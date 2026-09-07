@@ -64,7 +64,7 @@ onMounted(loadAnalytics)
         description="Entenda para onde seu dinheiro está indo, compare meses e acompanhe a evolução da sua reserva."
       >
         <template #actions>
-          <div class="grid gap-3 @sm:grid-cols-[180px_150px]">
+          <div class="grid gap-3 @min-[40rem]:grid-cols-[180px_150px]">
             <BaseInput id="dashboard-competency" v-model="competency" label="Competência" type="month" />
             <BaseInput id="dashboard-months" v-model="months" label="Período" type="number" />
           </div>
@@ -76,12 +76,12 @@ onMounted(loadAnalytics)
       {{ generalError }}
     </p>
 
-    <div v-if="isLoading && !analytics" class="grid gap-4 @md:grid-cols-2 @xl:grid-cols-4">
+    <div v-if="isLoading && !analytics" class="grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-4">
       <div v-for="item in 4" :key="item" class="skeleton-card" />
     </div>
 
     <template v-else>
-      <div class="grid gap-4 @md:grid-cols-2 @xl:grid-cols-4">
+      <div class="grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-4">
         <FinancialCard
           label="Entradas do mês"
           :value="formatCurrency(overview.total_income)"
@@ -112,22 +112,22 @@ onMounted(loadAnalytics)
         />
       </div>
 
-      <div class="mt-5 grid gap-4 @lg:grid-cols-3">
+      <div class="mt-5 grid gap-4 @min-[64rem]:grid-cols-3">
         <MonthlyComparison :comparison="comparison" />
-        <FinancialInsights class="@lg:col-span-2" :insights="insights" />
+        <FinancialInsights class="@min-[64rem]:col-span-2" :insights="insights" />
       </div>
 
-      <div class="mt-5 grid gap-4 @xl:grid-cols-[1.1fr_0.9fr]">
+      <div class="mt-5 grid gap-4 @min-[80rem]:grid-cols-[1.1fr_0.9fr]">
         <ExpenseChart :categories="categories" />
         <CategoryRanking :categories="categories" />
       </div>
 
-      <div class="mt-5 grid gap-4 @xl:grid-cols-[1fr_1fr]">
+      <div class="mt-5 grid gap-4 @min-[80rem]:grid-cols-[1fr_1fr]">
         <CashFlowChart :items="cashFlow" />
         <ReserveEvolution :items="reserveEvolution" />
       </div>
 
-      <div class="mt-5 grid gap-4 @xl:grid-cols-[0.8fr_1.2fr]">
+      <div class="mt-5 grid gap-4 @min-[80rem]:grid-cols-[0.8fr_1.2fr]">
         <FinancialHeatmap :items="heatmap" />
 
         <section class="analytics-panel">
@@ -139,7 +139,7 @@ onMounted(loadAnalytics)
             </p>
           </div>
 
-          <div class="grid gap-3 @sm:grid-cols-2">
+          <div class="grid gap-3 @min-[40rem]:grid-cols-2">
             <div class="kpi-tile">
               <span>Média mensal de gastos</span>
               <strong>{{ formatCurrency(kpis.average_monthly_expense) }}</strong>

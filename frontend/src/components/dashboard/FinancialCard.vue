@@ -28,7 +28,7 @@ defineProps({
     <div class="flex items-start justify-between gap-4">
       <div>
         <p class="text-sm font-semibold text-slate-400">{{ label }}</p>
-        <strong class="mt-3 block text-2xl font-black text-slate-50 @md:text-3xl">
+        <strong class="mt-3 block text-2xl font-black text-slate-50 @min-[48rem]:text-3xl">
           {{ value }}
         </strong>
       </div>

@@ -135,7 +135,7 @@ onMounted(loadReserves)
       {{ generalError }}
     </p>
 
-    <div class="mt-5 grid gap-4 @md:grid-cols-2 @xl:grid-cols-4">
+    <div class="mt-5 grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-4">
       <article class="financial-card financial-card--sky">
         <div class="flex items-start justify-between gap-4">
           <div>
@@ -186,7 +186,7 @@ onMounted(loadReserves)
       </article>
     </div>
 
-    <div class="mt-5 grid min-w-0 gap-4 @xl:grid-cols-[minmax(360px,0.9fr)_minmax(0,1.1fr)]">
+    <div class="mt-5 grid min-w-0 gap-4 @min-[80rem]:grid-cols-[minmax(360px,0.9fr)_minmax(0,1.1fr)]">
       <BaseCard>
         <h2 class="text-2xl font-black text-slate-50">Nova reserva</h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">
@@ -210,7 +210,7 @@ onMounted(loadReserves)
             <p class="text-sm font-bold uppercase text-sky-300">Insights</p>
             <h2 class="mt-2 text-2xl font-black text-slate-50">Leitura rápida</h2>
           </div>
-          <div class="grid gap-3 @md:grid-cols-2">
+          <div class="grid gap-3 @min-[48rem]:grid-cols-2">
             <FinancialInsight
               v-for="insight in reserveInsights"
               :key="insight.title"
@@ -224,7 +224,7 @@ onMounted(loadReserves)
     </div>
 
     <BaseCard class="mt-5">
-      <div class="mb-5 flex flex-col gap-3 @sm:flex-row @sm:items-center @sm:justify-between">
+      <div class="mb-5 flex flex-col gap-3 @min-[40rem]:flex-row @min-[40rem]:items-center @min-[40rem]:justify-between">
         <div>
           <h2 class="text-2xl font-black text-slate-50">Histórico de reservas</h2>
           <p class="mt-2 text-sm text-slate-400">Informações organizadas por competência.</p>
@@ -238,7 +238,7 @@ onMounted(loadReserves)
         description="Cadastre a reserva mensal para completar a análise financeira."
       />
 
-      <div v-else class="hidden @xl:block">
+      <div v-else class="hidden @min-[80rem]:block">
         <table class="premium-table">
           <thead>
             <tr>
@@ -272,7 +272,7 @@ onMounted(loadReserves)
         </table>
       </div>
 
-      <div class="grid gap-3 @lg:hidden">
+      <div class="grid gap-3 @min-[64rem]:hidden">
         <article
           v-for="reserve in paginatedItems"
           :key="reserve.id"
@@ -287,7 +287,7 @@ onMounted(loadReserves)
               {{ formatCurrency(reserve.remaining_amount) }}
             </strong>
           </div>
-          <div class="mt-4 grid gap-3 @sm:grid-cols-2">
+          <div class="mt-4 grid gap-3 @min-[40rem]:grid-cols-2">
             <span class="value-badge value-badge--info">Reserva: {{ formatCurrency(reserve.current_reserve) }}</span>
             <span class="value-badge value-badge--success">Guardado: {{ formatCurrency(reserve.total_saved) }}</span>
             <span class="value-badge">Entradas: {{ formatCurrency(reserve.total_income) }}</span>

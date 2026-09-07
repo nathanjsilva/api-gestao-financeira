@@ -117,7 +117,7 @@ onMounted(loadCategories)
       {{ generalError }}
     </p>
 
-    <div class="grid min-w-0 gap-6 @lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
+    <div class="grid min-w-0 gap-6 @min-[64rem]:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
       <BaseCard>
         <h2 class="text-xl font-black text-slate-50">Nova categoria</h2>
 
@@ -144,7 +144,7 @@ onMounted(loadCategories)
           description="Crie categorias para organizar os gastos de cartão."
         />
 
-        <div v-else class="hidden @md:block">
+        <div v-else class="hidden @min-[48rem]:block">
           <table class="premium-table">
             <thead class="text-slate-400">
               <tr class="border-b border-white/10">
@@ -175,7 +175,7 @@ onMounted(loadCategories)
           </table>
         </div>
 
-        <div v-if="categories.length" class="grid gap-3 @md:hidden">
+        <div v-if="categories.length" class="grid gap-3 @min-[48rem]:hidden">
           <article
             v-for="category in paginatedItems"
             :key="category.id"

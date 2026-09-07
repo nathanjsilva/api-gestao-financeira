@@ -5,7 +5,6 @@ import BaseCard from '../../components/base/BaseCard.vue'
 import BaseInput from '../../components/base/BaseInput.vue'
 import BaseModal from '../../components/base/BaseModal.vue'
 import BaseMonthPicker from '../../components/base/BaseMonthPicker.vue'
-import BasePagination from '../../components/base/BasePagination.vue'
 import BaseSelect from '../../components/base/BaseSelect.vue'
 import CardsSubNav from '../../components/cards/CardsSubNav.vue'
 import CardBreakdownList from '../../components/card-dashboard/CardBreakdownList.vue'
@@ -21,7 +20,6 @@ import PageHeader from '../../components/layout/PageHeader.vue'
 import FinancialInsight from '../../components/shared/FinancialInsight.vue'
 import { useFormErrors } from '../../composables/useFormErrors'
 import { useLoading } from '../../composables/useLoading'
-import { usePagination } from '../../composables/usePagination'
 import { CARD_PAYMENT_TYPES } from '../../constants/cardPurchases'
 import { getCurrentCompetency } from '../../helpers/competency'
 import { formatCurrency } from '../../helpers/currency'
@@ -123,18 +121,27 @@ const categoryTotals = computed(() => {
 
 const biggestCategoryTotal = computed(() => Math.max(...categoryTotals.value.map((item) => item.total), 1))
 
-const cardTotals = computed(() => {
-  const totals = new Map()
+const purchasesByCard = computed(() => {
+  const groups = new Map()
 
-  purchases.value.forEach((purchase) => {
-    const label = purchase.card ? `${purchase.card.name} (${purchase.card.responsible_person})` : 'Cartão removido'
-    const amount = Number(installmentForCompetency(purchase, filters.competency)?.amount || 0)
-    totals.set(label, (totals.get(label) || 0) + amount)
+  filteredPurchases.value.forEach((purchase) => {
+    const cardId = purchase.card_id
+
+    if (!groups.has(cardId)) {
+      groups.set(cardId, {
+        cardId,
+        label: purchase.card ? `${purchase.card.name} (${purchase.card.responsible_person})` : 'Cartão removido',
+        purchases: [],
+        total: 0,
+      })
+    }
+
+    const group = groups.get(cardId)
+    group.purchases.push(purchase)
+    group.total += Number(installmentForCompetency(purchase, filters.competency)?.amount || 0)
   })
 
-  return [...totals.entries()]
-    .map(([label, total]) => ({ label, total }))
-    .sort((a, b) => b.total - a.total)
+  return [...groups.values()].sort((a, b) => b.total - a.total)
 })
 
 const purchaseInsights = computed(() => {
@@ -177,12 +184,6 @@ const byPersonItems = computed(() => (analytics.value?.by_person || []).map((ite
   label: item.responsible_person,
   total: item.total,
 })))
-
-const { currentPage, totalPages, paginatedItems: paginatedPurchases, pageNumbers, nextPage, prevPage, goToPage } = usePagination(filteredPurchases)
-
-watch([search, () => filters.card_id, () => filters.card_category_id, () => filters.payment_type], () => {
-  goToPage(1)
-})
 
 watch(months, async () => {
   await withLoading(async () => {
@@ -343,9 +344,9 @@ onMounted(loadInitialData)
         description="Lance compras à vista ou parceladas e acompanhe o impacto de cada uma mês a mês."
       >
         <template #actions>
-          <div class="grid gap-3 @sm:grid-cols-[1fr_120px]">
+          <div class="grid gap-3 @min-[40rem]:grid-cols-[1fr_120px]">
             <BaseMonthPicker id="card-purchases-competency" v-model="filters.competency" label="Competência" />
-            <BaseButton class="@sm:mt-7" :loading="isLoading" @click="loadPurchases">Filtrar</BaseButton>
+            <BaseButton class="@min-[40rem]:mt-7" :loading="isLoading" @click="loadPurchases">Filtrar</BaseButton>
           </div>
         </template>
       </PageHeader>
@@ -357,7 +358,7 @@ onMounted(loadInitialData)
       {{ generalError }}
     </p>
 
-    <div class="mt-5 grid gap-4 @md:grid-cols-2 @xl:grid-cols-4">
+    <div class="mt-5 grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-4">
       <article class="financial-card financial-card--rose">
         <p class="text-sm font-semibold text-slate-400">Total do mês</p>
         <strong class="mt-3 block text-3xl font-black text-rose-300">{{ formatCurrency(totalMonth) }}</strong>
@@ -380,11 +381,7 @@ onMounted(loadInitialData)
       </article>
     </div>
 
-    <div class="mt-5">
-      <CardBreakdownList title="Total por cartão" subtitle="Quanto cada cartão consumiu nesta competência" :items="cardTotals" />
-    </div>
-
-    <div class="mt-5 grid min-w-0 gap-4 @xl:grid-cols-[minmax(380px,440px)_minmax(0,1fr)]">
+    <div class="mt-5 grid min-w-0 gap-4 @min-[80rem]:grid-cols-[minmax(380px,440px)_minmax(0,1fr)]">
       <BaseCard>
         <h2 class="text-2xl font-black text-slate-50">Nova compra</h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">Informe o valor total e a quantidade de parcelas — o sistema calcula cada parcela automaticamente.</p>
@@ -408,7 +405,7 @@ onMounted(loadInitialData)
             <p class="text-sm font-bold uppercase text-sky-300">Filtros</p>
             <h2 class="mt-2 text-2xl font-black text-slate-50">Encontre compras rapidamente</h2>
           </div>
-          <div class="grid gap-4 @md:grid-cols-2 @xl:grid-cols-4">
+          <div class="grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-4">
             <BaseInput id="card-purchase-search" v-model="search" label="Buscar" placeholder="Descrição" />
             <BaseSelect id="filter-card" v-model="filters.card_id" label="Cartão" placeholder="Todos" :options="cardOptions" />
             <BaseSelect id="filter-card-category" v-model="filters.card_category_id" label="Categoria" placeholder="Todas" :options="categoryOptions" />
@@ -442,7 +439,7 @@ onMounted(loadInitialData)
             <p class="text-sm font-bold uppercase text-sky-300">Insights</p>
             <h2 class="mt-2 text-2xl font-black text-slate-50">Resumo do mês</h2>
           </div>
-          <div class="grid gap-3 @md:grid-cols-3">
+          <div class="grid gap-3 @min-[48rem]:grid-cols-3">
             <FinancialInsight
               v-for="insight in purchaseInsights"
               :key="insight.title"
@@ -455,11 +452,11 @@ onMounted(loadInitialData)
       </div>
     </div>
 
-    <BaseCard class="mt-5">
-      <div class="mb-5 flex flex-col gap-3 @sm:flex-row @sm:items-center @sm:justify-between">
+    <div class="mt-5">
+      <div class="mb-5 flex flex-col gap-3 @min-[40rem]:flex-row @min-[40rem]:items-center @min-[40rem]:justify-between">
         <div>
           <h2 class="text-2xl font-black text-slate-50">Compras lançadas</h2>
-          <p class="mt-2 text-sm text-slate-400">Tabela no desktop e cards no mobile.</p>
+          <p class="mt-2 text-sm text-slate-400">Um card por cartão, para não misturar as compras.</p>
         </div>
         <span class="rounded-full bg-white/6 px-3 py-1 text-sm text-slate-300">{{ filteredPurchases.length }} itens</span>
       </div>
@@ -470,74 +467,74 @@ onMounted(loadInitialData)
         description="Cadastre uma compra ou ajuste os filtros."
       />
 
-      <div v-else class="hidden @xl:block">
-        <table class="premium-table">
-          <thead>
-            <tr>
-              <th>Descrição</th>
-              <th>Cartão</th>
-              <th>Categoria</th>
-              <th>Tipo</th>
-              <th class="text-right">Parcela do mês</th>
-              <th class="text-right">Valor total</th>
-              <th class="text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="purchase in paginatedPurchases" :key="purchase.id">
-              <td>
-                <strong class="block max-w-55 truncate text-slate-50">{{ purchase.description }}</strong>
-              </td>
-              <td><span class="block max-w-40 truncate">{{ purchase.card?.name }}</span></td>
-              <td><span class="block max-w-40 truncate">{{ purchase.category?.name || 'Sem categoria' }}</span></td>
-              <td><InstallmentStatusBadge :purchase="purchase" /></td>
-              <td class="text-right text-lg font-black text-rose-300">
-                {{ formatCurrency(installmentForCompetency(purchase, filters.competency)?.amount) }}
-              </td>
-              <td class="text-right text-slate-300">{{ formatCurrency(purchase.total_amount) }}</td>
-              <td>
-                <div class="flex justify-end gap-2">
-                  <BaseButton variant="secondary" title="Editar" :disabled="isLoading" @click="startEdit(purchase)">Editar</BaseButton>
-                  <BaseButton variant="danger" title="Excluir" :disabled="isLoading" @click="removePurchase(purchase)">Excluir</BaseButton>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
+      <div v-else class="space-y-4">
+        <BaseCard v-for="group in purchasesByCard" :key="group.cardId">
+          <div class="mb-5 flex flex-col gap-3 @min-[40rem]:flex-row @min-[40rem]:items-center @min-[40rem]:justify-between">
+            <div>
+              <h3 class="text-xl font-black text-slate-50">{{ group.label }}</h3>
+              <p class="mt-1 text-sm text-slate-400">{{ group.purchases.length }} compra(s) nesta competência</p>
+            </div>
+            <span class="value-badge value-badge--info">{{ formatCurrency(group.total) }}</span>
+          </div>
 
-      <div class="grid gap-3 @xl:hidden">
-        <CardPurchaseCard
-          v-for="purchase in paginatedPurchases"
-          :key="purchase.id"
-          :purchase="purchase"
-          @edit="startEdit"
-          @remove="removePurchase"
-        />
-      </div>
+          <div class="hidden @min-[80rem]:block">
+            <table class="premium-table">
+              <thead>
+                <tr>
+                  <th>Descrição</th>
+                  <th>Categoria</th>
+                  <th>Tipo</th>
+                  <th class="text-right">Parcela do mês</th>
+                  <th class="text-right">Valor total</th>
+                  <th class="text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="purchase in group.purchases" :key="purchase.id">
+                  <td>
+                    <strong class="block max-w-55 truncate text-slate-50">{{ purchase.description }}</strong>
+                  </td>
+                  <td><span class="block max-w-40 truncate">{{ purchase.category?.name || 'Sem categoria' }}</span></td>
+                  <td><InstallmentStatusBadge :purchase="purchase" /></td>
+                  <td class="text-right text-lg font-black text-rose-300">
+                    {{ formatCurrency(installmentForCompetency(purchase, filters.competency)?.amount) }}
+                  </td>
+                  <td class="text-right text-slate-300">{{ formatCurrency(purchase.total_amount) }}</td>
+                  <td>
+                    <div class="flex justify-end gap-2">
+                      <BaseButton variant="secondary" title="Editar" :disabled="isLoading" @click="startEdit(purchase)">Editar</BaseButton>
+                      <BaseButton variant="danger" title="Excluir" :disabled="isLoading" @click="removePurchase(purchase)">Excluir</BaseButton>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-      <BasePagination
-        :current-page="currentPage"
-        :total-pages="totalPages"
-        :total="filteredPurchases.length"
-        :page-numbers="pageNumbers"
-        @prev="prevPage"
-        @next="nextPage"
-        @go="goToPage"
-      />
-    </BaseCard>
+          <div class="grid gap-3 @min-[80rem]:hidden">
+            <CardPurchaseCard
+              v-for="purchase in group.purchases"
+              :key="purchase.id"
+              :purchase="purchase"
+              @edit="startEdit"
+              @remove="removePurchase"
+            />
+          </div>
+        </BaseCard>
+      </div>
+    </div>
 
     <div class="mt-8">
-      <div class="mb-5 flex flex-col gap-3 @sm:flex-row @sm:items-end @sm:justify-between">
+      <div class="mb-5 flex flex-col gap-3 @min-[40rem]:flex-row @min-[40rem]:items-end @min-[40rem]:justify-between">
         <div>
           <p class="text-sm font-bold uppercase text-sky-300">Análises</p>
           <h2 class="mt-2 text-2xl font-black text-slate-50">Visão ampliada dos cartões</h2>
           <p class="mt-2 text-sm text-slate-400">Totais, distribuição e parcelas futuras considerando o período abaixo.</p>
         </div>
-        <BaseInput id="card-analytics-months" v-model="months" label="Período (meses)" type="number" class="@sm:w-40" />
+        <BaseInput id="card-analytics-months" v-model="months" label="Período (meses)" type="number" class="@min-[40rem]:w-40" />
       </div>
 
-      <div class="grid gap-4 @md:grid-cols-2 @xl:grid-cols-3">
+      <div class="grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-3">
         <FinancialCard
           label="Total do ano"
           :value="formatCurrency(overview.total_year)"
@@ -558,7 +555,7 @@ onMounted(loadInitialData)
         />
       </div>
 
-      <div class="mt-5 grid gap-4 @xl:grid-cols-[1.1fr_0.9fr]">
+      <div class="mt-5 grid gap-4 @min-[80rem]:grid-cols-[1.1fr_0.9fr]">
         <CardCategoryChart :categories="categoryRanking" />
         <CardPaymentTypeChart :items="paymentTypeBreakdown" />
       </div>
@@ -571,7 +568,7 @@ onMounted(loadInitialData)
         <CardEvolutionChart :items="evolution" />
       </div>
 
-      <div class="mt-5 grid gap-4 @xl:grid-cols-3">
+      <div class="mt-5 grid gap-4 @min-[80rem]:grid-cols-3">
         <FinancialInsight
           v-for="insight in analyticsInsights"
           :key="insight.title"

@@ -391,10 +391,10 @@ if (currentId.value) {
         </div>
       </div>
 
-      <form class="mt-4 grid gap-3 @sm:grid-cols-2" @submit.prevent="handleEntrySubmit">
+      <form class="mt-4 grid gap-3 @min-[40rem]:grid-cols-2" @submit.prevent="handleEntrySubmit">
         <BaseInput id="entry-description" v-model="entryForm.description" label="Descrição" placeholder="Ex: Aporte em fundo DI" :error="entryFieldError('description')" />
         <BaseInput id="entry-amount" v-model="entryForm.amount" label="Valor" type="number" placeholder="Ex: 250.00" :error="entryFieldError('amount')" />
-        <div class="flex gap-2 @sm:col-span-2">
+        <div class="flex gap-2 @min-[40rem]:col-span-2">
           <BaseButton type="submit" class="flex-1" :loading="isEntryLoading">{{ entrySubmitLabel }}</BaseButton>
           <BaseButton v-if="editingEntryId" type="button" variant="secondary" @click="resetEntryForm">Cancelar</BaseButton>
         </div>

@@ -28,7 +28,7 @@ defineProps({
       </span>
     </div>
 
-    <div class="grid gap-3 @sm:grid-cols-2">
+    <div class="grid gap-3 @min-[40rem]:grid-cols-2">
       <div class="rounded-2xl bg-white/[0.04] p-4">
         <p class="text-sm text-slate-400">Variação de gastos</p>
         <strong class="mt-2 block text-xl text-slate-50">

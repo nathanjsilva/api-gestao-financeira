@@ -44,7 +44,7 @@ function updateNote(value) {
       </span>
     </div>
 
-    <div class="mt-3 grid gap-2 @sm:grid-cols-[1fr_1.4fr]">
+    <div class="mt-3 grid gap-2 @min-[40rem]:grid-cols-[1fr_1.4fr]">
       <BaseInput
         :id="`reserve-account-${account.id}-balance`"
         label="Saldo do mês"

@@ -278,9 +278,9 @@ onMounted(loadInitialData)
         description="Controle entradas, saídas, filtros e comportamento financeiro por competência."
       >
         <template #actions>
-          <div class="grid gap-3 @sm:grid-cols-[1fr_120px]">
+          <div class="grid gap-3 @min-[40rem]:grid-cols-[1fr_120px]">
             <BaseMonthPicker id="transactions-competency" v-model="filters.competency" label="Competência" />
-            <BaseButton class="@sm:mt-7" :loading="isLoading" @click="loadTransactions">Filtrar</BaseButton>
+            <BaseButton class="@min-[40rem]:mt-7" :loading="isLoading" @click="loadTransactions">Filtrar</BaseButton>
           </div>
         </template>
       </PageHeader>
@@ -290,7 +290,7 @@ onMounted(loadInitialData)
       {{ generalError }}
     </p>
 
-    <div class="mt-5 grid gap-4 @md:grid-cols-2 @xl:grid-cols-4">
+    <div class="mt-5 grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-4">
       <article class="financial-card financial-card--emerald">
         <p class="text-sm font-semibold text-slate-400">Entradas filtradas</p>
         <strong class="mt-3 block text-3xl font-black text-emerald-300">{{ formatCurrency(totalIncome) }}</strong>
@@ -315,7 +315,7 @@ onMounted(loadInitialData)
       </article>
     </div>
 
-    <div class="mt-5 grid min-w-0 gap-4 @xl:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]">
+    <div class="mt-5 grid min-w-0 gap-4 @min-[80rem]:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]">
       <BaseCard>
         <h2 class="text-2xl font-black text-slate-50">Nova transação</h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">Cadastre lançamentos com categoria, status e impacto financeiro visível antes de salvar.</p>
@@ -338,7 +338,7 @@ onMounted(loadInitialData)
             <p class="text-sm font-bold uppercase text-sky-300">Filtros inteligentes</p>
             <h2 class="mt-2 text-2xl font-black text-slate-50">Encontre lançamentos rapidamente</h2>
           </div>
-          <div class="grid gap-4 @md:grid-cols-2 @xl:grid-cols-5">
+          <div class="grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-5">
             <BaseInput id="search" v-model="search" label="Buscar" placeholder="Descrição" />
             <BaseSelect id="filter-category" v-model="filters.category_id" label="Categoria" placeholder="Todas" :options="categoryOptions" />
             <BaseSelect id="filter-type" v-model="filters.type" label="Tipo" placeholder="Todos" :options="TRANSACTION_TYPES" />
@@ -380,7 +380,7 @@ onMounted(loadInitialData)
             <p class="text-sm font-bold uppercase text-sky-300">Insights</p>
             <h2 class="mt-2 text-2xl font-black text-slate-50">Resumo financeiro</h2>
           </div>
-          <div class="grid gap-3 @md:grid-cols-3">
+          <div class="grid gap-3 @min-[48rem]:grid-cols-3">
             <FinancialInsight
               v-for="insight in transactionInsights"
               :key="insight.title"
@@ -394,7 +394,7 @@ onMounted(loadInitialData)
     </div>
 
     <BaseCard class="mt-5">
-      <div class="mb-5 flex flex-col gap-3 @sm:flex-row @sm:items-center @sm:justify-between">
+      <div class="mb-5 flex flex-col gap-3 @min-[40rem]:flex-row @min-[40rem]:items-center @min-[40rem]:justify-between">
         <div>
           <h2 class="text-2xl font-black text-slate-50">Lançamentos</h2>
           <p class="mt-2 text-sm text-slate-400">Tabela no desktop e cards financeiros no mobile.</p>
@@ -408,7 +408,7 @@ onMounted(loadInitialData)
         description="Cadastre uma transação ou ajuste os filtros."
       />
 
-      <div v-else class="hidden @xl:block">
+      <div v-else class="hidden @min-[80rem]:block">
         <table class="premium-table">
           <thead>
             <tr>
@@ -453,7 +453,7 @@ onMounted(loadInitialData)
         </table>
       </div>
 
-      <div class="grid gap-3 @xl:hidden">
+      <div class="grid gap-3 @min-[80rem]:hidden">
         <TransactionCard
           v-for="transaction in paginatedTransactions"
           :key="transaction.id"
