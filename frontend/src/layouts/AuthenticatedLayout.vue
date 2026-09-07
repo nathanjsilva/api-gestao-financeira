@@ -43,7 +43,6 @@ const CARD_SECTION_ROUTES = [
   ROUTE_NAMES.CARD_PURCHASES,
   ROUTE_NAMES.CARDS,
   ROUTE_NAMES.CARD_CATEGORIES,
-  ROUTE_NAMES.CARD_DASHBOARD,
 ]
 
 const displayName = computed(() => authStore.userName || 'Usuário')

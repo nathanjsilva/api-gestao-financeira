@@ -18,7 +18,7 @@ defineProps({
       </p>
     </div>
 
-    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 2xl:grid-cols-3">
+    <div class="grid grid-cols-1 gap-3 @sm:grid-cols-2 @2xl:grid-cols-3">
       <div
         v-for="item in items"
         :key="item.label"
@@ -30,7 +30,7 @@ defineProps({
           'bg-emerald-400/10 text-emerald-50': item.tone === 'safe',
         }"
       >
-        <strong class="block break-words text-sm leading-5 sm:text-base">
+        <strong class="block break-words text-sm leading-5 @sm:text-base">
           {{ item.label }}
         </strong>
         <span class="mt-3 block text-sm font-semibold opacity-80">{{ item.value }}% dos gastos</span>

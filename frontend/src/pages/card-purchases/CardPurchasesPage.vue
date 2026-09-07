@@ -8,10 +8,15 @@ import BaseMonthPicker from '../../components/base/BaseMonthPicker.vue'
 import BasePagination from '../../components/base/BasePagination.vue'
 import BaseSelect from '../../components/base/BaseSelect.vue'
 import CardsSubNav from '../../components/cards/CardsSubNav.vue'
+import CardBreakdownList from '../../components/card-dashboard/CardBreakdownList.vue'
+import CardCategoryChart from '../../components/card-dashboard/CardCategoryChart.vue'
+import CardEvolutionChart from '../../components/card-dashboard/CardEvolutionChart.vue'
+import CardPaymentTypeChart from '../../components/card-dashboard/CardPaymentTypeChart.vue'
 import CardPurchaseCard from '../../components/card-purchases/CardPurchaseCard.vue'
 import CardPurchaseForm from '../../components/card-purchases/CardPurchaseForm.vue'
 import InstallmentStatusBadge from '../../components/card-purchases/InstallmentStatusBadge.vue'
 import EmptyState from '../../components/data-display/EmptyState.vue'
+import FinancialCard from '../../components/dashboard/FinancialCard.vue'
 import PageHeader from '../../components/layout/PageHeader.vue'
 import FinancialInsight from '../../components/shared/FinancialInsight.vue'
 import { useFormErrors } from '../../composables/useFormErrors'
@@ -22,6 +27,7 @@ import { getCurrentCompetency } from '../../helpers/competency'
 import { formatCurrency } from '../../helpers/currency'
 import { cardService } from '../../services/cards/cardService'
 import { cardCategoryService } from '../../services/card-categories/cardCategoryService'
+import { cardDashboardService } from '../../services/card-dashboard/cardDashboardService'
 import { cardPurchaseService } from '../../services/card-purchases/cardPurchaseService'
 
 const cards = ref([])
@@ -35,6 +41,9 @@ const filters = reactive({
   card_category_id: '',
   payment_type: '',
 })
+
+const months = ref(6)
+const analytics = ref(null)
 
 const { isLoading, withLoading } = useLoading()
 const { generalError, clearErrors, setErrorsFromApi, fieldError } = useFormErrors()
@@ -114,6 +123,20 @@ const categoryTotals = computed(() => {
 
 const biggestCategoryTotal = computed(() => Math.max(...categoryTotals.value.map((item) => item.total), 1))
 
+const cardTotals = computed(() => {
+  const totals = new Map()
+
+  purchases.value.forEach((purchase) => {
+    const label = purchase.card ? `${purchase.card.name} (${purchase.card.responsible_person})` : 'Cartão removido'
+    const amount = Number(installmentForCompetency(purchase, filters.competency)?.amount || 0)
+    totals.set(label, (totals.get(label) || 0) + amount)
+  })
+
+  return [...totals.entries()]
+    .map(([label, total]) => ({ label, total }))
+    .sort((a, b) => b.total - a.total)
+})
+
 const purchaseInsights = computed(() => {
   const insights = []
 
@@ -140,10 +163,35 @@ const purchaseInsights = computed(() => {
   return insights
 })
 
+const overview = computed(() => analytics.value?.overview || {})
+const analyticsInsights = computed(() => analytics.value?.insights || [])
+const evolution = computed(() => analytics.value?.evolution || [])
+const categoryRanking = computed(() => analytics.value?.by_category?.ranking || [])
+const concentration = computed(() => analytics.value?.by_category?.concentration || {})
+const topGrowth = computed(() => analytics.value?.by_category?.top_growth || [])
+const paymentTypeBreakdown = computed(() => analytics.value?.payment_type_breakdown || [])
+const committedFuture = computed(() => analytics.value?.committed_future || 0)
+const outstandingBalance = computed(() => analytics.value?.outstanding_balance || 0)
+
+const byPersonItems = computed(() => (analytics.value?.by_person || []).map((item) => ({
+  label: item.responsible_person,
+  total: item.total,
+})))
+
 const { currentPage, totalPages, paginatedItems: paginatedPurchases, pageNumbers, nextPage, prevPage, goToPage } = usePagination(filteredPurchases)
 
 watch([search, () => filters.card_id, () => filters.card_category_id, () => filters.payment_type], () => {
   goToPage(1)
+})
+
+watch(months, async () => {
+  await withLoading(async () => {
+    try {
+      await fetchAnalytics()
+    } catch (error) {
+      setErrorsFromApi(error)
+    }
+  })
 })
 
 function categoryBarWidth(total) {
@@ -180,6 +228,17 @@ async function loadCardsAndCategories() {
   categories.value = await cardCategoryService.list()
 }
 
+async function fetchAnalytics() {
+  if (!filters.competency) {
+    return
+  }
+
+  analytics.value = await cardDashboardService.analytics({
+    competency: filters.competency,
+    months: months.value,
+  })
+}
+
 async function loadPurchases() {
   if (!filters.competency) {
     return
@@ -191,6 +250,7 @@ async function loadPurchases() {
     try {
       purchases.value = await cardPurchaseService.list({ competency: filters.competency })
       form.reference_competency = filters.competency
+      await fetchAnalytics()
     } catch (error) {
       setErrorsFromApi(error)
     }
@@ -202,6 +262,7 @@ async function loadInitialData() {
     try {
       await loadCardsAndCategories()
       purchases.value = await cardPurchaseService.list({ competency: filters.competency })
+      await fetchAnalytics()
     } catch (error) {
       setErrorsFromApi(error)
     }
@@ -282,9 +343,9 @@ onMounted(loadInitialData)
         description="Lance compras à vista ou parceladas e acompanhe o impacto de cada uma mês a mês."
       >
         <template #actions>
-          <div class="grid gap-3 sm:grid-cols-[1fr_120px]">
+          <div class="grid gap-3 @sm:grid-cols-[1fr_120px]">
             <BaseMonthPicker id="card-purchases-competency" v-model="filters.competency" label="Competência" />
-            <BaseButton class="sm:mt-7" :loading="isLoading" @click="loadPurchases">Filtrar</BaseButton>
+            <BaseButton class="@sm:mt-7" :loading="isLoading" @click="loadPurchases">Filtrar</BaseButton>
           </div>
         </template>
       </PageHeader>
@@ -296,7 +357,7 @@ onMounted(loadInitialData)
       {{ generalError }}
     </p>
 
-    <div class="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div class="mt-5 grid gap-4 @md:grid-cols-2 @xl:grid-cols-4">
       <article class="financial-card financial-card--rose">
         <p class="text-sm font-semibold text-slate-400">Total do mês</p>
         <strong class="mt-3 block text-3xl font-black text-rose-300">{{ formatCurrency(totalMonth) }}</strong>
@@ -319,7 +380,11 @@ onMounted(loadInitialData)
       </article>
     </div>
 
-    <div class="mt-5 grid min-w-0 gap-4 xl:grid-cols-[minmax(380px,440px)_minmax(0,1fr)]">
+    <div class="mt-5">
+      <CardBreakdownList title="Total por cartão" subtitle="Quanto cada cartão consumiu nesta competência" :items="cardTotals" />
+    </div>
+
+    <div class="mt-5 grid min-w-0 gap-4 @xl:grid-cols-[minmax(380px,440px)_minmax(0,1fr)]">
       <BaseCard>
         <h2 class="text-2xl font-black text-slate-50">Nova compra</h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">Informe o valor total e a quantidade de parcelas — o sistema calcula cada parcela automaticamente.</p>
@@ -343,7 +408,7 @@ onMounted(loadInitialData)
             <p class="text-sm font-bold uppercase text-sky-300">Filtros</p>
             <h2 class="mt-2 text-2xl font-black text-slate-50">Encontre compras rapidamente</h2>
           </div>
-          <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <div class="grid gap-4 @md:grid-cols-2 @xl:grid-cols-4">
             <BaseInput id="card-purchase-search" v-model="search" label="Buscar" placeholder="Descrição" />
             <BaseSelect id="filter-card" v-model="filters.card_id" label="Cartão" placeholder="Todos" :options="cardOptions" />
             <BaseSelect id="filter-card-category" v-model="filters.card_category_id" label="Categoria" placeholder="Todas" :options="categoryOptions" />
@@ -377,7 +442,7 @@ onMounted(loadInitialData)
             <p class="text-sm font-bold uppercase text-sky-300">Insights</p>
             <h2 class="mt-2 text-2xl font-black text-slate-50">Resumo do mês</h2>
           </div>
-          <div class="grid gap-3 md:grid-cols-3">
+          <div class="grid gap-3 @md:grid-cols-3">
             <FinancialInsight
               v-for="insight in purchaseInsights"
               :key="insight.title"
@@ -391,7 +456,7 @@ onMounted(loadInitialData)
     </div>
 
     <BaseCard class="mt-5">
-      <div class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div class="mb-5 flex flex-col gap-3 @sm:flex-row @sm:items-center @sm:justify-between">
         <div>
           <h2 class="text-2xl font-black text-slate-50">Compras lançadas</h2>
           <p class="mt-2 text-sm text-slate-400">Tabela no desktop e cards no mobile.</p>
@@ -405,7 +470,7 @@ onMounted(loadInitialData)
         description="Cadastre uma compra ou ajuste os filtros."
       />
 
-      <div v-else class="hidden xl:block">
+      <div v-else class="hidden @xl:block">
         <table class="premium-table">
           <thead>
             <tr>
@@ -441,7 +506,7 @@ onMounted(loadInitialData)
         </table>
       </div>
 
-      <div class="grid gap-3 xl:hidden">
+      <div class="grid gap-3 @xl:hidden">
         <CardPurchaseCard
           v-for="purchase in paginatedPurchases"
           :key="purchase.id"
@@ -461,6 +526,75 @@ onMounted(loadInitialData)
         @go="goToPage"
       />
     </BaseCard>
+
+    <div class="mt-8">
+      <div class="mb-5 flex flex-col gap-3 @sm:flex-row @sm:items-end @sm:justify-between">
+        <div>
+          <p class="text-sm font-bold uppercase text-sky-300">Análises</p>
+          <h2 class="mt-2 text-2xl font-black text-slate-50">Visão ampliada dos cartões</h2>
+          <p class="mt-2 text-sm text-slate-400">Totais, distribuição e parcelas futuras considerando o período abaixo.</p>
+        </div>
+        <BaseInput id="card-analytics-months" v-model="months" label="Período (meses)" type="number" class="@sm:w-40" />
+      </div>
+
+      <div class="grid gap-4 @md:grid-cols-2 @xl:grid-cols-3">
+        <FinancialCard
+          label="Total do ano"
+          :value="formatCurrency(overview.total_year)"
+          hint="Acumulado do ano da competência selecionada"
+          accent="sky"
+        />
+        <FinancialCard
+          label="Comprometido futuro"
+          :value="formatCurrency(committedFuture)"
+          hint="Parcelas com vencimento após este mês"
+          accent="violet"
+        />
+        <FinancialCard
+          label="Saldo devedor parcelado"
+          :value="formatCurrency(outstandingBalance)"
+          hint="Parte ainda não vencida das compras parceladas"
+          accent="emerald"
+        />
+      </div>
+
+      <div class="mt-5 grid gap-4 @xl:grid-cols-[1.1fr_0.9fr]">
+        <CardCategoryChart :categories="categoryRanking" />
+        <CardPaymentTypeChart :items="paymentTypeBreakdown" />
+      </div>
+
+      <div class="mt-5">
+        <CardBreakdownList title="Por pessoa" subtitle="Gasto por responsável" :items="byPersonItems" />
+      </div>
+
+      <div class="mt-5">
+        <CardEvolutionChart :items="evolution" />
+      </div>
+
+      <div class="mt-5 grid gap-4 @xl:grid-cols-3">
+        <FinancialInsight
+          v-for="insight in analyticsInsights"
+          :key="insight.title"
+          :title="insight.title"
+          :description="insight.description"
+          :tone="insight.type === 'warning' ? 'warning' : (insight.type === 'danger' ? 'danger' : 'info')"
+        />
+
+        <FinancialInsight
+          v-if="concentration.top_1_percentage"
+          title="Concentração de categorias"
+          :description="`A categoria principal responde por ${concentration.top_1_percentage}% dos gastos e as 3 maiores somam ${concentration.top_3_percentage}%.`"
+          tone="info"
+        />
+
+        <FinancialInsight
+          v-if="topGrowth[0]"
+          title="Categoria em maior crescimento"
+          :description="`${topGrowth[0].category_name} cresceu ${topGrowth[0].growth_percentage}% em relação ao mês anterior.`"
+          tone="warning"
+        />
+      </div>
+    </div>
 
     <BaseModal :open="isEditModalOpen" title="Editar compra" @close="closeEditModal">
       <CardPurchaseForm

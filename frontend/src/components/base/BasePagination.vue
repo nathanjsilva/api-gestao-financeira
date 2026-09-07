@@ -11,7 +11,7 @@ defineEmits(['prev', 'next', 'go'])
 </script>
 
 <template>
-  <div v-if="totalPages > 1" class="mt-5 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+  <div v-if="totalPages > 1" class="mt-5 flex flex-col items-center gap-3 @sm:flex-row @sm:justify-between">
     <p class="text-sm text-slate-400">
       Mostrando <strong class="text-slate-200">{{ Math.min((currentPage - 1) * perPage + 1, total) }}–{{ Math.min(currentPage * perPage, total) }}</strong>
       de <strong class="text-slate-200">{{ total }}</strong> itens

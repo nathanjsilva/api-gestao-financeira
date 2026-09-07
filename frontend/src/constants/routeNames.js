@@ -8,5 +8,4 @@ export const ROUTE_NAMES = {
   CARD_PURCHASES: 'card-purchases',
   CARDS: 'cards',
   CARD_CATEGORIES: 'card-categories',
-  CARD_DASHBOARD: 'card-dashboard',
 }

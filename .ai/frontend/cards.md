@@ -2,22 +2,23 @@
 
 ## Responsabilidade
 
-Telas de cadastro de cartões, categorias de cartão, lançamento de compras (à vista/parceladas) e um dashboard analítico dedicado — tudo agrupado sob a seção "Cartões", isolada do dashboard financeiro geral.
+Telas de cadastro de cartões, categorias de cartão e lançamento de compras (à vista/parceladas) — tudo agrupado sob a seção "Cartões", isolada do dashboard financeiro geral. Compras e análises (gráficos, totais por cartão/pessoa, evolução) vivem na mesma página (`CardPurchasesPage.vue`), para evitar que o usuário precise alternar de aba para relacionar lançamentos com os totais.
 
 ---
 
 ## Navegação
 
-Um único item de navegação global "Cartões" (sidebar desktop e bottom tab bar mobile — `AuthenticatedLayout.vue`, agora com 5 itens) leva a `/cartoes/compras`. Dentro da seção, a sub-navegação (`components/cards/CardsSubNav.vue`, renderizada no topo de cada uma das 4 páginas) alterna entre as abas:
+Um único item de navegação global "Cartões" (sidebar desktop e bottom tab bar mobile — `AuthenticatedLayout.vue`, agora com 5 itens) leva a `/cartoes/compras`. Dentro da seção, a sub-navegação (`components/cards/CardsSubNav.vue`, renderizada no topo de cada uma das 3 páginas) alterna entre as abas:
 
 | Path | Rota | Página |
 |------|------|--------|
-| `/cartoes/compras` | `card-purchases` | `pages/card-purchases/CardPurchasesPage.vue` |
+| `/cartoes/compras` | `card-purchases` | `pages/card-purchases/CardPurchasesPage.vue` — formulário, filtros, totais por cartão/categoria, listagem e as análises (gráficos, evolução, insights) |
 | `/cartoes/gerenciar` | `cards` | `pages/cards/CardsPage.vue` |
 | `/cartoes/categorias` | `card-categories` | `pages/card-categories/CardCategoriesPage.vue` |
-| `/cartoes/analise` | `card-dashboard` | `pages/card-dashboard/CardDashboardPage.vue` |
 
-Essa IA em sub-abas evita inflar a navegação global com 4 novos itens (ver `.ai/frontend/overview.md`).
+`/cartoes/analise` (antiga rota `card-dashboard`) foi removida e agora só existe como redirect para `card-purchases` — a página `pages/card-dashboard/CardDashboardPage.vue` foi apagada; seus componentes de gráfico continuam em uso, importados diretamente por `CardPurchasesPage.vue`.
+
+Essa IA em sub-abas evita inflar a navegação global com novos itens (ver `.ai/frontend/overview.md`).
 
 ---
 
@@ -50,11 +51,13 @@ components/card-purchases/
   CardPurchaseCard.vue     — card mobile de uma compra
   InstallmentStatusBadge.vue — badge "À vista/Parcelado Nx" + "Quitada/Em andamento"
 
-components/card-dashboard/
+components/card-dashboard/ (usados dentro de CardPurchasesPage.vue, na seção "Análises")
   CardEvolutionChart.vue   — área/linha, evolução mensal (ApexCharts)
   CardCategoryChart.vue    — donut, gastos por categoria (mirror de ExpenseChart.vue)
   CardPaymentTypeChart.vue — donut, à vista x parcelado
-  CardBreakdownList.vue    — lista de barras genérica (usada para "por cartão" e "por pessoa")
+  CardBreakdownList.vue    — lista de barras genérica; usada duas vezes em CardPurchasesPage.vue:
+                             "Total por cartão" (totais locais da competência filtrada) e "Por pessoa"
+                             (vem do endpoint /card-dashboard/analytics)
 ```
 
 ---

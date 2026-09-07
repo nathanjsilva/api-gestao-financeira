@@ -27,25 +27,25 @@ function barHeight(value) {
       </p>
     </div>
 
-    <div class="responsive-chart-frame flex h-64 items-end gap-2 rounded-3xl bg-slate-950/60 p-3 sm:h-72 sm:gap-4 sm:p-5">
+    <div class="responsive-chart-frame flex h-64 items-end gap-2 rounded-3xl bg-slate-950/60 p-3 @sm:h-72 @sm:gap-4 @sm:p-5">
       <div
         v-for="item in orderedItems"
         :key="item.id"
         class="flex min-w-0 flex-1 basis-0 flex-col items-center justify-end gap-3"
       >
-        <div class="flex h-40 w-full min-w-0 items-end justify-center gap-1.5 sm:h-48 sm:gap-2">
+        <div class="flex h-40 w-full min-w-0 items-end justify-center gap-1.5 @sm:h-48 @sm:gap-2">
           <span
-            class="w-3 rounded-t-full bg-sky-300 sm:w-5"
+            class="w-3 rounded-t-full bg-sky-300 @sm:w-5"
             :style="{ height: barHeight(item.total_saved) }"
             :title="formatCurrency(item.total_saved)"
           />
           <span
-            class="w-3 rounded-t-full bg-emerald-300 sm:w-5"
+            class="w-3 rounded-t-full bg-emerald-300 @sm:w-5"
             :style="{ height: barHeight(item.investimento) }"
             :title="formatCurrency(item.investimento)"
           />
         </div>
-        <span class="max-w-full truncate text-[10px] font-bold text-slate-400 sm:text-xs">{{ item.competency }}</span>
+        <span class="max-w-full truncate text-[10px] font-bold text-slate-400 @sm:text-xs">{{ item.competency }}</span>
       </div>
     </div>
 

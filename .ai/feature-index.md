@@ -9,7 +9,7 @@
 | Transações (CRUD + filtro por mês) | Financeiro | `.ai/backend/contexts/transactions.md` | `pages/transactions/TransactionsPage.vue` | — |
 | Reserva Mensal (contas de reserva + investimentos) | Financeiro | `.ai/backend/contexts/monthly-reserve.md` | `pages/monthly-reserve/MonthlyReservePage.vue` | — |
 | Dashboard Analítico | Analytics | `.ai/backend/contexts/dashboard.md` | `pages/dashboard/DashboardPage.vue` | — |
-| Cartões (cartões, categorias, compras/parcelas, dashboard) | Financeiro/Analytics | `.ai/backend/contexts/cards.md` | `pages/card-purchases/`, `pages/cards/`, `pages/card-categories/`, `pages/card-dashboard/` | — |
+| Cartões (cartões, categorias, compras/parcelas, dashboard) | Financeiro/Analytics | `.ai/backend/contexts/cards.md` | `pages/card-purchases/` (compras + análises unificadas), `pages/cards/`, `pages/card-categories/` | — |
 
 ---
 
@@ -146,10 +146,9 @@ Backend:
   app/Listeners/InvalidarCacheCartoes.php
 
 Frontend:
-  frontend/src/pages/card-purchases/CardPurchasesPage.vue
+  frontend/src/pages/card-purchases/CardPurchasesPage.vue (compras + análises unificadas)
   frontend/src/pages/cards/CardsPage.vue
   frontend/src/pages/card-categories/CardCategoriesPage.vue
-  frontend/src/pages/card-dashboard/CardDashboardPage.vue
   frontend/src/services/cards/cardService.js
   frontend/src/services/card-categories/cardCategoryService.js
   frontend/src/services/card-purchases/cardPurchaseService.js

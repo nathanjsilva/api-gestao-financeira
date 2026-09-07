@@ -89,7 +89,7 @@ const finalCompetency = computed(() => preview.value[preview.value.length - 1]?.
       :error="fieldError('reference_competency')"
     />
 
-    <div v-if="isInstallment" class="grid gap-3 sm:grid-cols-2">
+    <div v-if="isInstallment" class="grid gap-3 @sm:grid-cols-2">
       <BaseInput
         id="card-purchase-installments-total"
         v-model="form.installments_total"

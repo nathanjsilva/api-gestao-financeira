@@ -11,7 +11,6 @@ const MonthlyReservePage = () => import('../pages/monthly-reserve/MonthlyReserve
 const CardPurchasesPage = () => import('../pages/card-purchases/CardPurchasesPage.vue')
 const CardsPage = () => import('../pages/cards/CardsPage.vue')
 const CardCategoriesPage = () => import('../pages/card-categories/CardCategoriesPage.vue')
-const CardDashboardPage = () => import('../pages/card-dashboard/CardDashboardPage.vue')
 
 export const routes = [
   {
@@ -111,11 +110,6 @@ export const routes = [
   },
   {
     path: '/cartoes/analise',
-    name: ROUTE_NAMES.CARD_DASHBOARD,
-    component: CardDashboardPage,
-    meta: {
-      layout: LAYOUTS.AUTHENTICATED,
-      requiresAuth: true,
-    },
+    redirect: { name: ROUTE_NAMES.CARD_PURCHASES },
   },
 ]

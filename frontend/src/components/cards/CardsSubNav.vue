@@ -8,7 +8,6 @@ const items = [
   { label: 'Compras', routeName: ROUTE_NAMES.CARD_PURCHASES },
   { label: 'Cartões', routeName: ROUTE_NAMES.CARDS },
   { label: 'Categorias', routeName: ROUTE_NAMES.CARD_CATEGORIES },
-  { label: 'Análises', routeName: ROUTE_NAMES.CARD_DASHBOARD },
 ]
 
 function isActive(routeName) {

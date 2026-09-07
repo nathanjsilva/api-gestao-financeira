@@ -30,12 +30,12 @@
 | `/categorias` | `categories` | AUTHENTICATED | requiresAuth | `pages/categories/CategoriesPage.vue` |
 | `/transacoes` | `transactions` | AUTHENTICATED | requiresAuth | `pages/transactions/TransactionsPage.vue` |
 | `/reserva-mensal` | `monthly-reserve` | AUTHENTICATED | requiresAuth | `pages/monthly-reserve/MonthlyReservePage.vue` |
-| `/cartoes/compras` | `card-purchases` | AUTHENTICATED | requiresAuth | `pages/card-purchases/CardPurchasesPage.vue` |
+| `/cartoes/compras` | `card-purchases` | AUTHENTICATED | requiresAuth | `pages/card-purchases/CardPurchasesPage.vue` (compras + análises, ver abaixo) |
 | `/cartoes/gerenciar` | `cards` | AUTHENTICATED | requiresAuth | `pages/cards/CardsPage.vue` |
 | `/cartoes/categorias` | `card-categories` | AUTHENTICATED | requiresAuth | `pages/card-categories/CardCategoriesPage.vue` |
-| `/cartoes/analise` | `card-dashboard` | AUTHENTICATED | requiresAuth | `pages/card-dashboard/CardDashboardPage.vue` |
+| `/cartoes/analise` | — | — | — | Redirect para `card-purchases` (rota antiga `card-dashboard` removida; mantida por compatibilidade de links) |
 
-As 4 rotas de Cartões compartilham uma sub-navegação própria (`components/cards/CardsSubNav.vue`) e aparecem na navegação global como um único item "Cartões" — ver `.ai/frontend/cards.md`.
+As 3 rotas de Cartões compartilham uma sub-navegação própria (`components/cards/CardsSubNav.vue`) e aparecem na navegação global como um único item "Cartões" — ver `.ai/frontend/cards.md`.
 
 - `/` redireciona para `/dashboard` (autenticado) ou `/login` (não autenticado)
 - Nomes das rotas em `constants/routeNames.js`

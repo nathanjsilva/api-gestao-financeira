@@ -31,7 +31,7 @@ defineProps({
         </span>
 
         <div class="min-w-0 flex-1">
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+          <div class="flex flex-col gap-2 @sm:flex-row @sm:items-start @sm:justify-between">
             <strong class="break-words leading-5 text-slate-100">{{ category.category_name }}</strong>
             <strong class="shrink-0 text-slate-50">{{ formatCurrency(category.total) }}</strong>
           </div>

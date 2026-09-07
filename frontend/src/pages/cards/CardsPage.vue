@@ -121,7 +121,7 @@ onMounted(loadCards)
       {{ generalError }}
     </p>
 
-    <div class="grid min-w-0 gap-6 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
+    <div class="grid min-w-0 gap-6 @lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)]">
       <BaseCard>
         <h2 class="text-xl font-black text-slate-50">Novo cartão</h2>
 
@@ -148,7 +148,7 @@ onMounted(loadCards)
           description="Cadastre um cartão para começar a lançar suas compras."
         />
 
-        <div v-else class="hidden md:block">
+        <div v-else class="hidden @md:block">
           <table class="premium-table">
             <thead class="text-slate-400">
               <tr class="border-b border-white/10">
@@ -181,7 +181,7 @@ onMounted(loadCards)
           </table>
         </div>
 
-        <div v-if="cards.length" class="grid gap-3 md:hidden">
+        <div v-if="cards.length" class="grid gap-3 @md:hidden">
           <article
             v-for="card in paginatedItems"
             :key="card.id"

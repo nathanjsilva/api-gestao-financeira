@@ -45,6 +45,7 @@ a {
 
 .dashboard-shell {
   animation: dashboard-enter 520ms ease both;
+  container-type: inline-size;
 }
 
 .dashboard-hero {
