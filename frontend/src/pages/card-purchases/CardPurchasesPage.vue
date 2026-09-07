@@ -478,40 +478,42 @@ onMounted(loadInitialData)
           </div>
 
           <div class="hidden @min-[80rem]:block">
-            <table class="premium-table">
-              <thead>
-                <tr>
-                  <th>Descrição</th>
-                  <th>Categoria</th>
-                  <th>Tipo</th>
-                  <th class="text-right">Parcela do mês</th>
-                  <th class="text-right">Valor total</th>
-                  <th class="text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="purchase in group.purchases" :key="purchase.id">
-                  <td>
-                    <strong class="block max-w-55 truncate text-slate-50">{{ purchase.description }}</strong>
-                  </td>
-                  <td><span class="block max-w-40 truncate">{{ purchase.category?.name || 'Sem categoria' }}</span></td>
-                  <td><InstallmentStatusBadge :purchase="purchase" /></td>
-                  <td class="text-right text-lg font-black text-rose-300">
-                    {{ formatCurrency(installmentForCompetency(purchase, filters.competency)?.amount) }}
-                  </td>
-                  <td class="text-right text-slate-300">{{ formatCurrency(purchase.total_amount) }}</td>
-                  <td>
-                    <div class="flex justify-end gap-2">
-                      <BaseButton variant="secondary" title="Editar" :disabled="isLoading" @click="startEdit(purchase)">Editar</BaseButton>
-                      <BaseButton variant="danger" title="Excluir" :disabled="isLoading" @click="removePurchase(purchase)">Excluir</BaseButton>
-                    </div>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <div class="max-h-80 overflow-y-auto pr-1">
+              <table class="premium-table">
+                <thead>
+                  <tr>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th>Tipo</th>
+                    <th class="text-right">Parcela do mês</th>
+                    <th class="text-right">Valor total</th>
+                    <th class="text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="purchase in group.purchases" :key="purchase.id">
+                    <td>
+                      <strong class="block max-w-55 truncate text-slate-50">{{ purchase.description }}</strong>
+                    </td>
+                    <td><span class="block max-w-40 truncate">{{ purchase.category?.name || 'Sem categoria' }}</span></td>
+                    <td><InstallmentStatusBadge :purchase="purchase" /></td>
+                    <td class="text-right text-lg font-black text-rose-300">
+                      {{ formatCurrency(installmentForCompetency(purchase, filters.competency)?.amount) }}
+                    </td>
+                    <td class="text-right text-slate-300">{{ formatCurrency(purchase.total_amount) }}</td>
+                    <td>
+                      <div class="flex justify-end gap-2">
+                        <BaseButton variant="secondary" title="Editar" :disabled="isLoading" @click="startEdit(purchase)">Editar</BaseButton>
+                        <BaseButton variant="danger" title="Excluir" :disabled="isLoading" @click="removePurchase(purchase)">Excluir</BaseButton>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
 
-          <div class="grid gap-3 @min-[80rem]:hidden">
+          <div class="grid max-h-108 gap-3 overflow-y-auto pr-1 @min-[80rem]:hidden">
             <CardPurchaseCard
               v-for="purchase in group.purchases"
               :key="purchase.id"
