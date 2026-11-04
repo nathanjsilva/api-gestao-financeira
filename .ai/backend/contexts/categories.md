@@ -1,125 +1,43 @@
-# context: categories — Categorias
+# Contexto: categorias financeiras
 
 ## Responsabilidade
 
-CRUD de categorias financeiras do usuário. Categorias classificam transações por tipo (entrada ou saída).
+CRUD de categorias gerais do usuário para classificar transações de entrada ou saída. Categorias de cartão pertencem a outro módulo e não se relacionam com estas categorias.
 
----
+## Estrutura e restrições
 
-## Arquivos Envolvidos
-
-| Tipo | Arquivo |
-|------|---------|
-| Controller | `app/Http/Controllers/Api/CategoryController.php` |
-| Service | `app/Services/CategoryService.php` |
-| Repository | `app/Repositories/CategoryRepository.php` |
-| Request (criar) | `app/Http/Requests/Category/StoreCategoryRequest.php` |
-| Request (atualizar) | `app/Http/Requests/Category/UpdateCategoryRequest.php` |
-| Resource | `app/Http/Resources/CategoryResource.php` |
-| Model | `app/Models/Category.php` |
-| Migration | `database/migrations/2026_05_17_000003_create_categories_table.php` |
-
----
-
-## Estrutura do Model (Category)
-
-```
-id          int (PK)
-user_id     int (FK → users)
-name        string(255)
-type        enum('income', 'expense')
-created_at  timestamp
-updated_at  timestamp
-```
-
-**Constraint única:** `(user_id, name, type)` — mesmo usuário não pode ter duas categorias com mesmo nome e tipo
-
----
+Category contém user_id, name e type. type aceita income ou expense. Há unicidade por usuário, nome e tipo. A listagem filtra o usuário e ordena por type e name.
 
 ## Endpoints
 
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/categories` | Listar todas as categorias do usuário |
-| POST | `/api/categories` | Criar categoria |
-| GET | `/api/categories/{id}` | Buscar por ID |
-| PUT | `/api/categories/{id}` | Atualizar |
-| DELETE | `/api/categories/{id}` | Excluir |
+Rotas sob auth:sanctum:
 
----
+- GET /api/categories lista categorias próprias.
+- POST /api/categories cria.
+- GET /api/categories/{id} consulta categoria própria.
+- PUT/PATCH /api/categories/{id} atualiza parcialmente.
+- DELETE /api/categories/{id} exclui; a FK pode rejeitar se houver transações vinculadas.
 
-## Fluxo de Listagem
+## Validação e fluxo
 
-```
-GET /api/categories
-    → CategoryController::index()
-    → CategoryService::listar(usuarioId)
-    → CategoryRepository::listarPorUsuarioId(userId)
-        → WHERE user_id = $userId
-        → ORDER BY name ASC
-    → CategoryResource::collection()
-```
+StoreCategoryRequest e UpdateCategoryRequest removem espaços do name e validam type e unicidade por usuário/tipo. CategoryService coordena operações e recebe o ID autenticado pelo Controller. CategoryRepository filtra listagens e buscas por user_id.
 
----
+A compatibilidade entre type da categoria e type da transação é verificada por TransactionService quando a transação é criada ou atualizada. Atualizar o tipo da categoria não reclassifica transações existentes nem faz uma verificação em lote dessas transações.
 
-## Fluxo de Criação
+## Repositório usado por transações
 
-```
-POST /api/categories
-Body: { name, type }
-    → StoreCategoryRequest (valida: name, type)
-    → CategoryController::store()
-    → CategoryService::criar(usuarioId, dados)
-    → CategoryRepository::criar(userId, dados)
-    → CategoryResource (201)
-```
+~~~php
+buscarPorIdTipoEUsuarioId(int $id, int $userId, string $type): ?Category
+~~~
 
----
+Este método exige simultaneamente ID, usuário e tipo. Uma associação ausente ou incompatível gera erro de domínio no fluxo de transação.
 
-## Regras de Negócio
+## Arquivos principais
 
-1. Usuário só acessa suas próprias categorias
-2. Não é possível ter duas categorias com mesmo `name` + `type` para o mesmo usuário (unique constraint)
-3. `type` só pode ser `income` ou `expense`
-4. Ao excluir categoria com transações vinculadas, o banco pode rejeitar (FK constraint) — verificar antes de implementar cascade delete
-5. As categorias são usadas como filtro de tipo nas transações — `type` da categoria deve coincidir com `type` da transação
-
----
-
-## Validações (StoreCategoryRequest)
-
-```php
-'name' => ['required', 'string', 'max:255'],
-'type' => ['required', 'in:income,expense'],
-```
-
----
-
-## Resource de Resposta
-
-```json
-{
-  "id": 1,
-  "name": "Alimentação",
-  "type": "expense"
-}
-```
-
----
-
-## Repository — Método Especial
-
-```php
-// Usado pelo TransactionService para validar categoria na criação de transação
-buscarPorIdTipoEUsuarioId(int $id, string $type, int $userId): ?Category
-```
-
-Este método é **crítico** — garante que o usuário não associe uma transação de `expense` a uma categoria de `income` (ou vice-versa).
-
----
-
-## Pontos de Atenção
-
-- Ao renomear uma categoria, verificar se há transações vinculadas que precisem de atualização no frontend
-- Não há listagem paginada — todas as categorias do usuário são retornadas de uma vez
-- O frontend usa a listagem de categorias para popular selects nos formulários de transação
+- Controller: app/Http/Controllers/Api/CategoryController.php
+- Service: app/Services/CategoryService.php
+- Repository: app/Repositories/CategoryRepository.php
+- Requests: app/Http/Requests/Category/
+- Resource: app/Http/Resources/CategoryResource.php
+- Model: app/Models/Category.php
+- Migration: database/migrations/2026_05_17_000003_create_categories_table.php

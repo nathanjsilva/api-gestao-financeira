@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\CardCategory\ListCardCategoryRequest;
 use App\Http\Requests\CardCategory\StoreCardCategoryRequest;
 use App\Http\Requests\CardCategory\UpdateCardCategoryRequest;
 use App\Http\Resources\CardCategoryResource;
@@ -18,10 +19,13 @@ class CardCategoryController extends Controller
         protected CardCategoryService $cardCategoryService,
     ) {}
 
-    public function index(): AnonymousResourceCollection
+    public function index(ListCardCategoryRequest $request): AnonymousResourceCollection
     {
         return CardCategoryResource::collection(
-            $this->cardCategoryService->listar($this->usuarioIdAutenticado())
+            $this->cardCategoryService->listar(
+                $this->usuarioIdAutenticado(),
+                $request->boolean('include_inactive'),
+            )
         );
     }
 

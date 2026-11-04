@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import EmptyState from '../data-display/EmptyState.vue'
 import { formatCompetencyLabel } from '../../helpers/competency'
@@ -80,18 +80,18 @@ const chartOptions = computed(() => ({
 <template>
   <section class="analytics-panel">
     <div class="mb-5">
-      <p class="text-sm font-bold uppercase text-sky-300">Patrimônio</p>
-      <h2 class="mt-2 text-2xl font-black text-slate-50">Evolução da reserva</h2>
+      <p class="text-sm font-bold uppercase text-sky-300">PatrimÃ´nio</p>
+      <h2 class="mt-2 text-2xl font-black text-slate-50">EvoluÃ§Ã£o da reserva</h2>
       <p class="mt-3 text-sm leading-6 text-slate-400">
-        Acompanha se sua reserva e seus investimentos estão crescendo ou diminuindo ao longo dos meses.
+        Acompanha se sua reserva e seus investimentos estÃ£o crescendo ou diminuindo ao longo dos meses.
       </p>
     </div>
 
-    <EmptyState v-if="!items.length" title="Sem dados de reserva" description="Cadastre reservas mensais para visualizar a evolução." />
+    <EmptyState v-if="!items.length" title="Sem dados de reserva" description="Cadastre reservas mensais para visualizar a evoluÃ§Ã£o." />
     <apexchart v-else type="area" height="280" :options="chartOptions" :series="series" />
 
     <p class="mt-5 rounded-2xl bg-white/4 p-4 text-sm leading-6 text-slate-400">
-      Cálculo: reserva atual = reserva anterior + saldo restante do mês. Total guardado = reserva atual + investimento.
+      CÃ¡lculo: reserva atual = reserva anterior + saldo restante do mÃªs. Total guardado = reserva atual + investimento.
     </p>
   </section>
 </template>

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import BaseButton from '../../components/base/BaseButton.vue'
 import BaseCard from '../../components/base/BaseCard.vue'
@@ -36,8 +36,8 @@ const reserveInsights = computed(() => {
 
   if (!latestReserve.value) {
     return [{
-      title: 'Comece sua evolução',
-      description: 'Cadastre a primeira reserva mensal para acompanhar sua evolução patrimonial.',
+      title: 'Comece sua evoluÃ§Ã£o',
+      description: 'Cadastre a primeira reserva mensal para acompanhar sua evoluÃ§Ã£o patrimonial.',
       tone: 'info',
     }]
   }
@@ -45,13 +45,13 @@ const reserveInsights = computed(() => {
   insights.push({
     title: reserveDifference.value >= 0 ? 'Reserva em crescimento' : 'Reserva em queda',
     description: reserveDifference.value >= 0
-      ? `Sua reserva aumentou ${formatCurrency(reserveDifference.value)} em relação ao registro anterior.`
-      : `Sua reserva caiu ${formatCurrency(Math.abs(reserveDifference.value))} em relação ao registro anterior.`,
+      ? `Sua reserva aumentou ${formatCurrency(reserveDifference.value)} em relaÃ§Ã£o ao registro anterior.`
+      : `Sua reserva caiu ${formatCurrency(Math.abs(reserveDifference.value))} em relaÃ§Ã£o ao registro anterior.`,
     tone: reserveDifference.value >= 0 ? 'success' : 'danger',
   })
 
   insights.push({
-    title: investmentDifference.value >= 0 ? 'Investimento reforçado' : 'Investimento menor',
+    title: investmentDifference.value >= 0 ? 'Investimento reforÃ§ado' : 'Investimento menor',
     description: investmentDifference.value >= 0
       ? `O investimento cresceu ${formatCurrency(investmentDifference.value)} no comparativo.`
       : `O investimento foi ${formatCurrency(Math.abs(investmentDifference.value))} menor que o anterior.`,
@@ -61,7 +61,7 @@ const reserveInsights = computed(() => {
   if (Number(latestReserve.value.remaining_amount || 0) < 0) {
     insights.push({
       title: 'Saldo final negativo',
-      description: 'O mês fechou com mais gastos do que entradas. Vale revisar gastos recorrentes.',
+      description: 'O mÃªs fechou com mais gastos do que entradas. Vale revisar gastos recorrentes.',
       tone: 'danger',
     })
   }
@@ -104,7 +104,7 @@ function closeEditModal() {
 }
 
 async function removeReserve(reserve) {
-  if (!confirm(`Excluir a reserva da competência ${reserve.competency}?`)) {
+  if (!confirm(`Excluir a reserva da competÃªncia ${reserve.competency}?`)) {
     return
   }
 
@@ -127,7 +127,7 @@ onMounted(loadReserves)
       <PageHeader
         eyebrow="Reserva financeira"
         title="Reserva mensal"
-        description="Acompanhe sua evolução patrimonial, investimentos e saldo final mês a mês."
+        description="Acompanhe sua evoluÃ§Ã£o patrimonial, investimentos e saldo final mÃªs a mÃªs."
       />
     </div>
 
@@ -144,7 +144,7 @@ onMounted(loadReserves)
               {{ formatCurrency(latestReserve?.current_reserve) }}
             </strong>
             <p class="mt-3 text-sm" :class="reserveDifference >= 0 ? 'text-emerald-300' : 'text-rose-300'">
-              {{ reserveDifference >= 0 ? '↑' : '↓' }} {{ formatPercentage(reserveGrowthPercentage) }} vs. registro anterior
+              {{ reserveDifference >= 0 ? 'â†‘' : 'â†“' }} {{ formatPercentage(reserveGrowthPercentage) }} vs. registro anterior
             </p>
           </div>
           <span class="financial-card__orb" />
@@ -159,7 +159,7 @@ onMounted(loadReserves)
               {{ formatCurrency(latestReserve?.investimento) }}
             </strong>
             <p class="mt-3 text-sm" :class="investmentDifference >= 0 ? 'text-emerald-300' : 'text-amber-300'">
-              {{ investmentDifference >= 0 ? '↑' : '↓' }} {{ formatCurrency(Math.abs(investmentDifference)) }} no comparativo
+              {{ investmentDifference >= 0 ? 'â†‘' : 'â†“' }} {{ formatCurrency(Math.abs(investmentDifference)) }} no comparativo
             </p>
           </div>
           <span class="financial-card__orb" />
@@ -182,7 +182,7 @@ onMounted(loadReserves)
         >
           {{ formatCurrency(latestReserve?.remaining_amount) }}
         </strong>
-        <p class="mt-3 text-sm text-slate-400">Entradas menos gastos do mês.</p>
+        <p class="mt-3 text-sm text-slate-400">Entradas menos gastos do mÃªs.</p>
       </article>
     </div>
 
@@ -190,7 +190,7 @@ onMounted(loadReserves)
       <BaseCard>
         <h2 class="text-2xl font-black text-slate-50">Nova reserva</h2>
         <p class="mt-2 text-sm leading-6 text-slate-400">
-          Declare o saldo de cada conta de reserva no mês. Contas sem alteração mantêm automaticamente o valor do mês anterior.
+          Declare o saldo de cada conta de reserva no mÃªs. Contas sem alteraÃ§Ã£o mantÃªm automaticamente o valor do mÃªs anterior.
         </p>
 
         <div class="mt-6">
@@ -208,7 +208,7 @@ onMounted(loadReserves)
         <section class="analytics-panel">
           <div class="mb-5">
             <p class="text-sm font-bold uppercase text-sky-300">Insights</p>
-            <h2 class="mt-2 text-2xl font-black text-slate-50">Leitura rápida</h2>
+            <h2 class="mt-2 text-2xl font-black text-slate-50">Leitura rÃ¡pida</h2>
           </div>
           <div class="grid gap-3 @min-[48rem]:grid-cols-2">
             <FinancialInsight
@@ -226,8 +226,8 @@ onMounted(loadReserves)
     <BaseCard class="mt-5">
       <div class="mb-5 flex flex-col gap-3 @min-[40rem]:flex-row @min-[40rem]:items-center @min-[40rem]:justify-between">
         <div>
-          <h2 class="text-2xl font-black text-slate-50">Histórico de reservas</h2>
-          <p class="mt-2 text-sm text-slate-400">Informações organizadas por competência.</p>
+          <h2 class="text-2xl font-black text-slate-50">HistÃ³rico de reservas</h2>
+          <p class="mt-2 text-sm text-slate-400">InformaÃ§Ãµes organizadas por competÃªncia.</p>
         </div>
         <span class="rounded-full bg-white/[0.06] px-3 py-1 text-sm text-slate-300">{{ reserves.length }} registros</span>
       </div>
@@ -235,20 +235,20 @@ onMounted(loadReserves)
       <EmptyState
         v-if="!reserves.length"
         title="Nenhuma reserva cadastrada"
-        description="Cadastre a reserva mensal para completar a análise financeira."
+        description="Cadastre a reserva mensal para completar a anÃ¡lise financeira."
       />
 
       <div v-else class="hidden @min-[80rem]:block">
         <table class="premium-table">
           <thead>
             <tr>
-              <th>Competência</th>
+              <th>CompetÃªncia</th>
               <th>Reserva atual</th>
               <th>Total guardado</th>
-              <th>Total do mês</th>
+              <th>Total do mÃªs</th>
               <th>Total gasto</th>
               <th>Saldo final</th>
-              <th class="text-right">Ações</th>
+              <th class="text-right">AÃ§Ãµes</th>
             </tr>
           </thead>
           <tbody>
@@ -280,7 +280,7 @@ onMounted(loadReserves)
         >
           <div class="flex items-start justify-between gap-4">
             <div>
-              <p class="text-xs font-bold uppercase text-slate-500">Competência</p>
+              <p class="text-xs font-bold uppercase text-slate-500">CompetÃªncia</p>
               <strong class="text-xl text-slate-50">{{ reserve.competency }}</strong>
             </div>
             <strong :class="Number(reserve.remaining_amount || 0) >= 0 ? 'text-emerald-300' : 'text-rose-300'">

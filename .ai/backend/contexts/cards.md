@@ -56,8 +56,8 @@ Toda compra gera pelo menos 1 `CardInstallment` — compra à vista gera exatame
 
 | Método | Rota | Descrição |
 |--------|------|-----------|
-| GET/POST/PUT/DELETE | `/api/cards` | CRUD de cartões |
-| GET/POST/PUT/DELETE | `/api/card-categories` | CRUD de categorias de cartão |
+| GET/POST/PUT/DELETE | `/api/cards` | CRUD de cartões (`GET ?include_inactive=1` para gerenciamento) |
+| GET/POST/PUT/DELETE | `/api/card-categories` | CRUD de categorias (`GET ?include_inactive=1` para gerenciamento) |
 | GET/POST/PUT/DELETE | `/api/card-purchases` | CRUD de compras (`?competency=&card_id=&card_category_id=&payment_type=`) |
 | GET | `/api/card-dashboard/analytics?competency=&months=` | Painel analítico (cache 5min) |
 | GET | `/api/card-dashboard/monthly-summary?competency=` | Resumo mensal |
@@ -72,7 +72,7 @@ Ao cadastrar uma compra que já está em andamento (`starting_installment_number
 
 **Edição de compra = apagar e regerar todas as parcelas** (dentro de uma `DB::transaction`) — parcelas são dado derivado, não há diff incremental parcela-a-parcela.
 
-**Quitação** não é uma coluna persistida — `is_settled` é calculado comparando a maior `competency` das parcelas da compra com o mês atual (`CardPurchaseResource` / `CardPurchaseService::verificarQuitacao`).
+`installment_schedule_ended` indica que a competência da última parcela prevista já passou; não confirma pagamento. `is_settled` permanece na resposta apenas para compatibilidade e não deve ser usado como estado de pagamento.
 
 ---
 
@@ -107,3 +107,10 @@ Versão incrementada via `Cache::increment("cards:user:{userId}:version")` sempr
 - `CardAnalyticsService` é deliberadamente **independente** do `CategoryAnalyticsService` do dashboard financeiro geral, mesmo tendo lógica parecida — evita acoplar os dois domínios.
 - Se o usuário desativar um cartão/categoria, compras já lançadas continuam existindo e aparecendo nas consultas — apenas não podem mais ser usadas em **novas** compras nem em edições de compras existentes.
 - `by_card`/`by_person`/`by_category` (e `top_categories`/`top_cards`) retornam dados brutos das Repositories (Collections de models/stdClass) — os Resources (`CardDashboardAnalyticsResource`, `CardMonthlySummaryResource`) são responsáveis por achatar isso em arrays simples antes de serializar, seguindo o mesmo padrão do `DashboardResource` existente.
+
+
+## Janela histórica das análises
+
+CardAnalyticsRequest exige competency válida e months entre 2 e 24, padrão 6. A evolução inclui a janela selecionada até a competência consultada. A média histórica usa as competências anteriores da janela, sem incluir a competência em análise. A lista de competências é deduplicada; o repositório soma os totais encontrados e divide pelo número completo de competências solicitadas, de modo que meses sem compras contam como zero. Uma lista vazia resulta em média zero; com média zero, o painel não marca o mês como gasto atípico.
+
+O campo installment_schedule_ended é calculado quando a relação installments está carregada e compara a maior competência da compra com o mês atual: é verdadeiro se a última parcela prevista chegou ou passou. is_settled recebe o mesmo valor por compatibilidade. Nenhum dos dois campos confirma pagamento.

@@ -21,14 +21,6 @@ export const monthlyReserveService = {
     await httpClient.delete(`/monthly-reserves/${id}`)
   },
 
-  async suggestPreviousReserve(competency) {
-    const response = await httpClient.get('/monthly-reserves/reserva-anterior-sugerida', {
-      params: { competency },
-    })
-
-    return response.data
-  },
-
   async listEntries(reserveId) {
     return getData(await httpClient.get(`/monthly-reserves/${reserveId}/entries`))
   },

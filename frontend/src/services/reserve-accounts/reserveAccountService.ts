@@ -25,6 +25,10 @@ export const reserveAccountService = {
     return getData(await httpClient.put(`/reserve-accounts/${id}/entries/${competency}`, payload))
   },
 
+  async setEntries(competency, entries) {
+    return getData(await httpClient.put('/reserve-account-balances', { competency, entries }))
+  },
+
   async removeEntry(id, competency) {
     await httpClient.delete(`/reserve-accounts/${id}/entries/${competency}`)
   },

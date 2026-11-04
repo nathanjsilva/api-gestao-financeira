@@ -1,131 +1,82 @@
-# context: monthly-reserve — Reserva Mensal
+# Contexto: reserva mensal
 
-## Responsabilidade
+## Responsabilidade e fontes de dados
 
-Acompanha a evolução patrimonial do usuário mês a mês, combinando:
+O módulo acompanha a reserva patrimonial por competência e combina três fontes:
 
-1. **Contas de reserva** (`reserve_accounts` + `reserve_account_entries`) — quantidade livre de contas nomeadas pelo usuário (ex: "Nathan", "Esposa", "Reserva de emergência"), cada uma com um saldo declarado por competência. Se o usuário não declarar um novo valor num mês, o saldo é **herdado automaticamente** do último valor declarado em um mês anterior.
-2. **Investimentos** (`monthly_reserves` + `monthly_reserve_entries`) — lançamentos itemizados (descrição + valor) por competência, somados automaticamente no campo `investimento` de `monthly_reserves`. Fica sempre separado da reserva.
-3. **Saldo do mês** — calculado automaticamente a partir das transações da competência (receitas − despesas), sem nenhuma entrada manual.
+1. Contas de reserva e seus snapshots de saldo declarado.
+2. Transações da competência, usadas para calcular o saldo restante.
+3. Reserva mensal e seus itens de investimento.
 
----
+MonthlyReserve não possui o antigo campo reserva_anterior. ReserveAccountEntry guarda snapshots, não movimentações; se uma competência não tem declaração, o saldo herda o snapshot mais recente de competência anterior. MonthlyReserveEntry guarda itens de investimento.
 
-## Arquivos Envolvidos
+Arquivos centrais: ReserveAccountController, ReserveAccountEntryController, MonthlyReserveController, MonthlyReserveEntryController, ReserveAccountService, MonthlyReserveService, seus repositories e models, além de DashboardService para os resumos financeiros calculados.
 
-### Contas de reserva
-| Tipo | Arquivo |
-|------|---------|
-| Controller | `app/Http/Controllers/Api/ReserveAccountController.php` |
-| Controller (saldo por mês) | `app/Http/Controllers/Api/ReserveAccountEntryController.php` |
-| Service | `app/Services/ReserveAccountService.php` |
-| Repository | `app/Repositories/ReserveAccountRepository.php` |
-| Repository (saldos por mês) | `app/Repositories/ReserveAccountEntryRepository.php` |
-| Requests | `app/Http/Requests/ReserveAccount/*.php` |
-| Resources | `app/Http/Resources/ReserveAccountResource.php`, `ReserveAccountEntryResource.php` |
-| Models | `app/Models/ReserveAccount.php`, `app/Models/ReserveAccountEntry.php` |
-| Migrations | `database/migrations/2026_07_31_*` |
+## Estrutura resumida dos models
 
-### Investimentos (inalterado, itemizado)
-| Tipo | Arquivo |
-|------|---------|
-| Controller | `app/Http/Controllers/Api/MonthlyReserveController.php`, `MonthlyReserveEntryController.php` |
-| Service | `app/Services/MonthlyReserveService.php` |
-| Repository | `app/Repositories/MonthlyReserveRepository.php`, `MonthlyReserveEntryRepository.php` |
-| Model | `app/Models/MonthlyReserve.php`, `app/Models/MonthlyReserveEntry.php` |
-
-### Saldo do mês / agregação
-| Tipo | Arquivo |
-|------|---------|
-| Service | `app/Services/DashboardService.php` (`obterResumosBaseIndexados`) |
-
----
-
-## Estrutura dos Models
-
-### ReserveAccount
-```
-id          int (PK)
-user_id     int (FK → users)
-name        string(255)     — rótulo livre, sem unicidade
-active      boolean         — arquivada = false (nunca é excluída)
-```
-
-### ReserveAccountEntry
-```
-id                  int (PK)
-reserve_account_id  int (FK → reserve_accounts)
-competency          string(7)  — formato YYYY-MM
-balance             decimal(12,2)  — saldo DECLARADO da conta naquele mês (não é um delta/movimento)
-note                text (nullable)
-```
-Constraint única: `(reserve_account_id, competency)` — no máximo uma declaração por conta e por mês.
-
-### MonthlyReserve (mantido, sem `reserva_anterior`)
-```
-id            int (PK)
-user_id       int (FK → users)
-competency    string(7)
-investimento  decimal(12,2)  — somado automaticamente a partir de monthly_reserve_entries
-observations  text (nullable)
-```
-
----
+| Model | Campos relevantes e invariantes |
+|---|---|
+| ReserveAccount | user_id, name e active. Nome não precisa ser único. Arquivar define active=false; não há exclusão pela interface. |
+| ReserveAccountEntry | reserve_account_id, competency, balance e note. balance é o saldo declarado, não delta. Há uma declaração por conta e competência. |
+| MonthlyReserve | user_id, competency, investimento e observations. Único por usuário e competência. |
+| MonthlyReserveEntry | monthly_reserve_id, description e amount. O registro pai agrupa os itens da competência. |
 
 ## Endpoints
 
-### Contas de reserva
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/api/reserve-accounts` | Lista contas ativas do usuário. Com `?competency=YYYY-MM`, cada conta traz `current_balance`, `previous_balance`, `delta` e `is_inherited` |
-| POST | `/api/reserve-accounts` | Cria conta (`name`) |
-| PUT | `/api/reserve-accounts/{id}` | Renomeia e/ou arquiva (`name`, `active`) |
-| GET | `/api/reserve-accounts/{id}/entries` | Histórico de saldos declarados (inclui contas arquivadas) |
-| PUT | `/api/reserve-accounts/{id}/entries/{competency}` | Declara/atualiza o saldo da conta naquele mês (`balance`, `note?`) — upsert |
-| DELETE | `/api/reserve-accounts/{id}/entries/{competency}` | Remove a declaração daquele mês (volta a herdar do mês anterior) |
+Todas as rotas exigem autenticação e limitam acesso ao usuário do token.
 
-### Investimentos (inalterado)
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET/POST/PUT/DELETE | `/api/monthly-reserves/{id}/entries` | Lançamentos de investimento do mês |
+| Método e rota | Uso |
+|---|---|
+| GET /api/reserve-accounts | Lista contas ativas. Aceita include_archived; quando recebe competency, inclui current_balance, previous_balance, delta, is_inherited e note. |
+| POST /api/reserve-accounts | Cria conta pelo name. |
+| PUT/PATCH /api/reserve-accounts/{id} | Renomeia e/ou altera active. |
+| GET /api/reserve-accounts/{id}/entries | Lista snapshots declarados, inclusive em conta arquivada. |
+| PUT /api/reserve-accounts/{id}/entries/{YYYY-MM} | Cria ou atualiza saldo e nota de uma conta pertencente ao usuário na competência; a API não exige que ela esteja ativa. |
+| DELETE /api/reserve-accounts/{id}/entries/{YYYY-MM} | Remove o snapshot; competências posteriores sem declaração própria voltam a herdar o snapshot válido anterior. |
+| PUT /api/reserve-account-balances | Grava vários saldos para a mesma competência em uma transação. |
+| GET/POST /api/monthly-reserves | Lista ou cria resumos mensais. |
+| GET/PUT/PATCH/DELETE /api/monthly-reserves/{id} | Consulta, atualiza ou exclui um resumo mensal; o payload aceita investimento diretamente. |
+| GET/POST /api/monthly-reserves/{id}/entries | Lista e cria itens de investimento da reserva. |
+| PUT/PATCH/DELETE /api/monthly-reserves/{id}/entries/{entry} | Edita ou exclui um item de investimento da reserva. |
 
-### Reserva mensal (mantido, sem `reserva_anterior`)
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET/POST/PUT/DELETE | `/api/monthly-reserves` | CRUD de `investimento` + `observations` por competência |
+O payload do endpoint em lote tem competency e uma lista entries com account_id, balance e note opcional. Exige competência válida, pelo menos uma entrada, IDs de conta distintos pertencentes ao usuário e balance numérico não negativo. A API aceita contas arquivadas se forem do usuário; a interface envia apenas as contas ativas. Se uma conta não pertencer ao usuário, a operação falha sem manter gravações parciais. O evento de invalidação é enviado depois do commit.
 
----
+A tela envia somente saldos alterados no lote. Renomeações são chamadas PUT separadas antes do lote; portanto, a atomicidade do endpoint em lote cobre os snapshots, não renomeações e saldos em conjunto.
 
-## Regra central: herança automática de saldo
+## Herança e saldo exposto por conta
 
-O "saldo vigente" de uma conta em uma competência X é o valor da `ReserveAccountEntry` mais recente com `competency <= X`. Implementado em `ReserveAccountEntryRepository::buscarSaldoVigente()` (uma conta) e `obterSaldoVigenteTotalIndexadoPorCompetencia()` (soma em lote, usado pelo `DashboardService`).
+Para uma conta e competência X, current_balance usa o snapshot mais recente com competency menor ou igual a X. previous_balance usa o mesmo critério na competência imediatamente anterior. delta só é calculado quando ambos os saldos existem. is_inherited indica que o saldo atual veio de outra competência.
 
-Não existe cálculo de "reserva anterior + aporte" — o valor declarado em cada mês já é o saldo corrente daquela conta, exatamente como funcionava na planilha original do usuário.
+As rotas individuais de snapshot restringem o parâmetro ao formato YYYY-MM, mas não aplicam CompetencyRule para validar o número do mês. A listagem com filtro e o endpoint em lote aplicam a validação completa. Use competências válidas; este é um desvio da regra normativa observado no código atual.
 
----
+O histórico de snapshots permanece acessível após arquivamento. include_archived permite que a tela de gerenciamento também apresente contas arquivadas e suas informações de saldo.
 
-## Fórmulas (calculadas sempre no backend, nunca digitadas)
+## Fórmulas do dashboard e da listagem
 
-```
-Saldo do mês       = receitas do mês − despesas do mês
-Reserva Atual       = soma do saldo vigente de todas as contas de reserva ativas + Saldo do mês
-Total Guardado       = Reserva Atual + investimento (monthly_reserves.investimento)
-```
+Para cada competência:
 
-Implementado em `DashboardService::obterResumosBaseIndexados()`, reaproveitado por `/dashboard/monthly-summary`, `/dashboard/analytics` (`reserve_evolution`) e pela listagem de `/monthly-reserves`.
+- remaining_amount = total_income - total_expense;
+- previous_reserve = soma dos saldos vigentes das contas atualmente ativas;
+- current_reserve = previous_reserve + remaining_amount;
+- investment = MonthlyReserve.investimento da competência, ou zero sem registro;
+- total_saved = current_reserve + investment.
 
----
+DashboardService aplica a mesma agregação ao resumo mensal, analytics, evolução e listagem de MonthlyReserve. O campo previous_reserve é calculado; não é persistido e não significa necessariamente o fechamento real da competência anterior. Transações paid e pending são incluídas nos totais.
 
-## Regras de Negócio
+O estado active da conta é aplicado no momento da consulta. Uma conta arquivada fica fora dos agregados de todas as competências consultadas, inclusive as históricas. Isso não corresponde literalmente à confirmação atual da interface, que informa que ela deixa de entrar nos totais dos próximos meses. Mantenha essa diferença documentada ao alterar qualquer um dos fluxos.
 
-1. Uma conta de reserva pode ser criada livremente pelo usuário — não há limite nem nomes fixos.
-2. No máximo uma declaração de saldo por conta e por competência.
-3. Contas arquivadas (`active = false`) somem das somas de meses seguintes, mas o histórico continua consultável via `/entries`.
-4. Investimento continua completamente separado da reserva — nunca é somado a `current_reserve`, só a `total_saved`.
-5. Isolamento por usuário em todas as camadas (`user_id` do token autenticado).
+## Investimentos
 
----
+A interface mantém itens com descrição e valor; ao criar, editar ou excluir um item, MonthlyReserveService bloqueia a linha pai, executa a alteração e recalcula investimento pela soma dos itens dentro da mesma transação. O evento DadosFinanceirosAlterados é emitido depois do commit.
 
-## Pontos de Atenção
+A API de MonthlyReserve também aceita investimento diretamente por compatibilidade. Essa gravação direta pode divergir da soma de MonthlyReserveEntry; a próxima mutação de item recalcula e substitui o valor agregado pela soma. O investimento continua separado de current_reserve e só é somado em total_saved.
 
-- Se o usuário declarar manualmente na conta de reserva um valor que já embute a sobra do mês corrente, o saldo do mês pode ser contado duas vezes (uma vez como saldo automático, outra dentro do novo valor declarado). Orientação de uso: ajustar os saldos das contas no fechamento do mês, não no meio dele.
-- Migração de dados: o antigo campo único `reserva_anterior` de `monthly_reserves` foi migrado para uma conta chamada "Reserva" por usuário (migration `2026_07_31_000003_backfill_reserve_accounts_from_monthly_reserves.php`) antes de a coluna ser removida.
+## Integrações, invalidação e pontos de atenção
+
+- O MonthlyReserveEditor consulta GET /api/reserve-accounts com competency e include_archived=1, e GET /api/dashboard/monthly-summary para atualizar a prévia do saldo da competência.
+- Contas e transações alimentam o dashboard geral; itens e total mensal de investimento alimentam total_saved.
+- Operações financeiras emitem DadosFinanceirosAlterados e avançam a versão do cache do dashboard.
+- Snapshots não debitam nem creditam contas bancárias. Se o snapshot já incluir a sobra da competência, somar remaining_amount pode contar o dinheiro duas vezes; a regra atual não diferencia saldo de abertura de saldo de fechamento.
+- Arquivar tem efeito retroativo nos agregados do dashboard porque contas inativas são filtradas independentemente da competência.
+- O snapshot de saldo não é movimento de caixa. Não inferir transferências ou pagamentos a partir dele.
+- Migração de dados: snapshots históricos do antigo campo reserva_anterior foram copiados para uma conta de reserva chamada Reserva por usuário antes da remoção da coluna. A migration correspondente é 2026_07_31_000003_backfill_reserve_accounts_from_monthly_reserves.php.

@@ -1,91 +1,51 @@
-# context: cards — Frontend do Módulo de Cartões
+# Contexto frontend: módulo de cartões
 
-## Responsabilidade
+## Responsabilidade e navegação
 
-Telas de cadastro de cartões, categorias de cartão e lançamento de compras (à vista/parceladas) — tudo agrupado sob a seção "Cartões", isolada do dashboard financeiro geral. Compras e análises (gráficos, totais por cartão/pessoa, evolução) vivem na mesma página (`CardPurchasesPage.vue`), para evitar que o usuário precise alternar de aba para relacionar lançamentos com os totais.
+O módulo oferece gerenciamento de cartões, categorias próprias de cartão, compras à vista ou parceladas e análise de parcelas por competência. É independente de Categorias, Transações e Dashboard financeiro geral. Compras e análises são apresentadas juntas na página de compras.
 
----
+| Rota | Página | Função |
+|---|---|---|
+| /cartoes/compras | pages/card-purchases/CardPurchasesPage.vue | Cadastro, pesquisa, filtros, totais e análises. |
+| /cartoes/gerenciar | pages/cards/CardsPage.vue | Criar, editar, arquivar e reativar cartões. |
+| /cartoes/categorias | pages/card-categories/CardCategoriesPage.vue | Criar, editar, arquivar e reativar categorias de cartão. |
+| /cartoes/analise | — | Redirect de compatibilidade para /cartoes/compras. |
 
-## Navegação
+As três páginas usam components/cards/CardsSubNav.vue. A navegação global tem um único item Cartões.
 
-Um único item de navegação global "Cartões" (sidebar desktop e bottom tab bar mobile — `AuthenticatedLayout.vue`, agora com 5 itens) leva a `/cartoes/compras`. Dentro da seção, a sub-navegação (`components/cards/CardsSubNav.vue`, renderizada no topo de cada uma das 3 páginas) alterna entre as abas:
+## Serviços e componentes
 
-| Path | Rota | Página |
-|------|------|--------|
-| `/cartoes/compras` | `card-purchases` | `pages/card-purchases/CardPurchasesPage.vue` — formulário, filtros, totais por cartão/categoria, listagem e as análises (gráficos, evolução, insights) |
-| `/cartoes/gerenciar` | `cards` | `pages/cards/CardsPage.vue` |
-| `/cartoes/categorias` | `card-categories` | `pages/card-categories/CardCategoriesPage.vue` |
+Services em TypeScript:
+- services/cards/cardService.ts;
+- services/card-categories/cardCategoryService.ts;
+- services/card-purchases/cardPurchaseService.ts;
+- services/card-dashboard/cardDashboardService.ts.
 
-`/cartoes/analise` (antiga rota `card-dashboard`) foi removida e agora só existe como redirect para `card-purchases` — a página `pages/card-dashboard/CardDashboardPage.vue` foi apagada; seus componentes de gráfico continuam em uso, importados diretamente por `CardPurchasesPage.vue`.
+Componentes principais:
+- components/cards/CardForm.vue e CardsSubNav.vue;
+- components/card-categories/CardCategoryForm.vue;
+- components/card-purchases/CardPurchaseForm.vue, CardPurchaseCard.vue e InstallmentStatusBadge.vue;
+- components/card-dashboard/CardEvolutionChart.vue, CardCategoryChart.vue, CardPaymentTypeChart.vue e CardBreakdownList.vue.
 
-Essa IA em sub-abas evita inflar a navegação global com novos itens (ver `.ai/frontend/overview.md`).
+CardPurchasesPage usa os quatro services, filtra localmente por descrição, cartão, categoria, tipo de pagamento e competência, e monta os totais da competência a partir da parcela correspondente de cada compra. Os gráficos e indicadores analíticos são exibidos na mesma página.
 
----
+## Gestão de itens inativos
 
-## Services
+CardsPage e CardCategoriesPage solicitam include_inactive=1 para mostrar registros ativos e inativos e permitir reativação. Os formulários de compra recebem somente cartões e categorias ativos. Compras antigas continuam consultáveis mesmo quando o cartão ou categoria vinculados forem arquivados.
 
-```javascript
-// services/cards/cardService.js — list/create/update/remove (mirror de categoryService.js)
-// services/card-categories/cardCategoryService.js — idem
-// services/card-purchases/cardPurchaseService.js — list(params)/create/update/remove
-// services/card-dashboard/cardDashboardService.js — analytics(params)/monthlySummary(competency)
-```
+## Parcelas e semântica da tela
 
----
+O formulário calcula uma prévia das parcelas com helpers/cardInstallments.ts, que replica o arredondamento do backend apenas para apresentação. O backend gera e persiste as parcelas.
 
-## Componentes
+A coluna de valor mensal e os totais locais somam a parcela cuja competency corresponde ao filtro, não o total_amount do cabeçalho da compra. Os demais cards, rankings e gráficos seguem o endpoint do dashboard de cartões.
 
-```
-components/cards/
-  CardsSubNav.vue        — sub-navegação das 4 páginas do módulo
-  CardForm.vue            — nome, pessoa responsável, toggle ativo (no modal de edição)
+installment_schedule_ended significa que a última competência prevista chegou ou passou. A interface apresenta Previsão encerrada ou Parcelas futuras. O campo de compatibilidade is_settled pode ser usado como fallback de leitura, mas não comprova pagamento. Não há ciclo de fatura, vencimento, baixa, liquidação parcial ou quitação no modelo atual.
 
-components/card-categories/
-  CardCategoryForm.vue     — nome, toggle ativo
+Os valores e gráficos de cartões são uma projeção por competência; não entram no dashboard financeiro geral, que se baseia em transactions e reservas. A tela informa essa separação para evitar que os totais sejam interpretados como integração contábil.
 
-components/card-purchases/
-  CardPurchaseForm.vue     — cartão, categoria, descrição, valor, data, tipo de pagamento,
-                             parcelas — com PREVIEW AO VIVO de cada parcela antes de salvar
-                             (helpers/cardInstallments.js replica o algoritmo de arredondamento
-                             do backend para o preview bater exatamente com o que será salvo)
-  CardPurchaseCard.vue     — card mobile de uma compra
-  InstallmentStatusBadge.vue — badge "À vista/Parcelado Nx" + "Quitada/Em andamento"
+## Consultas e dependências
 
-components/card-dashboard/ (usados dentro de CardPurchasesPage.vue, na seção "Análises")
-  CardEvolutionChart.vue   — área/linha, evolução mensal (ApexCharts)
-  CardCategoryChart.vue    — donut, gastos por categoria (mirror de ExpenseChart.vue)
-  CardPaymentTypeChart.vue — donut, à vista x parcelado
-  CardBreakdownList.vue    — lista de barras genérica; usada duas vezes em CardPurchasesPage.vue:
-                             "Total por cartão" (totais locais da competência filtrada) e "Por pessoa"
-                             (vem do endpoint /card-dashboard/analytics)
-```
-
----
-
-## Helpers
-
-```javascript
-// helpers/cardInstallments.js
-calculateInstallments(totalAmount, installmentsTotal, startingInstallmentNumber, referenceCompetency)
-// Replica CardPurchaseService::calcularParcelas do backend — usado só para o preview do form,
-// o valor real sempre vem do backend na resposta da API.
-```
-
----
-
-## Constants
-
-```javascript
-// constants/cardPurchases.js
-CARD_PAYMENT_TYPES = [{ label: 'À vista', value: 'cash' }, { label: 'Parcelado', value: 'installment' }]
-```
-
-`routeNames.js` ganhou `CARD_PURCHASES`, `CARDS`, `CARD_CATEGORIES`, `CARD_DASHBOARD`.
-
----
-
-## Pontos de Atenção
-
-- `CardsPage.vue`/`CardCategoriesPage.vue` listam por padrão apenas itens **ativos** (mesmo comportamento de `ReserveAccount` — desativar é uma espécie de arquivamento; não há tela de "reativar" um item já inativo, mirror do padrão já aceito em `reserve/` para contas arquivadas).
-- Em `CardPurchasesPage.vue`, o valor exibido na coluna/coluna "parcela do mês" da listagem **não é** `total_amount` da compra — é o valor da parcela específica cuja `competency` bate com o filtro selecionado (`installments` vêm sempre carregadas junto com a compra).
-- O dashboard de cartões (`/cartoes/analise`) é completamente separado do dashboard financeiro geral (`/dashboard`) — nenhum dado se mistura entre os dois.
+- cardDashboardService.ts consulta /card-dashboard/analytics e /card-dashboard/monthly-summary.
+- CardPurchasesPage carrega listas com os services de cartões e categorias, usando registros ativos nos formulários.
+- Insights do servidor podem indicar gasto atípico, categoria dominante, categoria em alta ou parcelas futuras.
+- Para fórmulas, payloads da API, cache e regras de exclusão, consulte [contexto backend de cartões](../backend/contexts/cards.md).

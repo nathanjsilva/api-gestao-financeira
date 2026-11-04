@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import BaseButton from '../../components/base/BaseButton.vue'
 import BaseCard from '../../components/base/BaseCard.vue'
@@ -95,14 +95,14 @@ const transactionInsights = computed(() => {
   insights.push({
     title: remainingAmount.value >= 0 ? 'Fluxo positivo' : 'Fluxo negativo',
     description: remainingAmount.value >= 0
-      ? `Você ainda tem ${formatCurrency(remainingAmount.value)} disponível nesta competência.`
+      ? `VocÃª ainda tem ${formatCurrency(remainingAmount.value)} disponÃ­vel nesta competÃªncia.`
       : `Os gastos superaram as entradas em ${formatCurrency(Math.abs(remainingAmount.value))}.`,
     tone: remainingAmount.value >= 0 ? 'success' : 'danger',
   })
 
   insights.push({
-    title: `${pendingCount.value} pendência(s)`,
-    description: 'Lançamentos pendentes merecem atenção para manter a visão financeira atualizada.',
+    title: `${pendingCount.value} pendÃªncia(s)`,
+    description: 'LanÃ§amentos pendentes merecem atenÃ§Ã£o para manter a visÃ£o financeira atualizada.',
     tone: pendingCount.value > 0 ? 'warning' : 'success',
   })
 
@@ -252,7 +252,7 @@ async function handleEditSubmit() {
 }
 
 async function removeTransaction(transaction) {
-  if (!confirm(`Excluir a transação "${transaction.description}"?`)) {
+  if (!confirm(`Excluir a transaÃ§Ã£o "${transaction.description}"?`)) {
     return
   }
 
@@ -273,13 +273,13 @@ onMounted(loadInitialData)
   <section class="dashboard-shell mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
     <div class="dashboard-hero">
       <PageHeader
-        eyebrow="Lançamentos"
-        title="Transações"
-        description="Controle entradas, saídas, filtros e comportamento financeiro por competência."
+        eyebrow="LanÃ§amentos"
+        title="TransaÃ§Ãµes"
+        description="Controle entradas, saÃ­das, filtros e comportamento financeiro por competÃªncia."
       >
         <template #actions>
           <div class="grid gap-3 @min-[40rem]:grid-cols-[1fr_120px]">
-            <BaseMonthPicker id="transactions-competency" v-model="filters.competency" label="Competência" />
+            <BaseMonthPicker id="transactions-competency" v-model="filters.competency" label="CompetÃªncia" />
             <BaseButton class="@min-[40rem]:mt-7" :loading="isLoading" @click="loadTransactions">Filtrar</BaseButton>
           </div>
         </template>
@@ -294,19 +294,19 @@ onMounted(loadInitialData)
       <article class="financial-card financial-card--emerald">
         <p class="text-sm font-semibold text-slate-400">Entradas filtradas</p>
         <strong class="mt-3 block text-3xl font-black text-emerald-300">{{ formatCurrency(totalIncome) }}</strong>
-        <p class="mt-3 text-sm text-slate-400">Tudo que entrou na competência.</p>
+        <p class="mt-3 text-sm text-slate-400">Tudo que entrou na competÃªncia.</p>
       </article>
       <article class="financial-card financial-card--rose">
-        <p class="text-sm font-semibold text-slate-400">Saídas filtradas</p>
+        <p class="text-sm font-semibold text-slate-400">SaÃ­das filtradas</p>
         <strong class="mt-3 block text-3xl font-black text-rose-300">{{ formatCurrency(totalExpense) }}</strong>
-        <p class="mt-3 text-sm text-slate-400">Tudo que saiu na competência.</p>
+        <p class="mt-3 text-sm text-slate-400">Tudo que saiu na competÃªncia.</p>
       </article>
       <article class="financial-card financial-card--sky">
         <p class="text-sm font-semibold text-slate-400">Saldo filtrado</p>
         <strong class="mt-3 block text-3xl font-black" :class="remainingAmount >= 0 ? 'text-emerald-300' : 'text-rose-300'">
           {{ formatCurrency(remainingAmount) }}
         </strong>
-        <p class="mt-3 text-sm text-slate-400">Entradas menos saídas.</p>
+        <p class="mt-3 text-sm text-slate-400">Entradas menos saÃ­das.</p>
       </article>
       <article class="financial-card financial-card--violet">
         <p class="text-sm font-semibold text-slate-400">Status</p>
@@ -317,8 +317,8 @@ onMounted(loadInitialData)
 
     <div class="mt-5 grid min-w-0 gap-4 @min-[80rem]:grid-cols-[minmax(360px,420px)_minmax(0,1fr)]">
       <BaseCard>
-        <h2 class="text-2xl font-black text-slate-50">Nova transação</h2>
-        <p class="mt-2 text-sm leading-6 text-slate-400">Cadastre lançamentos com categoria, status e impacto financeiro visível antes de salvar.</p>
+        <h2 class="text-2xl font-black text-slate-50">Nova transaÃ§Ã£o</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-400">Cadastre lanÃ§amentos com categoria, status e impacto financeiro visÃ­vel antes de salvar.</p>
 
         <div class="mt-6">
           <TransactionForm
@@ -326,7 +326,7 @@ onMounted(loadInitialData)
             :category-options="formCategoryOptions"
             :field-error="fieldError"
             :is-loading="isLoading"
-            submit-label="Cadastrar transação"
+            submit-label="Cadastrar transaÃ§Ã£o"
             @submit="handleSubmit"
           />
         </div>
@@ -336,21 +336,21 @@ onMounted(loadInitialData)
         <section class="analytics-panel">
           <div class="mb-5">
             <p class="text-sm font-bold uppercase text-sky-300">Filtros inteligentes</p>
-            <h2 class="mt-2 text-2xl font-black text-slate-50">Encontre lançamentos rapidamente</h2>
+            <h2 class="mt-2 text-2xl font-black text-slate-50">Encontre lanÃ§amentos rapidamente</h2>
           </div>
           <div class="grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-5">
-            <BaseInput id="search" v-model="search" label="Buscar" placeholder="Descrição" />
+            <BaseInput id="search" v-model="search" label="Buscar" placeholder="DescriÃ§Ã£o" />
             <BaseSelect id="filter-category" v-model="filters.category_id" label="Categoria" placeholder="Todas" :options="categoryOptions" />
             <BaseSelect id="filter-type" v-model="filters.type" label="Tipo" placeholder="Todos" :options="TRANSACTION_TYPES" />
             <BaseSelect id="filter-status" v-model="filters.status" label="Status" placeholder="Todos" :options="TRANSACTION_STATUS" />
             <BaseSelect
               id="filter-recurring"
               v-model="filters.recurring"
-              label="Recorrência"
+              label="RecorrÃªncia"
               placeholder="Todos"
               :options="[
                 { label: 'Recorrentes', value: 'true' },
-                { label: 'Não recorrentes', value: 'false' },
+                { label: 'NÃ£o recorrentes', value: 'false' },
               ]"
             />
           </div>
@@ -358,7 +358,7 @@ onMounted(loadInitialData)
 
         <section class="analytics-panel">
           <div class="mb-5">
-            <p class="text-sm font-bold uppercase text-sky-300">Análise visual</p>
+            <p class="text-sm font-bold uppercase text-sky-300">AnÃ¡lise visual</p>
             <h2 class="mt-2 text-2xl font-black text-slate-50">Gastos por categoria</h2>
           </div>
 
@@ -396,7 +396,7 @@ onMounted(loadInitialData)
     <BaseCard class="mt-5">
       <div class="mb-5 flex flex-col gap-3 @min-[40rem]:flex-row @min-[40rem]:items-center @min-[40rem]:justify-between">
         <div>
-          <h2 class="text-2xl font-black text-slate-50">Lançamentos</h2>
+          <h2 class="text-2xl font-black text-slate-50">LanÃ§amentos</h2>
           <p class="mt-2 text-sm text-slate-400">Tabela no desktop e cards financeiros no mobile.</p>
         </div>
         <span class="rounded-full bg-white/6 px-3 py-1 text-sm text-slate-300">{{ filteredTransactions.length }} itens</span>
@@ -404,20 +404,20 @@ onMounted(loadInitialData)
 
       <EmptyState
         v-if="!filteredTransactions.length"
-        title="Nenhuma transação encontrada"
-        description="Cadastre uma transação ou ajuste os filtros."
+        title="Nenhuma transaÃ§Ã£o encontrada"
+        description="Cadastre uma transaÃ§Ã£o ou ajuste os filtros."
       />
 
       <div v-else class="hidden @min-[80rem]:block">
         <table class="premium-table">
           <thead>
             <tr>
-              <th>Descrição</th>
+              <th>DescriÃ§Ã£o</th>
               <th>Categoria</th>
               <th>Tipo</th>
               <th>Status</th>
               <th class="text-right">Valor</th>
-              <th class="text-right">Ações</th>
+              <th class="text-right">AÃ§Ãµes</th>
             </tr>
           </thead>
           <tbody>
@@ -428,7 +428,7 @@ onMounted(loadInitialData)
                     class="grid size-10 shrink-0 place-items-center rounded-2xl"
                     :class="transaction.type === 'income' ? 'bg-emerald-400/10 text-emerald-200' : 'bg-rose-400/10 text-rose-200'"
                   >
-                    {{ transaction.type === 'income' ? '↑' : '↓' }}
+                    {{ transaction.type === 'income' ? 'â†‘' : 'â†“' }}
                   </span>
                   <strong class="max-w-55 truncate text-slate-50">{{ transaction.description }}</strong>
                 </div>
@@ -474,13 +474,13 @@ onMounted(loadInitialData)
       />
     </BaseCard>
 
-    <BaseModal :open="isEditModalOpen" title="Editar transação" @close="closeEditModal">
+    <BaseModal :open="isEditModalOpen" title="Editar transaÃ§Ã£o" @close="closeEditModal">
       <TransactionForm
         :form="editForm"
         :category-options="editFormCategoryOptions"
         :field-error="fieldError"
         :is-loading="isLoading"
-        submit-label="Salvar alterações"
+        submit-label="Salvar alteraÃ§Ãµes"
         show-cancel
         @submit="handleEditSubmit"
         @cancel="closeEditModal"

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BaseButton from '../components/base/BaseButton.vue'
@@ -23,7 +23,7 @@ const navigationItems = [
     icon: 'M4 6h16M4 12h10M4 18h16',
   },
   {
-    label: 'Transações',
+    label: 'TransaÃ§Ãµes',
     routeName: ROUTE_NAMES.TRANSACTIONS,
     icon: 'M7 17V7m0 0-3 3m3-3 3 3m7 4v10m0 0 3-3m-3 3-3-3M4 7h6m4 10h6',
   },
@@ -33,7 +33,7 @@ const navigationItems = [
     icon: 'M12 3 3 8.5v11h18v-11L12 3Zm-3 8.5h6v7H9v-7Z',
   },
   {
-    label: 'Cartões',
+    label: 'CartÃµes',
     routeName: ROUTE_NAMES.CARD_PURCHASES,
     icon: 'M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7Zm0 4h20M6 15h4',
   },
@@ -45,7 +45,7 @@ const CARD_SECTION_ROUTES = [
   ROUTE_NAMES.CARD_CATEGORIES,
 ]
 
-const displayName = computed(() => authStore.userName || 'Usuário')
+const displayName = computed(() => authStore.userName || 'UsuÃ¡rio')
 
 function isActive(routeName) {
   if (routeName === ROUTE_NAMES.CARD_PURCHASES) {
@@ -74,7 +74,7 @@ async function handleLogout() {
   <main class="min-h-screen bg-slate-950/80 text-slate-50">
     <aside class="fixed bottom-0 left-0 top-0 z-40 hidden w-[280px] overflow-y-auto border-r border-white/10 bg-slate-900/70 px-5 py-6 backdrop-blur lg:block">
       <RouterLink :to="{ name: ROUTE_NAMES.DASHBOARD }" class="block rounded-lg px-3 py-2">
-        <span class="block text-sm font-bold uppercase text-sky-300">Gestão Financeira</span>
+        <span class="block text-sm font-bold uppercase text-sky-300">GestÃ£o Financeira</span>
         <span class="mt-2 block text-2xl font-black leading-none">Painel</span>
       </RouterLink>
 
@@ -95,7 +95,7 @@ async function handleLogout() {
       <header class="sticky top-0 z-30 border-b border-white/10 bg-slate-950/75 px-4 py-4 backdrop-blur sm:px-6">
         <div class="mx-auto flex max-w-7xl items-center justify-between gap-4">
           <div class="min-w-0">
-            <p class="text-xs font-bold uppercase text-slate-500">Área autenticada</p>
+            <p class="text-xs font-bold uppercase text-slate-500">Ãrea autenticada</p>
             <p class="truncate text-sm font-semibold text-slate-200">{{ displayName }}</p>
           </div>
 
@@ -131,7 +131,7 @@ async function handleLogout() {
     <nav
       class="fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-slate-950/90 backdrop-blur lg:hidden"
       style="padding-bottom: env(safe-area-inset-bottom)"
-      aria-label="Navegação principal"
+      aria-label="NavegaÃ§Ã£o principal"
     >
       <div class="mx-auto grid max-w-7xl grid-cols-5">
         <RouterLink

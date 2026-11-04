@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { formatCurrency } from '../../helpers/currency'
 import { formatPercentage } from '../../helpers/percentage'
 
@@ -16,7 +16,7 @@ defineProps({
       <p class="text-sm font-bold uppercase text-sky-300">Ranking</p>
       <h2 class="mt-2 text-2xl font-black text-slate-50">Categorias mais caras</h2>
       <p class="mt-3 text-sm leading-6 text-slate-400">
-        Ordena as categorias da maior para a menor despesa e compara cada uma com o mês anterior.
+        Ordena as categorias da maior para a menor despesa e compara cada uma com o mÃªs anterior.
       </p>
     </div>
 
@@ -38,7 +38,7 @@ defineProps({
           <p class="mt-1 text-sm text-slate-400">
             {{ formatPercentage(category.percentage_of_expenses) }} dos gastos
             <span :class="category.difference > 0 ? 'text-rose-300' : 'text-emerald-300'">
-              | {{ formatCurrency(category.difference) }} vs. mês anterior
+              | {{ formatCurrency(category.difference) }} vs. mÃªs anterior
             </span>
           </p>
         </div>
@@ -46,8 +46,8 @@ defineProps({
     </div>
 
     <p class="mt-5 rounded-2xl bg-white/[0.04] p-4 text-sm leading-6 text-slate-400">
-      Cálculo: agrupamos os lançamentos por categoria, somamos os valores e ordenamos pelo maior gasto.
-      A diferença mostra quanto subiu ou caiu em relação ao mês anterior.
+      CÃ¡lculo: agrupamos os lanÃ§amentos por categoria, somamos os valores e ordenamos pelo maior gasto.
+      A diferenÃ§a mostra quanto subiu ou caiu em relaÃ§Ã£o ao mÃªs anterior.
     </p>
   </section>
 </template>

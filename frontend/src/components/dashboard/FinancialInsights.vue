@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 defineProps({
   insights: {
     type: Array,
@@ -10,10 +10,10 @@ defineProps({
 <template>
   <section class="analytics-panel">
     <div class="mb-5">
-      <p class="text-sm font-bold uppercase text-sky-300">Inteligência</p>
-      <h2 class="mt-2 text-2xl font-black text-slate-50">Insights automáticos</h2>
+      <p class="text-sm font-bold uppercase text-sky-300">InteligÃªncia</p>
+      <h2 class="mt-2 text-2xl font-black text-slate-50">Insights automÃ¡ticos</h2>
       <p class="mt-3 text-sm leading-6 text-slate-400">
-        Leituras simples geradas a partir dos gastos, entradas, reserva e comparação com o mês anterior.
+        Leituras simples geradas a partir dos gastos, entradas, reserva e comparaÃ§Ã£o com o mÃªs anterior.
       </p>
     </div>
 
@@ -35,8 +35,8 @@ defineProps({
     </div>
 
     <p class="mt-5 rounded-2xl bg-white/[0.04] p-4 text-sm leading-6 text-slate-400">
-      Cálculo: o sistema compara gastos, saldo, reserva e categorias. Quando encontra aumento, queda ou concentração alta,
-      transforma isso em uma mensagem fácil de entender.
+      CÃ¡lculo: o sistema compara gastos, saldo, reserva e categorias. Quando encontra aumento, queda ou concentraÃ§Ã£o alta,
+      transforma isso em uma mensagem fÃ¡cil de entender.
     </p>
   </section>
 </template>

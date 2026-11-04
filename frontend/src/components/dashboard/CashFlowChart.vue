@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import EmptyState from '../data-display/EmptyState.vue'
 import { formatCompetencyLabel } from '../../helpers/competency'
@@ -71,16 +71,16 @@ const chartOptions = computed(() => ({
       <p class="text-sm font-bold uppercase text-sky-300">Fluxo do dinheiro</p>
       <h2 class="mt-2 text-2xl font-black text-slate-50">Entradas vs gastos</h2>
       <p class="mt-3 text-sm leading-6 text-slate-400">
-        Compara, mês a mês, quanto entrou e quanto saiu. Verde representa entradas e rosa representa gastos.
+        Compara, mÃªs a mÃªs, quanto entrou e quanto saiu. Verde representa entradas e rosa representa gastos.
       </p>
     </div>
 
-    <EmptyState v-if="!items.length" title="Sem dados de fluxo de caixa" description="Registre transações para visualizar o gráfico." />
+    <EmptyState v-if="!items.length" title="Sem dados de fluxo de caixa" description="Registre transaÃ§Ãµes para visualizar o grÃ¡fico." />
     <apexchart v-else type="bar" height="280" :options="chartOptions" :series="series" />
 
     <p class="mt-5 rounded-2xl bg-white/4 p-4 text-sm leading-6 text-slate-400">
-      Cálculo: para cada competência, somamos todas as transações de entrada e todas as transações de gasto.
-      A diferença entre elas forma o saldo restante do mês.
+      CÃ¡lculo: para cada competÃªncia, somamos todas as transaÃ§Ãµes de entrada e todas as transaÃ§Ãµes de gasto.
+      A diferenÃ§a entre elas forma o saldo restante do mÃªs.
     </p>
   </section>
 </template>

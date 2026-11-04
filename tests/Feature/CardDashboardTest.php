@@ -117,6 +117,52 @@ class CardDashboardTest extends TestCase
         $this->assertEquals(100, $analytics['overview']['total_month']);
     }
 
+    public function test_media_historica_inclui_competencias_sem_compras(): void
+    {
+        $usuario = User::factory()->create();
+        Sanctum::actingAs($usuario);
+
+        $cartao = Card::create([
+            'user_id' => $usuario->id,
+            'name' => 'Cartao',
+            'responsible_person' => 'Nathan',
+            'active' => true,
+        ]);
+        $categoria = CardCategory::create([
+            'user_id' => $usuario->id,
+            'name' => 'Compras',
+            'active' => true,
+        ]);
+
+        $this->postJson('/api/card-purchases', [
+            'card_id' => $cartao->id,
+            'card_category_id' => $categoria->id,
+            'description' => 'Compra de marco',
+            'total_amount' => 100,
+            'purchase_date' => '2026-03-05',
+            'reference_competency' => '2026-03',
+            'payment_type' => 'cash',
+        ])->assertCreated();
+
+        $this->postJson('/api/card-purchases', [
+            'card_id' => $cartao->id,
+            'card_category_id' => $categoria->id,
+            'description' => 'Compra de junho',
+            'total_amount' => 50,
+            'purchase_date' => '2026-06-05',
+            'reference_competency' => '2026-06',
+            'payment_type' => 'cash',
+        ])->assertCreated();
+
+        $analytics = $this->getJson('/api/card-dashboard/analytics?competency=2026-06&months=4')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertTrue(collect($analytics['insights'])->contains(
+            fn (array $insight): bool => $insight['title'] === 'Gasto acima da média'
+        ));
+    }
+
     public function test_dashboard_financeiro_geral_nao_e_afetado_por_compras_de_cartao(): void
     {
         $usuario = User::factory()->create();

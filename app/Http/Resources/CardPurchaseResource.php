@@ -12,6 +12,12 @@ class CardPurchaseResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $ultimaCompetencia = $this->relationLoaded('installments')
+            ? $this->installments->max('competency')
+            : null;
+        $cronogramaEncerrado = $ultimaCompetencia !== null
+            && $ultimaCompetencia <= now()->format('Y-m');
+
         return [
             'id' => $this->id,
             'card_id' => $this->card_id,
@@ -25,10 +31,9 @@ class CardPurchaseResource extends JsonResource
             'payment_type' => $this->payment_type,
             'installments_total' => $this->installments_total,
             'starting_installment_number' => $this->starting_installment_number,
-            'is_settled' => $this->whenLoaded(
-                'installments',
-                fn (): bool => $this->installments->max('competency') <= now()->format('Y-m')
-            ),
+            // Mantido por compatibilidade; a API não registra pagamentos de fatura.
+            'is_settled' => $this->whenLoaded('installments', fn (): bool => $cronogramaEncerrado),
+            'installment_schedule_ended' => $this->whenLoaded('installments', fn (): bool => $cronogramaEncerrado),
             'installments' => CardInstallmentResource::collection($this->whenLoaded('installments')),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,

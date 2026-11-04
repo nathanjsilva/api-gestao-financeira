@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
 import BaseButton from '../base/BaseButton.vue'
 import BaseInput from '../base/BaseInput.vue'
@@ -74,10 +74,12 @@ const newAccountName = ref('')
 const { isLoading: isAccountsLoading, withLoading: withAccountsLoading } = useLoading()
 const { generalError: accountGeneralError, clearErrors: clearAccountErrors, setErrorsFromApi: setAccountErrorsFromApi } = useFormErrors()
 
+const activeReserveAccounts = computed(() => reserveAccounts.value.filter((account) => account.active))
+const archivedReserveAccounts = computed(() => reserveAccounts.value.filter((account) => !account.active))
 const submitLabel = computed(() => currentId.value ? 'Salvar alterações' : 'Cadastrar reserva')
 const entriesTotal = computed(() => entries.value.reduce((sum, entry) => sum + Number(entry.amount || 0), 0))
 const previewRemainingAmount = computed(() => Number(competencySummary.value?.remaining_amount || 0))
-const reserveAccountsTotal = computed(() => reserveAccounts.value.reduce((sum, account) => sum + Number(accountDrafts[account.id]?.balance || 0), 0))
+const reserveAccountsTotal = computed(() => activeReserveAccounts.value.reduce((sum, account) => sum + Number(accountDrafts[account.id]?.balance || 0), 0))
 const currentReservePreview = computed(() => reserveAccountsTotal.value + previewRemainingAmount.value)
 const totalSavedPreview = computed(() => currentReservePreview.value + entriesTotal.value)
 const entrySubmitLabel = computed(() => editingEntryId.value ? 'Salvar lançamento' : 'Adicionar lançamento')
@@ -89,6 +91,7 @@ function buildAccountDrafts(accounts) {
 
   for (const account of accounts) {
     accountDrafts[account.id] = {
+      name: account.name,
       balance: account.current_balance ?? 0,
       note: account.note ?? '',
     }
@@ -105,7 +108,7 @@ async function loadReserveAccounts(competency) {
 
   await withAccountsLoading(async () => {
     try {
-      reserveAccounts.value = await reserveAccountService.list({ competency })
+      reserveAccounts.value = await reserveAccountService.list({ competency, include_archived: 1 })
       buildAccountDrafts(reserveAccounts.value)
     } catch (error) {
       setAccountErrorsFromApi(error)
@@ -132,11 +135,17 @@ watch(() => form.competency, (competency) => {
 }, { immediate: true })
 
 async function saveAccountDrafts(competency) {
-  for (const account of reserveAccounts.value) {
+  const entries = []
+
+  for (const account of activeReserveAccounts.value) {
     const draft = accountDrafts[account.id]
 
     if (!draft) {
       continue
+    }
+
+    if (draft.name.trim() !== account.name) {
+      await reserveAccountService.update(account.id, { name: draft.name.trim() })
     }
 
     const mudouSaldo = Number(draft.balance || 0) !== Number(account.current_balance || 0)
@@ -146,11 +155,37 @@ async function saveAccountDrafts(competency) {
       continue
     }
 
-    await reserveAccountService.setEntry(account.id, competency, {
+    entries.push({
+      account_id: account.id,
       balance: Number(draft.balance || 0),
       note: draft.note || null,
     })
   }
+
+  if (entries.length) {
+    await reserveAccountService.setEntries(competency, entries)
+  }
+}
+
+async function setAccountActive(account, active) {
+  if (!active && !confirm(`Arquivar "${account.name}"? O saldo deixa de entrar nos totais dos próximos meses.`)) {
+    return
+  }
+
+  clearAccountErrors()
+
+  await withAccountsLoading(async () => {
+    try {
+      await reserveAccountService.update(account.id, { active })
+      reserveAccounts.value = await reserveAccountService.list({
+        competency: form.competency,
+        include_archived: 1,
+      })
+      buildAccountDrafts(reserveAccounts.value)
+    } catch (error) {
+      setAccountErrorsFromApi(error)
+    }
+  })
 }
 
 async function createReserveAccount() {
@@ -296,18 +331,31 @@ if (currentId.value) {
         <p v-if="accountGeneralError" class="mb-3 text-sm text-rose-300">{{ accountGeneralError }}</p>
 
         <EmptyState
-          v-if="!isAccountsLoading && !reserveAccounts.length"
+          v-if="!isAccountsLoading && !activeReserveAccounts.length"
           title="Nenhuma conta de reserva ainda"
           description="Crie uma conta para cada pessoa ou objetivo (ex: Nathan, Esposa, Viagem)."
         />
 
         <div v-else class="space-y-3">
           <ReserveAccountRow
-            v-for="account in reserveAccounts"
+            v-for="account in activeReserveAccounts"
             :key="account.id"
             :account="account"
             v-model="accountDrafts[account.id]"
+            @archive="setAccountActive(account, false)"
           />
+        </div>
+
+        <div v-if="archivedReserveAccounts.length" class="mt-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+          <p class="text-sm font-bold text-slate-300">Contas arquivadas</p>
+          <div class="mt-3 space-y-2">
+            <div v-for="account in archivedReserveAccounts" :key="account.id" class="flex items-center justify-between gap-3">
+              <span class="truncate text-sm text-slate-400">{{ account.name }}</span>
+              <BaseButton type="button" variant="secondary" :disabled="isAccountsLoading" @click="setAccountActive(account, true)">
+                Reativar
+              </BaseButton>
+            </div>
+          </div>
         </div>
 
         <div class="mt-3 flex gap-2">

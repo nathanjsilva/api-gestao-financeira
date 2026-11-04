@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 defineProps({
   label: {
     type: String,
@@ -47,7 +47,7 @@ defineProps({
         'bg-rose-400/10 text-rose-200': trend === 'down',
       }"
     >
-      {{ trend === 'up' ? 'Tendência positiva' : 'Ponto de atenção' }}
+      {{ trend === 'up' ? 'TendÃªncia positiva' : 'Ponto de atenÃ§Ã£o' }}
     </p>
   </article>
 </template>

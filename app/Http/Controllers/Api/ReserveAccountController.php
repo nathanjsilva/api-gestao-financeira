@@ -22,10 +22,11 @@ class ReserveAccountController extends Controller
     {
         $competencia = $request->validated('competency');
         $usuarioId = $this->usuarioIdAutenticado();
+        $incluirArquivadas = $request->boolean('include_archived');
 
         $contas = $competencia !== null
-            ? $this->reserveAccountService->listarComSaldo($usuarioId, $competencia)
-            : $this->reserveAccountService->listar($usuarioId);
+            ? $this->reserveAccountService->listarComSaldo($usuarioId, $competencia, $incluirArquivadas)
+            : $this->reserveAccountService->listar($usuarioId, $incluirArquivadas);
 
         return ReserveAccountResource::collection($contas);
     }

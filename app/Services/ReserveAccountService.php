@@ -10,6 +10,7 @@ use App\Repositories\ReserveAccountRepository;
 use Carbon\Carbon;
 use DomainException;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 class ReserveAccountService
 {
@@ -28,9 +29,9 @@ class ReserveAccountService
      * informada (herdando de meses anteriores quando necessario) e a
      * diferenca em relacao ao mes anterior.
      */
-    public function listarComSaldo(int $usuarioId, string $competencia): Collection
+    public function listarComSaldo(int $usuarioId, string $competencia, bool $incluirArquivadas = false): Collection
     {
-        $contas = $this->listar($usuarioId);
+        $contas = $this->listar($usuarioId, $incluirArquivadas);
         $competenciaAnterior = Carbon::createFromFormat('Y-m', $competencia)->subMonth()->format('Y-m');
 
         foreach ($contas as $conta) {
@@ -95,6 +96,42 @@ class ReserveAccountService
         event(new DadosFinanceirosAlterados($usuarioId));
 
         return $entry;
+    }
+
+    /**
+     * @param  array{competency: string, entries: list<array{account_id: int, balance: numeric, note?: string|null}>}  $dados
+     */
+    public function definirSaldosDoMesEmLote(int $usuarioId, array $dados): Collection
+    {
+        $entries = DB::transaction(function () use ($usuarioId, $dados): Collection {
+            $resultado = new Collection();
+
+            foreach ($dados['entries'] as $dadosEntrada) {
+                $conta = $this->reserveAccountRepository->buscarPorIdEUsuarioId(
+                    (int) $dadosEntrada['account_id'],
+                    $usuarioId,
+                );
+
+                if ($conta === null) {
+                    throw new DomainException('Conta de reserva nao encontrada para este usuario.');
+                }
+
+                $resultado->push($this->reserveAccountEntryRepository->upsert(
+                    $conta->id,
+                    $dados['competency'],
+                    [
+                        'balance' => $dadosEntrada['balance'],
+                        'note' => $dadosEntrada['note'] ?? null,
+                    ],
+                ));
+            }
+
+            return $resultado;
+        });
+
+        event(new DadosFinanceirosAlterados($usuarioId));
+
+        return $entries;
     }
 
     public function removerSaldoDoMes(int $contaId, int $usuarioId, string $competencia): void

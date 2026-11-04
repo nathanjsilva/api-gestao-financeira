@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import BaseButton from '../../components/base/BaseButton.vue'
 import BaseCard from '../../components/base/BaseCard.vue'
@@ -41,7 +41,7 @@ function resetForm() {
 async function loadCards() {
   await withLoading(async () => {
     try {
-      cards.value = await cardService.list()
+      cards.value = await cardService.list({ include_inactive: 1 })
     } catch (error) {
       setErrorsFromApi(error)
     }

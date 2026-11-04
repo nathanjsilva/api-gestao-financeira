@@ -171,6 +171,8 @@ class CardInstallmentRepository
      */
     public function obterMediaHistoricaMensal(int $userId, array $competenciasAnteriores): float
     {
+        $competenciasAnteriores = array_values(array_unique($competenciasAnteriores));
+
         if (empty($competenciasAnteriores)) {
             return 0.0;
         }
@@ -182,10 +184,12 @@ class CardInstallmentRepository
             ->groupBy('competency')
             ->get();
 
-        if ($totaisPorMes->isEmpty()) {
-            return 0.0;
-        }
+        $totalHistorico = (float) $totaisPorMes->sum(
+            fn (object $mes): float => (float) $mes->total
+        );
 
-        return (float) $totaisPorMes->avg('total');
+        // Competencias sem compras representam meses com gasto zero e fazem
+        // parte da janela analisada pelo dashboard.
+        return $totalHistorico / count($competenciasAnteriores);
     }
 }

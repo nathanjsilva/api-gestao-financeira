@@ -1,9 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 
 const props = defineProps({
   modelValue: { type: String, default: '' },
-  label:      { type: String, default: 'Competência' },
+  label:      { type: String, default: 'CompetÃªncia' },
   error:      { type: String, default: '' },
 })
 
@@ -12,7 +12,7 @@ const emit = defineEmits(['update:modelValue'])
 const MONTHS = [
   { label: 'Janeiro',   value: 1 },
   { label: 'Fevereiro', value: 2 },
-  { label: 'Março',     value: 3 },
+  { label: 'MarÃ§o',     value: 3 },
   { label: 'Abril',     value: 4 },
   { label: 'Maio',      value: 5 },
   { label: 'Junho',     value: 6 },
@@ -54,7 +54,7 @@ function emit_value(month, year) {
         <option v-for="m in MONTHS" :key="m.value" :value="m.value">{{ m.label }}</option>
       </select>
 
-      <span class="shrink-0 text-sm text-slate-500">—</span>
+      <span class="shrink-0 text-sm text-slate-500">â€”</span>
 
       <select
         class="w-24 rounded-2xl border border-white/10 bg-slate-950/70 px-3 py-3 text-sm text-slate-100 outline-none transition focus:border-sky-400/50 focus:ring-1 focus:ring-sky-400/30"

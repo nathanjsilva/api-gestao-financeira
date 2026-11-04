@@ -27,6 +27,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('monthly-reserves.entries', MonthlyReserveEntryController::class)
         ->only(['index', 'store', 'update', 'destroy']);
 
+    Route::put('/reserve-account-balances', [ReserveAccountEntryController::class, 'upsertMany']);
     Route::apiResource('reserve-accounts', ReserveAccountController::class)
         ->only(['index', 'store', 'update']);
     Route::get('/reserve-accounts/{contaId}/entries', [ReserveAccountEntryController::class, 'index']);

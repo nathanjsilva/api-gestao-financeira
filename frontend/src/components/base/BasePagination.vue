@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 defineProps({
   currentPage: { type: Number, required: true },
   totalPages:  { type: Number, required: true },
@@ -13,7 +13,7 @@ defineEmits(['prev', 'next', 'go'])
 <template>
   <div v-if="totalPages > 1" class="mt-5 flex flex-col items-center gap-3 @min-[40rem]:flex-row @min-[40rem]:justify-between">
     <p class="text-sm text-slate-400">
-      Mostrando <strong class="text-slate-200">{{ Math.min((currentPage - 1) * perPage + 1, total) }}–{{ Math.min(currentPage * perPage, total) }}</strong>
+      Mostrando <strong class="text-slate-200">{{ Math.min((currentPage - 1) * perPage + 1, total) }}â€“{{ Math.min(currentPage * perPage, total) }}</strong>
       de <strong class="text-slate-200">{{ total }}</strong> itens
     </p>
 
@@ -23,11 +23,11 @@ defineEmits(['prev', 'next', 'go'])
         :disabled="currentPage === 1"
         @click="$emit('prev')"
       >
-        ←
+        â†
       </button>
 
       <template v-for="(page, i) in pageNumbers" :key="i">
-        <span v-if="page === '...'" class="grid h-9 min-w-9 place-items-center text-sm text-slate-500">…</span>
+        <span v-if="page === '...'" class="grid h-9 min-w-9 place-items-center text-sm text-slate-500">â€¦</span>
         <button
           v-else
           class="grid h-9 min-w-9 place-items-center rounded-xl border text-sm font-semibold transition"
@@ -45,7 +45,7 @@ defineEmits(['prev', 'next', 'go'])
         :disabled="currentPage === totalPages"
         @click="$emit('next')"
       >
-        →
+        â†’
       </button>
     </div>
   </div>

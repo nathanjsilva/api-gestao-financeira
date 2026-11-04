@@ -111,4 +111,33 @@ class MonthlyReserveTest extends TestCase
         $this->assertEquals(10200, $reserva['current_reserve']);
         $this->assertEquals(10500, $reserva['total_saved']);
     }
+
+    public function test_lancamentos_de_investimento_mantem_total_sincronizado_ao_criar_editar_e_excluir(): void
+    {
+        $usuario = User::factory()->create();
+        Sanctum::actingAs($usuario);
+
+        $reserva = $this->postJson('/api/monthly-reserves', [
+            'competency' => '2026-04',
+            'investimento' => 0,
+        ])->assertCreated()->json('data');
+
+        $lancamento = $this->postJson("/api/monthly-reserves/{$reserva['id']}/entries", [
+            'description' => 'Aporte em renda fixa',
+            'amount' => 120,
+        ])->assertCreated()->json('data');
+
+        $this->assertSame('120.00', MonthlyReserve::findOrFail($reserva['id'])->investimento);
+
+        $this->putJson("/api/monthly-reserves/{$reserva['id']}/entries/{$lancamento['id']}", [
+            'amount' => 175,
+        ])->assertOk();
+
+        $this->assertSame('175.00', MonthlyReserve::findOrFail($reserva['id'])->investimento);
+
+        $this->deleteJson("/api/monthly-reserves/{$reserva['id']}/entries/{$lancamento['id']}")
+            ->assertNoContent();
+
+        $this->assertSame('0.00', MonthlyReserve::findOrFail($reserva['id'])->investimento);
+    }
 }

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import BaseButton from '../base/BaseButton.vue'
 import BaseInput from '../base/BaseInput.vue'
@@ -127,7 +127,7 @@ const finalCompetency = computed(() => preview.value[preview.value.length - 1]?.
           Compra termina em <strong class="text-slate-200">{{ finalCompetency }}</strong>.
         </template>
         <template v-else>
-          Lançamento único, cobrado integralmente em <strong class="text-slate-200">{{ form.reference_competency }}</strong>.
+          Lançamento único, previsto integralmente em <strong class="text-slate-200">{{ form.reference_competency }}</strong>.
         </template>
       </p>
     </div>

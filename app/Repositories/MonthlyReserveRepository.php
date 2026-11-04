@@ -47,6 +47,16 @@ class MonthlyReserveRepository
             ->first();
     }
 
+    public function bloquearPorIdEUsuarioId(int $id, int $userId): ?MonthlyReserve
+    {
+        return $this->model
+            ->query()
+            ->where('id', $id)
+            ->where('user_id', $userId)
+            ->lockForUpdate()
+            ->first();
+    }
+
     public function criar(array $data): MonthlyReserve
     {
         return $this->model->query()->create($data);

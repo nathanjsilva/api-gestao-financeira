@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import EmptyState from '../data-display/EmptyState.vue'
 import { formatCompetencyLabel } from '../../helpers/competency'
@@ -14,7 +14,7 @@ function formatShort(val) {
 }
 
 const series = computed(() => [
-  { name: 'Gasto no cartão', data: props.items.map((item) => Number(item.total || 0)) },
+  { name: 'Gasto no cartÃ£o', data: props.items.map((item) => Number(item.total || 0)) },
 ])
 
 const chartOptions = computed(() => ({
@@ -57,14 +57,14 @@ const chartOptions = computed(() => ({
 <template>
   <section class="analytics-panel">
     <div class="mb-5">
-      <p class="text-sm font-bold uppercase text-sky-300">Evolução</p>
-      <h2 class="mt-2 text-2xl font-black text-slate-50">Gasto de cartão mês a mês</h2>
+      <p class="text-sm font-bold uppercase text-sky-300">EvoluÃ§Ã£o</p>
+      <h2 class="mt-2 text-2xl font-black text-slate-50">Gasto de cartÃ£o mÃªs a mÃªs</h2>
       <p class="mt-3 text-sm leading-6 text-slate-400">
-        Soma de todas as parcelas com vencimento em cada competência do período selecionado.
+        Soma de todas as parcelas com vencimento em cada competÃªncia do perÃ­odo selecionado.
       </p>
     </div>
 
-    <EmptyState v-if="!items.length" title="Sem dados no período" description="Cadastre compras para visualizar a evolução." />
+    <EmptyState v-if="!items.length" title="Sem dados no perÃ­odo" description="Cadastre compras para visualizar a evoluÃ§Ã£o." />
     <apexchart v-else type="area" height="260" :options="chartOptions" :series="series" />
   </section>
 </template>

@@ -215,10 +215,16 @@ class CardPurchaseTest extends TestCase
         $this->assertFalse(
             $this->getJson("/api/card-purchases/{$compra['id']}")->json('data.is_settled')
         );
+        $this->assertFalse(
+            $this->getJson("/api/card-purchases/{$compra['id']}")->json('data.installment_schedule_ended')
+        );
 
         Carbon::setTestNow(Carbon::parse('2026-03-15'));
         $this->assertTrue(
             $this->getJson("/api/card-purchases/{$compra['id']}")->json('data.is_settled')
+        );
+        $this->assertTrue(
+            $this->getJson("/api/card-purchases/{$compra['id']}")->json('data.installment_schedule_ended')
         );
     }
 

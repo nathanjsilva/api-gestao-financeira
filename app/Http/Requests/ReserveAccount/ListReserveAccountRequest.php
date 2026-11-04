@@ -19,6 +19,7 @@ class ListReserveAccountRequest extends FormRequest
     {
         return [
             'competency' => ['sometimes', 'nullable', new CompetencyRule()],
+            'include_archived' => ['sometimes', 'boolean'],
         ];
     }
 }

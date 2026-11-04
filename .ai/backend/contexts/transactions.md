@@ -1,177 +1,75 @@
-# context: transactions — Transações Financeiras
+# Contexto: transações financeiras
 
-## Responsabilidade
+## Responsabilidade e dependências
 
-CRUD de transações financeiras do usuário, filtradas por competência (mês/ano).
+CRUD de transações do usuário por competência mensal. Cada transação depende de uma categoria geral do mesmo usuário e do mesmo tipo. O dashboard geral soma as transações; o módulo de cartões é independente.
 
----
+## Estrutura principal
 
-## Arquivos Envolvidos
+Transaction contém user_id, category_id, description, amount, type, status, competency e is_recurring. Os valores de domínio são:
 
-| Tipo | Arquivo |
-|------|---------|
-| Controller | `app/Http/Controllers/Api/TransactionController.php` |
-| Service | `app/Services/TransactionService.php` |
-| Repository | `app/Repositories/TransactionRepository.php` |
-| Request (listagem) | `app/Http/Requests/Transaction/ListTransactionRequest.php` |
-| Request (criar) | `app/Http/Requests/Transaction/StoreTransactionRequest.php` |
-| Request (atualizar) | `app/Http/Requests/Transaction/UpdateTransactionRequest.php` |
-| Resource | `app/Http/Resources/TransactionResource.php` |
-| Rule | `app/Rules/CompetencyRule.php` |
-| Model | `app/Models/Transaction.php` |
-| Migration | `database/migrations/2026_05_17_000004_create_transactions_table.php` |
+- type: income ou expense;
+- status: paid ou pending;
+- competency: YYYY-MM;
+- amount: pelo menos 0.01.
 
----
-
-## Estrutura do Model (Transaction)
-
-```
-id              int (PK)
-user_id         int (FK → users)
-category_id     int (FK → categories)
-description     string(255)
-amount          decimal(10,2)
-type            enum('income', 'expense')
-status          enum('paid', 'pending')
-competency      string(7)  — formato YYYY-MM
-is_recurring    boolean    — default false
-created_at      timestamp
-updated_at      timestamp
-```
-
-**Índices:** `(user_id, competency)`, `(category_id, competency)`
-
----
+O índice da consulta mensal é por usuário e competência. Consulte a migration para detalhes de tipos e constraints.
 
 ## Endpoints
 
-| Método | Rota | Param | Descrição |
-|--------|------|-------|-----------|
-| GET | `/api/transactions` | `?competency=YYYY-MM` | Listar por mês |
-| POST | `/api/transactions` | body JSON | Criar |
-| GET | `/api/transactions/{id}` | — | Buscar por ID |
-| PUT | `/api/transactions/{id}` | body JSON | Atualizar |
-| DELETE | `/api/transactions/{id}` | — | Excluir |
+Todas as rotas exigem auth:sanctum.
 
----
+| Método | Caminho | Comportamento |
+|---|---|---|
+| GET | /api/transactions?competency=YYYY-MM | Lista a competência; o filtro é obrigatório. |
+| POST | /api/transactions | Cria uma transação. |
+| GET | /api/transactions/{id} | Busca registro próprio. |
+| PUT/PATCH | /api/transactions/{id} | Atualização parcial. |
+| DELETE | /api/transactions/{id} | Exclui registro próprio. |
 
-## Fluxo de Listagem
+## Fluxo de criação
 
-```
-GET /api/transactions?competency=2026-07
-    → ListTransactionRequest (valida: competency obrigatório)
-    → TransactionController::index()
-    → TransactionService::listar(usuarioId, competencia)
-    → TransactionRepository::listarPorUsuarioIdECompetencia()
-        → WHERE user_id = $userId AND competency = $competency
-        → WITH category (eager load)
-        → ORDER BY created_at DESC
-    → TransactionResource::collection()
-```
+~~~text
+Formulário
+→ StoreTransactionRequest valida campos e existência da categoria do usuário
+→ TransactionController obtém a identidade autenticada e dados validados
+→ TransactionService confirma ownership e compatibilidade do tipo da categoria
+→ TransactionRepository persiste com user_id autenticado e carrega category
+→ emite DadosFinanceirosAlterados
+→ TransactionResource retorna a resposta
+~~~
 
----
+A validação de existência no Request não garante compatibilidade do tipo; essa regra é verificada pelo Service.
 
-## Fluxo de Criação
+## Fluxo de atualização
 
-```
-POST /api/transactions
-Body: { category_id, description, amount, type, status, competency, is_recurring? }
-    → StoreTransactionRequest (validação completa)
-    → TransactionController::store()
-    → TransactionService::criar(usuarioId, dados)
-        → CategoryRepository::buscarPorIdTipoEUsuarioId(category_id, type, userId)
-            — valida que categoria existe, pertence ao usuário E tem o mesmo tipo
-        → TransactionRepository::criar(userId, dados)
-    → TransactionResource (201)
-```
+UpdateTransactionRequest aceita campos parciais. O Service busca a transação por id e usuário, combina type/category_id enviados com os valores atuais, verifica a categoria final e atualiza o registro. Recurso de outro usuário é tratado como inexistente.
 
-**Regra crítica**: A `category_id` deve pertencer ao `user_id` autenticado e ter o mesmo `type` da transação. Se não, erro de validação.
+## Validações
 
----
+Store exige category_id próprio, description até 255 caracteres, amount numérico mínimo 0.01, type em income/expense, status em paid/pending, competency validada por CompetencyRule e is_recurring booleano obrigatório.
 
-## Fluxo de Atualização
+Update permite campos parciais. Se categoria ou tipo não forem enviados, o Service usa os valores existentes para validar a combinação final.
 
-```
-PUT /api/transactions/{id}
-    → UpdateTransactionRequest
-    → TransactionController::update()
-    → TransactionService::atualizar(id, usuarioId, dados)
-        → Verifica que transação pertence ao usuário (404 se não)
-        → Valida categoria (mesma regra do criar)
-        → TransactionRepository::atualizar()
-    → TransactionResource (200)
-```
+## Regras e integração
 
----
+1. O usuário só consulta, altera ou exclui suas próprias transações.
+2. category_id deve pertencer ao usuário autenticado e ter o mesmo type da transação.
+3. A listagem sempre exige competency; não existe endpoint para listar todos os meses de uma vez.
+4. is_recurring é marcador informativo e não gera transações futuras.
+5. O dashboard inclui transações paid e pending, pois não há data de liquidação.
+6. Criação, atualização e exclusão emitem DadosFinanceirosAlterados e avançam a versão do cache geral.
+7. Categorias financeiras não emitem esse evento ao serem alteradas; nomes em analytics cacheados podem demorar até cinco minutos para atualizar.
 
-## Regras de Negócio
+## Integração com analytics
 
-1. Usuário só acessa suas próprias transações
-2. `category_id` deve pertencer ao usuário E ter o mesmo `type` da transação
-3. `competency` deve ser um mês válido no formato `YYYY-MM`
-4. `amount` mínimo de `0.01`
-5. Transações com `is_recurring = true` são marcadores — não criam automaticamente meses futuros
-6. Listagem sempre exige `competency` — não há listagem de todas as transações sem filtro
+DashboardService agrega receitas/despesas por competência e tipo. FinancialAnalyticsService usa as agregações para evolução, fluxo, comparações, ranking de despesas, taxas e insights. Os métodos de agregação ficam em TransactionRepository.
 
----
+## Referências
 
-## Validações (StoreTransactionRequest)
-
-```php
-'category_id'  => ['required', 'integer', 'min:1'],
-'description'  => ['required', 'string', 'max:255'],
-'amount'       => ['required', 'numeric', 'min:0.01'],
-'type'         => ['required', 'in:income,expense'],
-'status'       => ['required', 'in:paid,pending'],
-'competency'   => ['required', new CompetencyRule()],
-'is_recurring' => ['boolean'],
-```
-
----
-
-## Resource de Resposta
-
-```json
-{
-  "id": 1,
-  "description": "Salário",
-  "amount": "5000.00",
-  "type": "income",
-  "status": "paid",
-  "competency": "2026-07",
-  "is_recurring": true,
-  "category": {
-    "id": 2,
-    "name": "Salário",
-    "type": "income"
-  },
-  "created_at": "2026-07-01T10:00:00.000000Z"
-}
-```
-
----
-
-## Repository — Métodos de Agregação (usados pelo Dashboard)
-
-```php
-// Totais por tipo no mês
-obterResumoMensalPorTipo(int $userId, string $competency): Collection
-// Ex: [{ type: 'income', total: 5000.00 }, { type: 'expense', total: 3200.00 }]
-
-// Totais entre competências (evolução temporal)
-obterResumoMensalPorTipoEntreCompetencias(int $userId, string $inicio, string $fim): Collection
-
-// Gastos agrupados por categoria (para ranking)
-obterTotaisDeGastosAgrupadosPorCategoria(int $userId, string $competency): Collection
-
-// Gastos por categoria entre períodos
-obterTotaisDeGastosPorCategoriaEntreCompetencias(int $userId, string $inicio, string $fim): Collection
-```
-
----
-
-## Pontos de Atenção
-
-- Sempre carregar `category` com `with('category')` na listagem — o Resource usa
-- Ao criar transação, a validação de categoria é responsabilidade do **Service**, não do FormRequest
-- Não há paginação — todas as transações do mês são retornadas
+- Controller: app/Http/Controllers/Api/TransactionController.php
+- Service: app/Services/TransactionService.php
+- Repository: app/Repositories/TransactionRepository.php
+- Requests: app/Http/Requests/Transaction/
+- Resource: app/Http/Resources/TransactionResource.php
+- Validação de competência: app/Rules/CompetencyRule.php

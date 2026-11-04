@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import BaseInput from '../../components/base/BaseInput.vue'
 import CashFlowChart from '../../components/dashboard/CashFlowChart.vue'
@@ -59,14 +59,14 @@ onMounted(loadAnalytics)
   <section class="dashboard-shell mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
     <div class="dashboard-hero">
       <PageHeader
-        eyebrow="Inteligência financeira"
-        title="Dashboard analítico"
-        description="Entenda para onde seu dinheiro está indo, compare meses e acompanhe a evolução da sua reserva."
+        eyebrow="InteligÃªncia financeira"
+        title="Dashboard analÃ­tico"
+        description="Entenda para onde seu dinheiro estÃ¡ indo, compare meses e acompanhe a evoluÃ§Ã£o da sua reserva."
       >
         <template #actions>
           <div class="grid gap-3 @min-[40rem]:grid-cols-[180px_150px]">
-            <BaseInput id="dashboard-competency" v-model="competency" label="Competência" type="month" />
-            <BaseInput id="dashboard-months" v-model="months" label="Período" type="number" />
+            <BaseInput id="dashboard-competency" v-model="competency" label="CompetÃªncia" type="month" />
+            <BaseInput id="dashboard-months" v-model="months" label="PerÃ­odo" type="number" />
           </div>
         </template>
       </PageHeader>
@@ -83,14 +83,14 @@ onMounted(loadAnalytics)
     <template v-else>
       <div class="grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-4">
         <FinancialCard
-          label="Entradas do mês"
+          label="Entradas do mÃªs"
           :value="formatCurrency(overview.total_income)"
           hint="Renda e recebimentos confirmados"
           accent="emerald"
           trend="up"
         />
         <FinancialCard
-          label="Gastos do mês"
+          label="Gastos do mÃªs"
           :value="formatCurrency(overview.total_expense)"
           :hint="`${formatPercentage(kpis.income_commitment_rate)} da renda comprometida`"
           accent="rose"
@@ -132,49 +132,49 @@ onMounted(loadAnalytics)
 
         <section class="analytics-panel">
           <div class="mb-5">
-            <p class="text-sm font-bold uppercase text-sky-300">KPIs avançados</p>
+            <p class="text-sm font-bold uppercase text-sky-300">KPIs avanÃ§ados</p>
             <h2 class="mt-2 text-2xl font-black text-slate-50">Comportamento financeiro</h2>
             <p class="mt-3 text-sm leading-6 text-slate-400">
-              Resumo simples dos principais indicadores do período selecionado.
+              Resumo simples dos principais indicadores do perÃ­odo selecionado.
             </p>
           </div>
 
           <div class="grid gap-3 @min-[40rem]:grid-cols-2">
             <div class="kpi-tile">
-              <span>Média mensal de gastos</span>
+              <span>MÃ©dia mensal de gastos</span>
               <strong>{{ formatCurrency(kpis.average_monthly_expense) }}</strong>
-              <small>Soma dos gastos do período dividida pela quantidade de meses.</small>
+              <small>Soma dos gastos do perÃ­odo dividida pela quantidade de meses.</small>
             </div>
             <div class="kpi-tile">
-              <span>Média mensal de entradas</span>
+              <span>MÃ©dia mensal de entradas</span>
               <strong>{{ formatCurrency(kpis.average_monthly_income) }}</strong>
-              <small>Soma das entradas do período dividida pela quantidade de meses.</small>
+              <small>Soma das entradas do perÃ­odo dividida pela quantidade de meses.</small>
             </div>
             <div class="kpi-tile">
-              <span>Melhor mês</span>
+              <span>Melhor mÃªs</span>
               <strong>{{ kpis.best_month?.competency || '-' }}</strong>
-              <small>Mês com maior saldo restante entre entradas e gastos.</small>
+              <small>MÃªs com maior saldo restante entre entradas e gastos.</small>
             </div>
             <div class="kpi-tile">
-              <span>Pior mês</span>
+              <span>Pior mÃªs</span>
               <strong>{{ kpis.worst_month?.competency || '-' }}</strong>
-              <small>Mês com menor saldo restante no período analisado.</small>
+              <small>MÃªs com menor saldo restante no perÃ­odo analisado.</small>
             </div>
             <div class="kpi-tile">
-              <span>Saldo médio</span>
+              <span>Saldo mÃ©dio</span>
               <strong>{{ formatCurrency(kpis.average_remaining) }}</strong>
-              <small>Média do dinheiro que sobrou em cada mês.</small>
+              <small>MÃ©dia do dinheiro que sobrou em cada mÃªs.</small>
             </div>
             <div class="kpi-tile">
-              <span>Previsão de fechamento</span>
+              <span>PrevisÃ£o de fechamento</span>
               <strong>{{ formatCurrency(kpis.projected_closing) }}</strong>
-              <small>Saldo restante calculado para a competência selecionada.</small>
+              <small>Saldo restante calculado para a competÃªncia selecionada.</small>
             </div>
           </div>
 
           <p class="mt-5 rounded-2xl bg-white/[0.04] p-4 text-sm leading-6 text-slate-400">
-            Cálculo geral: usamos os meses do período escolhido, somamos entradas, gastos e saldo restante,
-            depois geramos médias e identificamos melhor e pior mês pelo saldo final.
+            CÃ¡lculo geral: usamos os meses do perÃ­odo escolhido, somamos entradas, gastos e saldo restante,
+            depois geramos mÃ©dias e identificamos melhor e pior mÃªs pelo saldo final.
           </p>
         </section>
       </div>

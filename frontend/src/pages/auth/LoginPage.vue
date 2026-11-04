@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BaseButton from '../../components/base/BaseButton.vue'
@@ -41,7 +41,7 @@ async function handleSubmit() {
     <p class="mb-3 text-sm font-bold uppercase text-sky-300">Acesso</p>
     <h1 class="mb-4 text-5xl font-black leading-none text-slate-50">Login</h1>
     <p class="text-lg leading-8 text-slate-300">
-      Entre com seu e-mail e senha para acessar seus lançamentos financeiros.
+      Entre com seu e-mail e senha para acessar seus lanÃ§amentos financeiros.
     </p>
 
     <form class="mt-8 space-y-5" @submit.prevent="handleSubmit">
@@ -73,7 +73,7 @@ async function handleSubmit() {
     </form>
 
     <p class="mt-6 text-sm text-slate-400">
-      Ainda não tem conta?
+      Ainda nÃ£o tem conta?
       <RouterLink :to="{ name: ROUTE_NAMES.REGISTER }" class="font-bold text-sky-300">
         Criar cadastro
       </RouterLink>

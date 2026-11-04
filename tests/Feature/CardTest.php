@@ -87,4 +87,29 @@ class CardTest extends TestCase
         Sanctum::actingAs($usuarioB);
         $this->getJson("/api/cards/{$cartao['id']}")->assertStatus(404);
     }
+
+    public function test_cartao_inativo_pode_ser_localizado_e_reativado(): void
+    {
+        $usuario = User::factory()->create();
+        Sanctum::actingAs($usuario);
+
+        $cartao = $this->postJson('/api/cards', [
+            'name' => 'Cartao arquivado',
+            'responsible_person' => 'Nathan',
+        ])->assertCreated()->json('data');
+
+        $this->putJson("/api/cards/{$cartao['id']}", ['active' => false])->assertOk();
+        $this->getJson('/api/cards')->assertOk()->assertJsonCount(0, 'data');
+
+        $inativos = $this->getJson('/api/cards?include_inactive=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->json('data');
+
+        $this->assertFalse($inativos[0]['active']);
+
+        $this->putJson("/api/cards/{$cartao['id']}", ['active' => true])
+            ->assertOk()
+            ->assertJsonPath('data.active', true);
+    }
 }

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import BaseButton from '../../components/base/BaseButton.vue'
 import BaseCard from '../../components/base/BaseCard.vue'
@@ -112,9 +112,9 @@ onMounted(loadCategories)
 <template>
   <section class="dashboard-shell mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
     <PageHeader
-      eyebrow="Organização"
+      eyebrow="OrganizaÃ§Ã£o"
       title="Categorias"
-      description="Cadastre suas categorias de entrada e saída. Elas serão usadas nos filtros e gráficos."
+      description="Cadastre suas categorias de entrada e saÃ­da. Elas serÃ£o usadas nos filtros e grÃ¡ficos."
     />
 
     <p v-if="generalError" class="mb-5 rounded-md bg-rose-500/10 p-3 text-sm text-rose-200">
@@ -145,7 +145,7 @@ onMounted(loadCategories)
         <EmptyState
           v-if="!categories.length"
           title="Nenhuma categoria cadastrada"
-          description="Crie categorias para organizar suas entradas e saídas."
+          description="Crie categorias para organizar suas entradas e saÃ­das."
         />
 
         <div v-else class="hidden @min-[48rem]:block">
@@ -154,7 +154,7 @@ onMounted(loadCategories)
               <tr class="border-b border-white/10">
                 <th class="py-3 font-semibold">Nome</th>
                 <th class="py-3 font-semibold">Tipo</th>
-                <th class="py-3 text-right font-semibold">Ações</th>
+                <th class="py-3 text-right font-semibold">AÃ§Ãµes</th>
               </tr>
             </thead>
             <tbody>
@@ -209,7 +209,7 @@ onMounted(loadCategories)
         :form="editForm"
         :field-error="fieldError"
         :is-loading="isLoading"
-        submit-label="Salvar alterações"
+        submit-label="Salvar alteraÃ§Ãµes"
         show-cancel
         @submit="handleEditSubmit"
         @cancel="closeEditModal"

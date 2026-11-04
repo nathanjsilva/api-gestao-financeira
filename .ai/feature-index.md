@@ -1,201 +1,101 @@
-# feature-index.md — Índice de Funcionalidades
+# Índice de funcionalidades e arquivos
 
-## Funcionalidades do Sistema
+Este índice localiza os contextos funcionais e os principais arquivos atuais. As regras normativas para agentes estão em AGENTS.md. Consulte o contexto do módulo antes de alterar seu código.
 
-| Funcionalidade | Área | Context Backend | Página Frontend | Store |
-|----------------|------|-----------------|-----------------|-------|
-| Autenticação (login/cadastro/logout) | Auth | `.ai/backend/contexts/auth.md` | `pages/auth/` | `authStore.js` |
-| Categorias (CRUD) | Financeiro | `.ai/backend/contexts/categories.md` | `pages/categories/CategoriesPage.vue` | — |
-| Transações (CRUD + filtro por mês) | Financeiro | `.ai/backend/contexts/transactions.md` | `pages/transactions/TransactionsPage.vue` | — |
-| Reserva Mensal (contas de reserva + investimentos) | Financeiro | `.ai/backend/contexts/monthly-reserve.md` | `pages/monthly-reserve/MonthlyReservePage.vue` | — |
-| Dashboard Analítico | Analytics | `.ai/backend/contexts/dashboard.md` | `pages/dashboard/DashboardPage.vue` | — |
-| Cartões (cartões, categorias, compras/parcelas, dashboard) | Financeiro/Analytics | `.ai/backend/contexts/cards.md` | `pages/card-purchases/` (compras + análises unificadas), `pages/cards/`, `pages/card-categories/` | — |
+## Funcionalidades
 
----
+| Funcionalidade | Contexto backend | Contexto frontend |
+|---|---|---|
+| Autenticação | backend/contexts/auth.md | frontend/overview.md |
+| Categorias financeiras | backend/contexts/categories.md | frontend/overview.md |
+| Transações | backend/contexts/transactions.md | frontend/overview.md |
+| Reserva mensal, contas e investimentos | backend/contexts/monthly-reserve.md | frontend/overview.md |
+| Dashboard financeiro geral | backend/contexts/dashboard.md | frontend/overview.md |
+| Cartões, categorias, compras e parcelas | backend/contexts/cards.md | frontend/cards.md |
 
-## Mapa de Arquivos por Funcionalidade
+## Autenticação
 
-### Autenticação
-```
+Backend: AuthController, AuthService, UserRepository, RegisterRequest, LoginRequest e User.
+
+Frontend:
+- frontend/src/pages/auth/LoginPage.vue
+- frontend/src/pages/auth/RegisterPage.vue
+- frontend/src/stores/authStore.ts
+- frontend/src/services/auth/authService.ts
+- frontend/src/middleware/authGuard.ts
+- frontend/src/middleware/guestGuard.ts
+- frontend/src/services/api/httpClient.ts
+
+## Categorias financeiras
+
+Backend: CategoryController, CategoryService, CategoryRepository, StoreCategoryRequest, UpdateCategoryRequest, CategoryResource e Category.
+
+Frontend:
+- frontend/src/pages/categories/CategoriesPage.vue
+- frontend/src/components/categories/CategoryForm.vue
+- frontend/src/services/categories/categoryService.ts
+
+## Transações
+
+Backend: TransactionController, TransactionService, TransactionRepository, ListTransactionRequest, StoreTransactionRequest, UpdateTransactionRequest, TransactionResource, CompetencyRule e Transaction.
+
+Frontend:
+- frontend/src/pages/transactions/TransactionsPage.vue
+- frontend/src/components/transactions/TransactionCard.vue
+- frontend/src/components/transactions/TransactionForm.vue
+- frontend/src/components/transactions/TransactionStatusBadge.vue
+- frontend/src/services/transactions/transactionService.ts
+- frontend/src/constants/transactions.ts
+
+## Reserva mensal
+
 Backend:
-  app/Http/Controllers/Api/AuthController.php
-  app/Services/AuthService.php
-  app/Repositories/UserRepository.php
-  app/Http/Requests/Auth/RegisterRequest.php
-  app/Http/Requests/Auth/LoginRequest.php
+- MonthlyReserveController e MonthlyReserveEntryController
+- ReserveAccountController e ReserveAccountEntryController
+- MonthlyReserveService e ReserveAccountService
+- MonthlyReserveRepository, MonthlyReserveEntryRepository, ReserveAccountRepository e ReserveAccountEntryRepository
+- Requests em app/Http/Requests/MonthlyReserve e app/Http/Requests/ReserveAccount
+- Resources MonthlyReserveResource, MonthlyReserveEntryResource, ReserveAccountResource e ReserveAccountEntryResource
+- Models MonthlyReserve, MonthlyReserveEntry, ReserveAccount e ReserveAccountEntry
 
 Frontend:
-  frontend/src/pages/auth/LoginPage.vue
-  frontend/src/pages/auth/RegisterPage.vue
-  frontend/src/stores/authStore.js
-  frontend/src/services/auth/authService.js
-  frontend/src/middleware/authGuard.js
-  frontend/src/middleware/guestGuard.js
-```
+- frontend/src/pages/monthly-reserve/MonthlyReservePage.vue
+- frontend/src/components/reserve/MonthlyReserveEditor.vue
+- frontend/src/components/reserve/ReserveAccountRow.vue
+- frontend/src/components/reserve/ReserveChart.vue
+- frontend/src/services/monthly-reserves/monthlyReserveService.ts
+- frontend/src/services/reserve-accounts/reserveAccountService.ts
 
-### Categorias
-```
-Backend:
-  app/Http/Controllers/Api/CategoryController.php
-  app/Services/CategoryService.php
-  app/Repositories/CategoryRepository.php
-  app/Http/Requests/Category/StoreCategoryRequest.php
-  app/Http/Requests/Category/UpdateCategoryRequest.php
-  app/Http/Resources/CategoryResource.php
+## Dashboard financeiro geral
+
+Backend: DashboardController, DashboardService, FinancialAnalyticsService, CategoryAnalyticsService, MonthlyComparisonService, Requests em app/Http/Requests/Dashboard e Resources Dashboard*.
 
 Frontend:
-  frontend/src/pages/categories/CategoriesPage.vue
-  frontend/src/services/categories/categoryService.js
-```
+- frontend/src/pages/dashboard/DashboardPage.vue
+- frontend/src/services/dashboard/dashboardService.ts
+- Componentes em frontend/src/components/dashboard
 
-### Transações
-```
-Backend:
-  app/Http/Controllers/Api/TransactionController.php
-  app/Services/TransactionService.php
-  app/Repositories/TransactionRepository.php
-  app/Http/Requests/Transaction/StoreTransactionRequest.php
-  app/Http/Requests/Transaction/UpdateTransactionRequest.php
-  app/Http/Requests/Transaction/ListTransactionRequest.php
-  app/Http/Resources/TransactionResource.php
-  app/Rules/CompetencyRule.php
+## Cartões
+
+O fluxo e as regras completas estão em backend/contexts/cards.md e frontend/cards.md.
+
+Backend: CardController, CardCategoryController, CardPurchaseController, CardDashboardController; CardService, CardCategoryService, CardPurchaseService, CardAnalyticsService, CardDashboardService; CardRepository, CardCategoryRepository, CardPurchaseRepository, CardInstallmentRepository; Models Card, CardCategory, CardPurchase e CardInstallment; requests em app/Http/Requests/Card, CardCategory, CardPurchase e CardDashboard; Resources Card*; evento CartaoDadosAlterados e listener InvalidarCacheCartoes.
 
 Frontend:
-  frontend/src/pages/transactions/TransactionsPage.vue
-  frontend/src/services/transactions/transactionService.js
-  frontend/src/components/transactions/TransactionCard.vue
-  frontend/src/components/transactions/TransactionStatusBadge.vue
-```
+- frontend/src/pages/card-purchases/CardPurchasesPage.vue
+- frontend/src/pages/cards/CardsPage.vue
+- frontend/src/pages/card-categories/CardCategoriesPage.vue
+- Services em frontend/src/services/cards, card-categories, card-purchases e card-dashboard
+- Componentes em frontend/src/components/cards, card-categories, card-purchases e card-dashboard
+- frontend/src/helpers/cardInstallments.ts
+- frontend/src/constants/cardPurchases.ts
 
-### Reserva Mensal
-```
-Backend (investimentos, mantido):
-  app/Http/Controllers/Api/MonthlyReserveController.php
-  app/Http/Controllers/Api/MonthlyReserveEntryController.php
-  app/Services/MonthlyReserveService.php
-  app/Repositories/MonthlyReserveRepository.php
-  app/Repositories/MonthlyReserveEntryRepository.php
-  app/Http/Requests/MonthlyReserve/*.php
-  app/Http/Resources/MonthlyReserveResource.php
-  app/Http/Resources/MonthlyReserveEntryResource.php
+## Arquivos compartilhados do frontend
 
-Backend (contas de reserva, novo):
-  app/Http/Controllers/Api/ReserveAccountController.php
-  app/Http/Controllers/Api/ReserveAccountEntryController.php
-  app/Services/ReserveAccountService.php
-  app/Repositories/ReserveAccountRepository.php
-  app/Repositories/ReserveAccountEntryRepository.php
-  app/Http/Requests/ReserveAccount/*.php
-  app/Http/Resources/ReserveAccountResource.php
-  app/Http/Resources/ReserveAccountEntryResource.php
-
-Frontend:
-  frontend/src/pages/monthly-reserve/MonthlyReservePage.vue
-  frontend/src/services/monthly-reserves/monthlyReserveService.js
-  frontend/src/services/reserve-accounts/reserveAccountService.js
-  frontend/src/components/reserve/ReserveChart.vue
-  frontend/src/components/reserve/ReserveAccountRow.vue
-```
-
-### Dashboard Analítico
-```
-Backend:
-  app/Http/Controllers/Api/DashboardController.php
-  app/Services/DashboardService.php
-  app/Services/FinancialAnalyticsService.php
-  app/Services/CategoryAnalyticsService.php
-  app/Services/MonthlyComparisonService.php
-  app/Http/Requests/Dashboard/*.php (5 requests)
-  app/Http/Resources/Dashboard*.php (5 resources)
-
-Frontend:
-  frontend/src/pages/dashboard/DashboardPage.vue
-  frontend/src/services/dashboard/dashboardService.js
-  frontend/src/components/dashboard/CashFlowChart.vue
-  frontend/src/components/dashboard/CategoryRanking.vue
-  frontend/src/components/dashboard/ExpenseChart.vue
-  frontend/src/components/dashboard/FinancialCard.vue
-  frontend/src/components/dashboard/FinancialHeatmap.vue
-  frontend/src/components/dashboard/FinancialInsights.vue
-  frontend/src/components/dashboard/MonthlyComparison.vue
-  frontend/src/components/dashboard/ReserveEvolution.vue
-```
-
----
-
-### Cartões
-```
-Backend:
-  app/Http/Controllers/Api/CardController.php
-  app/Http/Controllers/Api/CardCategoryController.php
-  app/Http/Controllers/Api/CardPurchaseController.php
-  app/Http/Controllers/Api/CardDashboardController.php
-  app/Services/CardService.php
-  app/Services/CardCategoryService.php
-  app/Services/CardPurchaseService.php
-  app/Services/CardAnalyticsService.php
-  app/Services/CardDashboardService.php
-  app/Repositories/CardRepository.php
-  app/Repositories/CardCategoryRepository.php
-  app/Repositories/CardPurchaseRepository.php
-  app/Repositories/CardInstallmentRepository.php
-  app/Models/Card.php, CardCategory.php, CardPurchase.php, CardInstallment.php
-  app/Http/Requests/Card/*.php, CardCategory/*.php, CardPurchase/*.php, CardDashboard/*.php
-  app/Http/Resources/Card*.php
-  app/Events/CartaoDadosAlterados.php
-  app/Listeners/InvalidarCacheCartoes.php
-
-Frontend:
-  frontend/src/pages/card-purchases/CardPurchasesPage.vue (compras + análises unificadas)
-  frontend/src/pages/cards/CardsPage.vue
-  frontend/src/pages/card-categories/CardCategoriesPage.vue
-  frontend/src/services/cards/cardService.js
-  frontend/src/services/card-categories/cardCategoryService.js
-  frontend/src/services/card-purchases/cardPurchaseService.js
-  frontend/src/services/card-dashboard/cardDashboardService.js
-  frontend/src/components/cards/, card-categories/, card-purchases/, card-dashboard/
-  frontend/src/helpers/cardInstallments.js
-```
-
-## Componentes Compartilhados (Frontend)
-
-```
-frontend/src/components/base/
-  BaseButton.vue    — Botão padrão reutilizável
-  BaseCard.vue      — Card container
-  BaseInput.vue     — Input com label e erro
-  BaseSelect.vue    — Select com label e erro
-  BaseTextarea.vue  — Textarea com label e erro
-
-frontend/src/components/data-display/
-  EmptyState.vue    — Estado vazio (sem dados)
-  MetricCard.vue    — Card de métrica numérica
-
-frontend/src/components/layout/
-  PageHeader.vue    — Cabeçalho de página com título e ações
-
-frontend/src/components/shared/
-  FinancialInsight.vue — Item de insight financeiro
-```
-
----
-
-## Utilitários (Frontend)
-
-```
-frontend/src/helpers/
-  competency.js     — getCurrentCompetency(date) → YYYY-MM
-  currency.js       — formatCurrency(value) → R$ X.XXX,XX
-  percentage.js     — formatPercentage(value) → X,X%
-  apiError.js       — parse de erros da API
-
-frontend/src/composables/
-  useLoading.js     — isLoading + withLoading(fn)
-  useFormErrors.js  — generalError, fieldError(name), setErrorsFromApi(error)
-
-frontend/src/constants/
-  routeNames.js     — LOGIN, REGISTER, DASHBOARD, CATEGORIES, TRANSACTIONS, MONTHLY_RESERVE
-  transactions.js   — TRANSACTION_TYPES, TRANSACTION_STATUS
-  api.js            — API_BASE_URL
-  layouts.js        — PUBLIC, AUTHENTICATED
-```
+- Inicialização e configuração: frontend/src/main.ts, frontend/src/App.vue, frontend/src/env.d.ts, frontend/tsconfig.json, frontend/vite.config.ts e frontend/package.json.
+- Rotas e sessão: frontend/src/router/index.ts, frontend/src/router/routes.ts, frontend/src/middleware e frontend/src/stores/authStore.ts.
+- Cliente HTTP: frontend/src/services/api/httpClient.ts e frontend/src/constants/api.ts.
+- Componentes reutilizáveis: frontend/src/components/base, data-display, layout e shared.
+- Composables: frontend/src/composables/useFormErrors.ts, useLoading.ts e usePagination.ts.
+- Helpers: frontend/src/helpers/apiError.ts, competency.ts, currency.ts e percentage.ts.
+- Constantes: frontend/src/constants/layouts.ts, routeNames.ts e transactions.ts.

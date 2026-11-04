@@ -1,159 +1,81 @@
-# project-context.md — Contexto Geral do Projeto
+# Contexto geral do projeto
 
-## Visão Geral
+## Visão geral
 
-**API Gestão Financeira** é uma aplicação full-stack de controle financeiro pessoal com dashboard analítico avançado.
+API Gestão Financeira é uma aplicação com backend Laravel e uma SPA Vue independente. O backend expõe a API JSON em /api; a SPA roda a partir de frontend/index.html e se comunica com a API por HTTP. A rota web / do Laravel ainda serve a view welcome, não a SPA.
 
-- **Backend**: Laravel 13 (PHP 8.3) — API REST
-- **Frontend**: Vue 3 + Pinia + Tailwind CSS 4 — SPA
-- **Banco**: MySQL 8 (Docker) / SQLite (local)
-- **Autenticação**: Laravel Sanctum (Bearer tokens)
-- **Cache**: Redis (Docker)
+| Camada | Tecnologia atual |
+|---|---|
+| API | Composer PHP constraint ^8.3 (Docker image PHP 8.4), Laravel 13, Laravel Sanctum |
+| SPA | Vue 3, TypeScript, Vue Router, Pinia, Axios, Tailwind CSS 4, ApexCharts |
+| Build da SPA | Vite 6, configuração em frontend/vite.config.ts |
+| Build das views Laravel | Vite 8, configuração na raiz em vite.config.ts |
+| Persistência | Eloquent e banco relacional configurado pelo ambiente; Docker Compose fornece MySQL 8 |
+| Cache | Cache do Laravel; padrão database, driver configurável; o Compose também fornece Redis |
+| Execução local | API Laravel em localhost:8000 e Vite da SPA em localhost:5173 |
 
----
+Os módulos de cartões têm categorias, compras e painéis próprios. Seus dados não são integrados às categorias, transações ou ao dashboard financeiro geral.
 
-## Stack Completa
+## Modelos e relações principais
 
-| Camada | Tecnologia | Versão |
-|--------|-----------|--------|
-| Backend framework | Laravel | ^13.0 |
-| PHP | PHP | ^8.3 |
-| Autenticação | Laravel Sanctum | ^4.3 |
-| Frontend framework | Vue.js | ^3.5.13 |
-| Roteamento frontend | Vue Router | ^4.6.4 |
-| Estado frontend | Pinia | ^3.0.4 |
-| HTTP client | Axios | ^1.16.1 |
-| CSS | Tailwind CSS | ^4.3.0 |
-| Build tool | Vite | ^6.0.5 |
-| Banco de dados | MySQL | 8.0 |
-| Cache | Redis | alpine |
+| Modelo | Dados e relações relevantes |
+|---|---|
+| User | Usuário autenticado; possui categorias, transações, reservas mensais, contas de reserva e entidades do módulo de cartões. |
+| Category | user_id, name, type (income ou expense); única por usuário, nome e tipo. Possui transações. |
+| Transaction | user_id, category_id, description, amount, type, status (paid ou pending), competency (YYYY-MM) e is_recurring. A categoria precisa pertencer ao usuário e ter o mesmo tipo. |
+| MonthlyReserve | user_id, competency, investimento e observations; único por usuário e competência. Não possui mais reserva_anterior. Possui itens de investimento. |
+| MonthlyReserveEntry | monthly_reserve_id, description e amount; itens que recalculam o total investimento quando criados, editados ou removidos. |
+| ReserveAccount | user_id, name e active; conta nomeada de reserva, arquivada por active=false em vez de excluída. |
+| ReserveAccountEntry | reserve_account_id, competency, balance e note; snapshot de saldo declarado, único por conta e competência. Competências sem snapshot herdam o último valor anterior. |
+| Card | user_id, name, responsible_person e active. |
+| CardCategory | user_id, name e active; única por usuário e nome. É independente de Category. |
+| CardPurchase | user_id, card_id, card_category_id, descrição, valor total, data, competência inicial e dados de pagamento parcelado. |
+| CardInstallment | parcelas derivadas da compra, com usuário, cartão, categoria, tipo, número, competência e valor. Os painéis de cartões agregam parcelas, não o total do cabeçalho. |
 
----
+Detalhes, restrições e cálculos de cada domínio estão nos contextos específicos:
 
-## Modelos de Dados
+- [Autenticação](backend/contexts/auth.md)
+- [Categorias](backend/contexts/categories.md)
+- [Transações](backend/contexts/transactions.md)
+- [Reserva mensal](backend/contexts/monthly-reserve.md)
+- [Dashboard geral](backend/contexts/dashboard.md)
+- [Módulo backend de cartões](backend/contexts/cards.md)
+- [Módulo frontend de cartões](frontend/cards.md)
+- [Mapa do frontend](frontend/overview.md)
 
-### User
-```
-id, name, email, password, email_verified_at, remember_token, created_at, updated_at
-```
-Relacionamentos: `hasMany(Category)`, `hasMany(Transaction)`, `hasMany(MonthlyReserve)`
+## Dependências entre módulos
 
-### Category
-```
-id, user_id, name, type (enum: income|expense), created_at, updated_at
-```
-Constraint única: `(user_id, name, type)`
-Relacionamentos: `belongsTo(User)`, `hasMany(Transaction)`
+- Transações dependem de uma categoria geral do mesmo usuário e do mesmo tipo.
+- Alterar o tipo de uma categoria não reclassifica transações existentes; a compatibilidade é conferida pelo TransactionService na criação/atualização da transação.
+- Dashboard geral agrega transações, snapshots das contas de reserva ativas e o investimento mensal. Transações pagas e pendentes entram nos totais.
+- Reserva mensal reúne snapshots de contas de reserva e itens de investimento. Os snapshots são saldos, não movimentos de caixa.
+- Compras de cartão dependem de cartão e categoria de cartão ativos do mesmo usuário. O backend gera parcelas; o dashboard de cartões lê essas parcelas.
+- Categorias de cartão, compras de cartão e painéis de cartão não alteram transações nem o dashboard geral.
+- Mutação de dados financeiros invalida a versão do cache do dashboard geral. Mutação de cartão, categoria de cartão ou compra invalida uma versão de cache separada.
 
-### Transaction
-```
-id, user_id, category_id, description, amount (decimal:2),
-type (income|expense), status (paid|pending),
-competency (YYYY-MM), is_recurring (boolean), created_at, updated_at
-```
-Índices: `(user_id, competency)`, `(category_id, competency)`
-Relacionamentos: `belongsTo(User)`, `belongsTo(Category)`
+## API
 
-### MonthlyReserve
-```
-id, user_id, competency (YYYY-MM), reserva_anterior (decimal:2),
-investimento (decimal:2), observations (text), created_at, updated_at
-```
-Constraint única: `(user_id, competency)`
-Relacionamentos: `belongsTo(User)`
+Base relativa: /api. Cadastro e login são públicos; as demais rotas abaixo exigem auth:sanctum. Logout também exige autenticação e revoga o token atual.
 
-### Card / CardCategory / CardPurchase / CardInstallment (módulo Cartões)
-```
-Card:            id, user_id, name, responsible_person, active
-CardCategory:    id, user_id, name (unique por usuário), active
-CardPurchase:    id, user_id, card_id, card_category_id, description, total_amount,
-                 purchase_date, reference_competency (YYYY-MM), payment_type (cash|installment),
-                 installments_total, starting_installment_number
-CardInstallment: id, card_purchase_id, user_id, card_id, card_category_id, payment_type,
-                 installment_number, competency (YYYY-MM), amount
-```
-Módulo aditivo e isolado — não referencia `categories`/`transactions`, não recalcula dados antigos. Ver `.ai/backend/contexts/cards.md`.
+| Área | Rotas e parâmetros principais |
+|---|---|
+| Autenticação | POST /auth/register, POST /auth/login, POST /auth/logout. |
+| Categorias | CRUD em /categories. |
+| Transações | CRUD em /transactions; GET exige competency=YYYY-MM. |
+| Reserva mensal | CRUD em /monthly-reserves; itens em /monthly-reserves/{id}/entries. |
+| Contas de reserva | GET/POST /reserve-accounts; PUT /reserve-accounts/{id}; entradas em /reserve-accounts/{id}/entries e /reserve-accounts/{id}/entries/{competency}; gravação em lote via PUT /reserve-account-balances. A listagem aceita competency e include_archived. |
+| Dashboard geral | GET /dashboard/analytics, /monthly-summary, /category-comparison, /monthly-evolution e /month-comparison, sob o prefixo /dashboard. O painel analítico aceita months entre 2 e 12, padrão 6. |
+| Cartões | CRUD em /cards, /card-categories e /card-purchases. As listas de cartões e categorias aceitam include_inactive=1. Compras aceitam filtros competency, card_id, card_category_id e payment_type. |
+| Dashboard de cartões | GET /card-dashboard/analytics e /card-dashboard/monthly-summary. O analytics aceita months entre 2 e 24, padrão 6. |
 
----
+Para contratos completos, consulte os contextos dos módulos; este resumo evita duplicar regras detalhadas.
 
-## Endpoints da API
+## Frontend
 
-**Base URL**: `/api`
-**Autenticação**: `Authorization: Bearer {token}` (exceto auth routes)
+A SPA inicia em frontend/src/main.ts. Rotas e guards ficam em frontend/src/router; páginas em frontend/src/pages; chamadas HTTP em frontend/src/services; sessão em frontend/src/stores/authStore.ts. Os serviços retornam os dados do Resource Laravel e centralizam as chamadas por módulo.
 
-### Auth (sem autenticação)
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| POST | `/auth/register` | Cadastro (throttle: register) |
-| POST | `/auth/login` | Login (throttle: auth) |
-| POST | `/auth/logout` | Logout *(requer auth)* |
+Os scripts atuais da SPA são dev, build, typecheck e preview. O script typecheck executa tsc --noEmit; apesar de vue-tsc estar instalado, o script atual não o invoca. A configuração TypeScript usa strict=false. Consulte frontend/overview.md para rotas, serviços e componentes atuais.
 
-### Categories (auth:sanctum)
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/categories` | Listar categorias do usuário |
-| POST | `/categories` | Criar categoria |
-| GET | `/categories/{id}` | Buscar categoria |
-| PUT | `/categories/{id}` | Atualizar categoria |
-| DELETE | `/categories/{id}` | Excluir categoria |
+## Infraestrutura
 
-### Transactions (auth:sanctum)
-| Método | Rota | Params | Descrição |
-|--------|------|--------|-----------|
-| GET | `/transactions` | `competency` (obrigatório) | Listar por mês |
-| POST | `/transactions` | — | Criar transação |
-| GET | `/transactions/{id}` | — | Buscar transação |
-| PUT | `/transactions/{id}` | — | Atualizar transação |
-| DELETE | `/transactions/{id}` | — | Excluir transação |
-
-### Monthly Reserves (auth:sanctum)
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET | `/monthly-reserves` | Listar reservas (ordenado desc) |
-| POST | `/monthly-reserves` | Criar reserva |
-| GET | `/monthly-reserves/{id}` | Buscar reserva |
-| PUT | `/monthly-reserves/{id}` | Atualizar reserva |
-| DELETE | `/monthly-reserves/{id}` | Excluir reserva |
-
-### Dashboard (auth:sanctum)
-| Método | Rota | Params | Descrição |
-|--------|------|--------|-----------|
-| GET | `/dashboard/analytics` | `competency`, `months` (default 6) | Painel analítico completo (cached 5min) |
-| GET | `/dashboard/monthly-summary` | `competency` | Resumo mensal com categorias |
-| GET | `/dashboard/category-comparison` | `current_competency`, `previous_competency` | Comparativo de categorias |
-| GET | `/dashboard/monthly-evolution` | `start_competency`, `end_competency` | Evolução temporal |
-| GET | `/dashboard/month-comparison` | `first_competency`, `second_competency` | Comparação entre dois meses |
-
-### Cartões (auth:sanctum) — ver `.ai/backend/contexts/cards.md`
-| Método | Rota | Descrição |
-|--------|------|-----------|
-| GET/POST/PUT/DELETE | `/cards` | CRUD de cartões |
-| GET/POST/PUT/DELETE | `/card-categories` | CRUD de categorias de cartão |
-| GET/POST/PUT/DELETE | `/card-purchases` | CRUD de compras (`?competency=&card_id=&card_category_id=&payment_type=`) |
-| GET | `/card-dashboard/analytics` | `competency`, `months` (default 6) — painel de cartões (cached 5min) |
-| GET | `/card-dashboard/monthly-summary` | `competency` | Resumo mensal de cartões |
-
----
-
-## Infraestrutura Docker
-
-| Serviço | Container | Porta | Credenciais |
-|---------|-----------|-------|-------------|
-| App (Laravel) | gestao_app | 8000:80 | — |
-| MySQL | gestao_db | 3306:3306 | gestao / secret |
-| Redis | gestao_redis | — | — |
-
-**Network**: `gestao_net`
-
----
-
-## Variáveis de Ambiente Relevantes
-
-```env
-APP_URL=http://localhost
-DB_CONNECTION=mysql
-DB_DATABASE=gestao_financeira
-DB_USERNAME=gestao
-DB_PASSWORD=secret
-VITE_API_BASE_URL=http://localhost:8000/api
-```
+O Docker Compose do projeto fornece a API, MySQL e Redis. A SPA é executada separadamente pelo Vite e não há serviço de frontend no Compose. Variáveis e credenciais dependem do ambiente; não trate valores exemplificativos como segredos ou configurações universais.

@@ -66,4 +66,27 @@ class CardCategoryTest extends TestCase
         $this->deleteJson("/api/card-categories/{$categoria->id}")
             ->assertStatus(422);
     }
+
+    public function test_categoria_de_cartao_inativa_pode_ser_localizada_e_reativada(): void
+    {
+        $usuario = User::factory()->create();
+        Sanctum::actingAs($usuario);
+
+        $categoria = $this->postJson('/api/card-categories', ['name' => 'Categoria arquivada'])
+            ->assertCreated()
+            ->json('data');
+
+        $this->putJson("/api/card-categories/{$categoria['id']}", ['active' => false])->assertOk();
+        $this->getJson('/api/card-categories')->assertOk()->assertJsonCount(0, 'data');
+
+        $inativas = $this->getJson('/api/card-categories?include_inactive=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->json('data');
+
+        $this->assertFalse($inativas[0]['active']);
+        $this->putJson("/api/card-categories/{$categoria['id']}", ['active' => true])
+            ->assertOk()
+            ->assertJsonPath('data.active', true);
+    }
 }

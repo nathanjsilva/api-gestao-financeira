@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import BaseButton from '../base/BaseButton.vue'
 import { formatCurrency } from '../../helpers/currency'
 import InstallmentStatusBadge from './InstallmentStatusBadge.vue'
@@ -18,7 +18,7 @@ defineEmits(['edit', 'remove'])
     <div class="flex items-start justify-between gap-4">
       <div class="min-w-0">
         <p class="text-xs font-bold uppercase text-slate-500">
-          {{ purchase.category?.name || 'Sem categoria' }} · {{ purchase.card?.name }}
+          {{ purchase.category?.name || 'Sem categoria' }} Â· {{ purchase.card?.name }}
         </p>
         <h3 class="mt-1 break-words text-lg font-black text-slate-50">{{ purchase.description }}</h3>
       </div>

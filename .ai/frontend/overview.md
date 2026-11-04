@@ -1,271 +1,76 @@
-# overview.md — Estrutura do Frontend
+# Mapa do frontend
 
-## Tecnologias e Versões
+> Este documento registra estrutura e comportamento observáveis. As regras normativas para agentes estão em [AGENTS.md](../../AGENTS.md); os detalhes funcionais estão nos contextos de cada módulo.
 
-```json
-{
-  "vue": "^3.5.13",
-  "vue-router": "^4.6.4",
-  "pinia": "^3.0.4",
-  "axios": "^1.16.1",
-  "tailwindcss": "^4.3.0",
-  "vite": "^6.0.5"
-}
-```
+## Stack e execução
 
-**Dev server**: `vite --host 0.0.0.0 --port 5173`
-**Build**: `vite build`
+A SPA usa Vue 3, TypeScript, Vue Router, Pinia, Axios, Tailwind CSS 4 e ApexCharts. O entrypoint é frontend/src/main.ts e a configuração do frontend fica em frontend/vite.config.ts. Esta SPA usa Vite 6 e roda separadamente do build das views Laravel, cuja configuração fica na raiz do repositório.
 
----
+Scripts em frontend/package.json:
+- dev: Vite em 0.0.0.0:5173;
+- build: vite build;
+- typecheck: tsc --noEmit;
+- preview: Vite em 0.0.0.0:4173.
 
-## Roteamento (Vue Router 4)
+vue-tsc está instalado, mas os scripts atuais não o chamam. O tsconfig inclui .ts, .d.ts e .vue, define strict=false e allowJs=false. Assim, o typecheck configurado executa tsc e não verifica integralmente os blocos TypeScript dos componentes Vue.
 
-### Rotas Disponíveis
+## Rotas
 
-| Path | Nome | Layout | Guard | Componente |
-|------|------|--------|-------|-----------|
-| `/login` | `login` | PUBLIC | guestOnly | `pages/auth/LoginPage.vue` |
-| `/cadastro` | `register` | PUBLIC | guestOnly | `pages/auth/RegisterPage.vue` |
-| `/dashboard` | `dashboard` | AUTHENTICATED | requiresAuth | `pages/dashboard/DashboardPage.vue` |
-| `/categorias` | `categories` | AUTHENTICATED | requiresAuth | `pages/categories/CategoriesPage.vue` |
-| `/transacoes` | `transactions` | AUTHENTICATED | requiresAuth | `pages/transactions/TransactionsPage.vue` |
-| `/reserva-mensal` | `monthly-reserve` | AUTHENTICATED | requiresAuth | `pages/monthly-reserve/MonthlyReservePage.vue` |
-| `/cartoes/compras` | `card-purchases` | AUTHENTICATED | requiresAuth | `pages/card-purchases/CardPurchasesPage.vue` (compras + análises, ver abaixo) |
-| `/cartoes/gerenciar` | `cards` | AUTHENTICATED | requiresAuth | `pages/cards/CardsPage.vue` |
-| `/cartoes/categorias` | `card-categories` | AUTHENTICATED | requiresAuth | `pages/card-categories/CardCategoriesPage.vue` |
-| `/cartoes/analise` | — | — | — | Redirect para `card-purchases` (rota antiga `card-dashboard` removida; mantida por compatibilidade de links) |
+| Caminho | Página | Acesso |
+|---|---|---|
+| /login | pages/auth/LoginPage.vue | Visitante; autenticados são redirecionados. |
+| /cadastro | pages/auth/RegisterPage.vue | Visitante; autenticados são redirecionados. |
+| /dashboard | pages/dashboard/DashboardPage.vue | Autenticado. |
+| /categorias | pages/categories/CategoriesPage.vue | Autenticado. |
+| /transacoes | pages/transactions/TransactionsPage.vue | Autenticado. |
+| /reserva-mensal | pages/monthly-reserve/MonthlyReservePage.vue | Autenticado. |
+| /cartoes/compras | pages/card-purchases/CardPurchasesPage.vue | Autenticado; compras e análises. |
+| /cartoes/gerenciar | pages/cards/CardsPage.vue | Autenticado; cartões ativos e arquivados. |
+| /cartoes/categorias | pages/card-categories/CardCategoriesPage.vue | Autenticado; categorias ativas e arquivadas. |
+| /cartoes/analise | — | Redirect de compatibilidade para /cartoes/compras. |
 
-As 3 rotas de Cartões compartilham uma sub-navegação própria (`components/cards/CardsSubNav.vue`) e aparecem na navegação global como um único item "Cartões" — ver `.ai/frontend/cards.md`.
+A raiz redireciona para o dashboard quando autenticado ou para login quando visitante. AuthenticatedLayout contém a navegação privada e PublicLayout atende login e cadastro. As três páginas de cartões compartilham CardsSubNav; o módulo aparece como um item na navegação global.
 
-- `/` redireciona para `/dashboard` (autenticado) ou `/login` (não autenticado)
-- Nomes das rotas em `constants/routeNames.js`
+## Sessão e cliente HTTP
 
-### Guards de Rota
+- stores/authStore.ts mantém usuário e token e persiste a sessão em localStorage.
+- middleware/authGuard.ts e guestGuard.ts controlam a navegação no navegador. A autorização da API continua sendo responsabilidade do backend e do Sanctum.
+- services/api/httpClient.ts usa VITE_API_BASE_URL, com padrão http://localhost:8000/api, envia Bearer token quando existe e limpa a sessão/redireciona em respostas 401.
+- Cada service do módulo extrai response.data.data e centraliza as chamadas HTTP.
 
-**authGuard.js** — Protege rotas autenticadas:
-```javascript
-// Se não há token → redireciona para { name: LOGIN }
-```
+## Páginas e serviços por módulo
 
-**guestGuard.js** — Protege rotas públicas:
-```javascript
-// Se já há token → redireciona para { name: DASHBOARD }
-```
+| Módulo | Página e service principal | Dependências na tela |
+|---|---|---|
+| Autenticação | pages/auth; services/auth/authService.ts | authStore e httpClient. |
+| Categorias | pages/categories; services/categories/categoryService.ts | CategoryForm e opções de tipo. |
+| Transações | pages/transactions; services/transactions/transactionService.ts | categorias, filtros locais por texto/categoria/tipo/status/recorrência, resumo da competência e gráfico de gastos por categoria. |
+| Reserva mensal | pages/monthly-reserve; services/monthly-reserves/monthlyReserveService.ts e services/reserve-accounts/reserveAccountService.ts | MonthlyReserveEditor também chama dashboardService e edita snapshots, itens de investimento, observações e contas. |
+| Dashboard geral | pages/dashboard; services/dashboard/dashboardService.ts | Resumo, comparações, ranking, evolução, reservas, fluxo de caixa, heatmap, insights e KPIs. |
+| Cartões | páginas em pages/cards, card-categories e card-purchases; services/cards, card-categories, card-purchases e card-dashboard | Ver [contexto frontend de cartões](cards.md). |
 
----
+MonthlyReserveEditor carrega contas da competência incluindo arquivadas, apresenta contas ativas e arquivadas, permite criar, renomear, arquivar e reativar, e prepara os saldos das contas ativas para gravação em lote. A gravação dos saldos é atômica no endpoint de lote. Renomeações são requests separados e não fazem parte dessa atomicidade. O componente também gerencia os itens de investimento da reserva mensal.
 
-## Layouts
+TransactionsPage filtra localmente a lista mensal que recebeu da API e apresenta totais e análise visual. O status de uma transação não é usado como critério dos agregados do backend; consulte o contexto de transações.
 
-### AuthenticatedLayout.vue
-- Menu de navegação lateral/superior
-- Links para: Dashboard, Categorias, Transações, Reserva Mensal
-- Botão de logout
-- Slot para conteúdo da página
+DashboardPage envia competency e months ao endpoint analytics. O backend aceita meses entre 2 e 12, embora o input da tela não limite localmente esse intervalo. O painel apresenta entradas, gastos, saldo restante, total guardado, comparação, insights, gráficos e KPIs do período.
 
-### PublicLayout.vue
-- Layout simples sem navegação
-- Para páginas de login e cadastro
+## Componentes compartilhados
 
----
+| Diretório/arquivo | Responsabilidade |
+|---|---|
+| components/base | BaseButton, BaseCard, BaseInput, BaseSelect, BaseTextarea, BaseModal, BaseMonthPicker e BasePagination. |
+| components/data-display | EmptyState e MetricCard. |
+| components/layout | PageHeader. |
+| components/shared | FinancialInsight. |
+| composables | useFormErrors, useLoading e usePagination. |
+| helpers | apiError, cardInstallments, competency, currency e percentage. |
+| constants | api, cardPurchases, layouts, routeNames e transactions. |
 
-## Estado Global (Pinia)
+O helper cardInstallments.ts replica no navegador apenas a prévia do algoritmo de parcelas; o cálculo persistido pelo backend é a autoridade. Para os componentes do módulo de cartões e a semântica da previsão, consulte frontend/cards.md.
 
-### authStore.js
+## Inicialização
 
-```javascript
-// Estado
-user  // ref — objeto do usuário logado
-token // ref — Bearer token
-
-// Computados
-isAuthenticated // computed — boolean
-userName        // computed — nome do usuário
-
-// Ações
-setSession(payload)  // salva user + token no localStorage
-clearSession()       // limpa dados locais
-
-// Storage key: 'gestao_financeira_auth'
-```
-
----
-
-## Serviços HTTP
-
-### httpClient.js (Axios)
-- Base URL: `VITE_API_BASE_URL` (default: `http://localhost:8000/api`)
-- **Request interceptor**: Adiciona `Authorization: Bearer {token}` de todo request
-- **Response interceptor**: Em 401 → limpa sessão + redireciona para `/login`
-
-### Services por Módulo
-
-```javascript
-// services/auth/authService.js
-register(payload)  // POST /auth/register
-login(payload)     // POST /auth/login
-logout()           // POST /auth/logout
-
-// services/categories/categoryService.js
-list()                    // GET /categories
-create(payload)           // POST /categories
-update(id, payload)       // PUT /categories/{id}
-remove(id)                // DELETE /categories/{id}
-
-// services/transactions/transactionService.js
-list(params)              // GET /transactions?competency=YYYY-MM
-create(payload)           // POST /transactions
-update(id, payload)       // PUT /transactions/{id}
-remove(id)                // DELETE /transactions/{id}
-
-// services/monthly-reserves/monthlyReserveService.js
-list()                    // GET /monthly-reserves
-create(payload)           // POST /monthly-reserves
-update(id, payload)       // PUT /monthly-reserves/{id}
-remove(id)                // DELETE /monthly-reserves/{id}
-listEntries(reserveId)    // GET /monthly-reserves/{id}/entries (lançamentos de investimento)
-createEntry(reserveId, payload)
-updateEntry(reserveId, entryId, payload)
-removeEntry(reserveId, entryId)
-
-// services/reserve-accounts/reserveAccountService.js
-list(params)               // GET /reserve-accounts (?competency=YYYY-MM)
-create(payload)             // POST /reserve-accounts
-update(id, payload)         // PUT /reserve-accounts/{id} (renomear/arquivar)
-listEntries(id)              // GET /reserve-accounts/{id}/entries
-setEntry(id, competency, payload)    // PUT /reserve-accounts/{id}/entries/{competency}
-removeEntry(id, competency)          // DELETE /reserve-accounts/{id}/entries/{competency}
-
-// services/dashboard/dashboardService.js
-analytics(params)         // GET /dashboard/analytics
-monthlySummary(competency)// GET /dashboard/monthly-summary
-categoryComparison(params)// GET /dashboard/category-comparison
-monthlyEvolution(params)  // GET /dashboard/monthly-evolution
-monthComparison(params)   // GET /dashboard/month-comparison
-
-// services/cards/cardService.js — list/create/update/remove
-// services/card-categories/cardCategoryService.js — list/create/update/remove
-// services/card-purchases/cardPurchaseService.js — list(params)/create/update/remove
-// services/card-dashboard/cardDashboardService.js — analytics(params)/monthlySummary(competency)
-```
-
----
-
-## Componentes
-
-### Base (`components/base/`)
-| Componente | Props principais | Uso |
-|-----------|-----------------|-----|
-| `BaseButton.vue` | `type`, `disabled`, `loading` | Botão padrão |
-| `BaseCard.vue` | — | Wrapper de card |
-| `BaseInput.vue` | `label`, `modelValue`, `error` | Input com label |
-| `BaseSelect.vue` | `label`, `modelValue`, `options`, `error` | Select com label |
-| `BaseTextarea.vue` | `label`, `modelValue`, `error` | Textarea com label |
-
-### Dashboard (`components/dashboard/`)
-| Componente | Dados esperados |
-|-----------|----------------|
-| `CashFlowChart.vue` | `cash_flow` do analytics |
-| `CategoryRanking.vue` | `categories` do analytics |
-| `ExpenseChart.vue` | dados de despesas |
-| `FinancialCard.vue` | `overview` / métricas individuais |
-| `FinancialHeatmap.vue` | `heatmap` do analytics |
-| `FinancialInsights.vue` | `insights` do analytics |
-| `MonthlyComparison.vue` | `comparison` do analytics |
-| `ReserveEvolution.vue` | `reserve_evolution` do analytics |
-
-### Transações (`components/transactions/`)
-- `TransactionCard.vue` — exibe uma transação (description, amount, category, status)
-- `TransactionStatusBadge.vue` — badge colorido para `paid`/`pending`
-
-### Cartões (`components/cards/`, `card-categories/`, `card-purchases/`, `card-dashboard/`)
-Ver `.ai/frontend/cards.md` para a lista completa — inclui `CardsSubNav.vue`, `CardPurchaseForm.vue` (com preview ao vivo das parcelas) e os gráficos do dashboard de cartões.
-
----
-
-## Composables
-
-### useLoading.js
-```javascript
-const { isLoading, withLoading } = useLoading()
-
-// Uso
-await withLoading(async () => {
-  await transactionService.create(payload)
-})
-// isLoading é true durante a execução
-```
-
-### useFormErrors.js
-```javascript
-const { generalError, fieldError, clearErrors, setErrorsFromApi } = useFormErrors()
-
-// Uso no catch
-setErrorsFromApi(error) // parse automático de erros da API Laravel (422)
-
-// No template
-fieldError('email')     // erro do campo 'email'
-generalError            // erro geral (não de campo)
-```
-
----
-
-## Constants
-
-### routeNames.js
-```javascript
-export const LOGIN         = 'login'
-export const REGISTER      = 'register'
-export const DASHBOARD     = 'dashboard'
-export const CATEGORIES    = 'categories'
-export const TRANSACTIONS  = 'transactions'
-export const MONTHLY_RESERVE = 'monthly-reserve'
-```
-
-### transactions.js
-```javascript
-export const TRANSACTION_TYPES = [
-  { label: 'Entrada', value: 'income' },
-  { label: 'Saída',   value: 'expense' }
-]
-
-export const TRANSACTION_STATUS = [
-  { label: 'Pago',     value: 'paid' },
-  { label: 'Pendente', value: 'pending' }
-]
-```
-
-### layouts.js
-```javascript
-export const PUBLIC        = 'PublicLayout'
-export const AUTHENTICATED = 'AuthenticatedLayout'
-```
-
----
-
-## Helpers
-
-### competency.js
-```javascript
-getCurrentCompetency(date = new Date()) // → 'YYYY-MM' (ex: '2026-07')
-```
-
-### cardInstallments.js
-```javascript
-calculateInstallments(totalAmount, installmentsTotal, startingInstallmentNumber, referenceCompetency)
-// Replica no frontend o algoritmo de arredondamento do backend, só para preview no formulário de compra
-```
-
-### currency.js
-```javascript
-formatCurrency(value) // → 'R$ 1.234,56' (Intl.NumberFormat, locale pt-BR)
-```
-
-### percentage.js
-```javascript
-formatPercentage(value) // → '36,0%'
-```
-
-### apiError.js
-```javascript
-// Parse de erros da API para uso no useFormErrors
-```
+- frontend/src/main.ts registra Pinia e Vue Router, importa os estilos e monta App.vue.
+- frontend/src/router/index.ts cria o router a partir de router/routes.ts.
+- frontend/index.html aponta para frontend/src/main.ts.

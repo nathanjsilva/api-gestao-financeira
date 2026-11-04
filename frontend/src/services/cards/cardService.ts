@@ -5,8 +5,8 @@ function getData(response) {
 }
 
 export const cardService = {
-  async list() {
-    return getData(await httpClient.get('/cards'))
+  async list(params) {
+    return getData(await httpClient.get('/cards', { params }))
   },
 
   async create(payload) {

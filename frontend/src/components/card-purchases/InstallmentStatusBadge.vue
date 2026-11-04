@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed } from 'vue'
 import { CARD_PAYMENT_TYPES } from '../../constants/cardPurchases'
 
@@ -10,6 +10,7 @@ const props = defineProps({
 })
 
 const paymentLabel = computed(() => CARD_PAYMENT_TYPES.find((type) => type.value === props.purchase.payment_type)?.label || props.purchase.payment_type)
+const scheduleEnded = computed(() => props.purchase.installment_schedule_ended ?? props.purchase.is_settled ?? false)
 </script>
 
 <template>
@@ -19,9 +20,9 @@ const paymentLabel = computed(() => CARD_PAYMENT_TYPES.find((type) => type.value
     </span>
     <span
       class="rounded-full px-3 py-1 text-xs font-bold"
-      :class="purchase.is_settled ? 'bg-emerald-400/10 text-emerald-300' : 'bg-amber-400/10 text-amber-300'"
+      :class="scheduleEnded ? 'bg-emerald-400/10 text-emerald-300' : 'bg-amber-400/10 text-amber-300'"
     >
-      {{ purchase.is_settled ? 'Quitada' : 'Em andamento' }}
+      {{ scheduleEnded ? 'Previsão encerrada' : 'Parcelas futuras' }}
     </span>
   </div>
 </template>

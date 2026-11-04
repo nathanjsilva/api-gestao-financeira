@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import BaseButton from '../base/BaseButton.vue'
 import BaseInput from '../base/BaseInput.vue'
 
@@ -38,7 +38,7 @@ defineEmits(['submit', 'cancel'])
       id="card-category-name"
       v-model="form.name"
       label="Nome"
-      placeholder="Ex: Alimentação"
+      placeholder="Ex: AlimentaÃ§Ã£o"
       :error="fieldError('name')"
     />
 

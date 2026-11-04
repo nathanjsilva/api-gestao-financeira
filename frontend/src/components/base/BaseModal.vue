@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
 
 const props = defineProps({
@@ -41,7 +41,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown))
               aria-label="Fechar"
               @click="$emit('close')"
             >
-              ✕
+              âœ•
             </button>
           </div>
 

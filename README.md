@@ -1,284 +1,96 @@
 # API Gestão Financeira
 
-API RESTful para controle financeiro pessoal multiusuário, com autenticação via Sanctum, competência mensal no formato `YYYY-MM` e endpoints de dashboard para consolidação financeira.
+Aplicação multiusuário de finanças pessoais. O repositório contém uma API REST em Laravel e uma SPA independente em Vue 3 com TypeScript.
 
-## Stack
+## Componentes
 
-- PHP 8.3+
-- Laravel 13
-- MySQL 8
-- Redis
-- Laravel Sanctum
-- Docker
+| Área | Implementação atual |
+|---|---|
+| API | Laravel 13, Sanctum e Eloquent; Composer exige PHP ^8.3 e a imagem Docker atual usa PHP 8.4 com Apache |
+| SPA | Vue 3, TypeScript, Vue Router, Pinia, Axios, Tailwind CSS 4, ApexCharts |
+| Banco do ambiente Docker | MySQL 8 |
+| Cache | Cache Laravel configurável, com database como padrão; o Compose também oferece Redis |
+| Execução local | API em localhost:8000; Vite em localhost:5173 |
 
-## Objetivo do sistema
-
-O sistema foi construído para controlar:
-
-- usuários
-- categorias por usuário
-- transações financeiras
-- reservas mensais
-- dashboard com indicadores e comparativos
-
-Cada usuário acessa apenas os seus próprios dados.
-
-## Principais regras de negócio
-
-- a competência mensal usa o formato `YYYY-MM`
-- categorias pertencem ao usuário autenticado
-- transações centralizam entradas e saídas
-- não existe parcelamento
-- não existe pagamento parcial
-- não existe vencimento
-- exclusão é permanente
-- recorrência é controlada por `boolean`
-
-## Arquitetura
-
-O projeto segue arquitetura em camadas:
-
-`Route -> Middleware -> FormRequest -> Controller -> Service -> Repository -> Model -> Resource`
-
-### Camadas
-
-- `Controller`: recebe a requisição HTTP
-- `Service`: aplica regra de negócio
-- `Repository`: consulta e persiste dados
-- `Request`: valida e normaliza entrada
-- `Resource`: padroniza a saída JSON
-- `Middleware`: trata responsabilidades transversais
-- `Model`: representa as entidades do domínio
-
-## Estrutura principal
-
-```text
-app/
-|-- Http/
-|   |-- Controllers/Api
-|   |-- Middleware
-|   |-- Requests
-|   `-- Resources
-|-- Models
-|-- Providers
-|-- Repositories
-|-- Rules
-`-- Services
-```
+A SPA está em frontend/ e não é servida pela rota web do Laravel. A rota / retorna a view welcome. O Docker Compose inicia API, MySQL e Redis, mas não inicia o Vite nem publica frontend/dist.
 
 ## Módulos implementados
 
-- autenticação
-- categorias
-- transações
-- reservas mensais
-- dashboard
+- Autenticação e sessão por token Sanctum.
+- Categorias financeiras de entrada e saída.
+- Transações por competência mensal.
+- Contas de reserva com snapshots de saldo e herança entre competências.
+- Reserva mensal com itens de investimento.
+- Dashboard financeiro geral.
+- Cartões, categorias próprias de cartão, compras à vista ou parceladas e dashboard de cartões independente.
 
-## Ambiente com Docker
+## Arquitetura
 
-O projeto foi preparado para rodar com:
+O fluxo padrão da API é:
 
-- `gestao_app`
-- `gestao_db`
-- `gestao_redis`
+~~~text
+rota → middleware → Form Request → Controller → Service → Repository → Model
+                                                               ↓
+                                                         banco relacional
 
-### Subir os containers
+Controller → Resource ou resposta JSON direta
+~~~
 
-```bash
+Controllers coordenam HTTP e delegam regras a Services. Services coordenam o domínio; Repositories concentram consultas Eloquent; Resources controlam a representação pública. Cadastro e login são rotas públicas. As demais rotas da API exigem auth:sanctum.
+
+## Regras importantes
+
+- A competência usa YYYY-MM e é validada no backend por CompetencyRule.
+- Categorias e registros financeiros pertencem ao usuário autenticado. O cliente não define user_id.
+- Uma transação depende de categoria do mesmo usuário e do mesmo tipo.
+- Transações pagas e pendentes entram nos agregados financeiros; is_recurring é apenas um marcador e não cria meses futuros.
+- ReserveAccountEntry é snapshot de saldo, não movimento. Na ausência de snapshot na competência, usa-se o último anterior.
+- MonthlyReserve.investimento pode ser enviado diretamente pela API. Alterações em itens de investimento recalculam o total como soma dos itens.
+- Compras de cartão geram CardInstallment. Os painéis de cartões somam parcelas, não total_amount da compra.
+- Dados de cartão não alimentam o dashboard financeiro geral.
+- Os dois dashboards têm cache e invalidação separados, com chaves por usuário.
+
+As fórmulas e limitações contábeis estão em docs/fluxograma-arquitetura-aplicacao.md e nos contextos em .ai/backend/contexts/.
+
+## Início local
+
+Com Docker:
+
+~~~bash
 docker compose up -d
-```
-
-### Instalar dependências no container
-
-```bash
 docker compose exec app composer install
-```
+docker compose exec app php artisan migrate
+~~~
 
-### Rodar migrations
+Em outro terminal, inicie a SPA:
 
-```bash
-docker compose exec app php artisan migrate --force
-```
+~~~bash
+cd frontend
+npm ci
+npm run dev
+~~~
 
-### Listar rotas
+Configure frontend/.env com VITE_API_BASE_URL apontando para a API, por exemplo http://localhost:8000/api. O valor é incorporado no build do Vite. Não coloque segredos em variáveis VITE_.
 
-```bash
-docker compose exec app php artisan route:list
-```
+## Comandos disponíveis
 
-## Configuração de ambiente
+Na raiz, os comandos de Laravel são definidos em composer.json; a suíte pode ser iniciada com composer test.
 
-Exemplo de variáveis importantes:
+Em frontend/:
 
-```env
-APP_URL=http://localhost:8000
+- npm run dev inicia Vite na porta 5173.
+- npm run build compila a SPA.
+- npm run typecheck executa tsc --noEmit. Esse script não executa vue-tsc, portanto não verifica integralmente os blocos TypeScript dos componentes Vue.
+- npm run preview inicia a prévia do build na porta 4173.
 
-DB_CONNECTION=mysql
-DB_HOST=db
-DB_PORT=3306
-DB_DATABASE=gestao_financeira
-DB_USERNAME=gestao
-DB_PASSWORD=secret
+Consulte os arquivos de configuração para os comandos e versões atuais. Esta documentação não afirma que verificações foram executadas.
 
-REDIS_HOST=redis
-REDIS_PORT=6379
+## Documentação
 
-SANCTUM_STATEFUL_DOMAINS=localhost:5173
-SANCTUM_TOKEN_EXPIRATION=1440
-```
-
-## Autenticação
-
-A API utiliza Sanctum com Bearer Token.
-
-Header esperado nas rotas protegidas:
-
-```http
-Authorization: Bearer SEU_TOKEN
-Accept: application/json
-Content-Type: application/json
-```
-
-### Fluxo recomendado
-
-1. registrar usuário em `/api/auth/register`
-2. armazenar o token retornado
-3. enviar o token nas rotas protegidas
-4. fazer logout em `/api/auth/logout` quando necessário
-
-## Endpoints principais
-
-### Auth
-
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-
-### Categories
-
-- `GET /api/categories`
-- `GET /api/categories/{id}`
-- `POST /api/categories`
-- `PUT/PATCH /api/categories/{id}`
-- `DELETE /api/categories/{id}`
-
-### Transactions
-
-- `GET /api/transactions?competency=2026-05`
-- `GET /api/transactions/{id}`
-- `POST /api/transactions`
-- `PUT/PATCH /api/transactions/{id}`
-- `DELETE /api/transactions/{id}`
-
-### Monthly Reserves
-
-- `GET /api/monthly-reserves`
-- `GET /api/monthly-reserves/{id}`
-- `POST /api/monthly-reserves`
-- `PUT/PATCH /api/monthly-reserves/{id}`
-- `DELETE /api/monthly-reserves/{id}`
-
-### Dashboard
-
-- `GET /api/dashboard/monthly-summary?competency=2026-05`
-- `GET /api/dashboard/category-comparison?current_competency=2026-05&previous_competency=2026-04`
-- `GET /api/dashboard/monthly-evolution?start_competency=2026-01&end_competency=2026-05`
-- `GET /api/dashboard/month-comparison?first_competency=2026-04&second_competency=2026-05`
-
-## Indicadores do dashboard
-
-O dashboard foi preparado para retornar:
-
-- total de entradas do mês
-- total de gastos do mês
-- valor restante
-- reserva atual
-- total guardado
-- categoria com maior gasto
-- categoria com menor gasto
-- gastos por categoria
-- comparativo de categorias entre meses
-- evolução mensal
-- comparação entre meses
-
-## Fórmulas utilizadas
-
-```text
-valor_restante = total_entradas - total_gastos
-reserva_atual = reserva_anterior + valor_restante
-total_guardado = reserva_atual + investimento
-```
-
-## Segurança aplicada
-
-- autenticação com Sanctum
-- ownership por usuário nas consultas
-- middleware para forçar JSON
-- throttle em login e registro
-- expiração configurada para tokens
-- validações contextuais por usuário
-
-## Validações implementadas
-
-- `competency` com regra customizada
-- email normalizado em auth
-- nome e descrição com `trim`
-- unicidade de categoria por usuário e tipo
-- unicidade de reserva mensal por usuário e competência
-- categoria da transação restrita ao usuário autenticado
-- consistência entre `category.type` e `transaction.type`
-
-## Otimizações aplicadas
-
-- eager loading com colunas específicas
-- agregações do dashboard nos repositories
-- consultas em lote para evolução mensal e comparações
-- índices de banco voltados para `user_id`, `competency`, `type` e `status`
-
-## Documentação local complementar
-
-Existem dois arquivos locais de apoio que não sobem para o GitHub por estarem no `.gitignore`:
-
-- `local-docs/USO_API_LOCAL.md`
-- `local-docs/EXPLICACAO_SISTEMA_LOCAL.md`
-
-Eles foram criados para uso local e estudo do projeto.
-
-## Comandos úteis
-
-### Rodar migrations
-
-```bash
-docker compose exec app php artisan migrate --force
-```
-
-### Limpar cache de configuração
-
-```bash
-docker compose exec app php artisan config:clear
-```
-
-### Rodar testes
-
-```bash
-docker compose exec app php artisan test
-```
-
-### Abrir shell no container da aplicação
-
-```bash
-docker compose exec app sh
-```
-
-## Melhorias futuras
-
-- testes automatizados
-- policies
-- handler global para exceções de domínio
-- cache no dashboard
-- paginação e filtros adicionais
-- versionamento de API
-
-## Licença
-
-Este projeto utiliza a licença MIT.
+- [Fluxo, arquitetura, dados, endpoints e fórmulas](docs/fluxograma-arquitetura-aplicacao.md)
+- [Auditoria funcional e limites atuais](docs/auditoria-funcional-financeira.md)
+- [Configuração atual do frontend](docs/guia-configuracao-vue-typescript-vite.md)
+- [Requisitos de implantação em VM](docs/deploy-oracle-cloud.md)
+- [Mapa de módulos backend](.ai/project-context.md)
+- [Mapa do frontend](.ai/frontend/overview.md)
+- [Instruções normativas do projeto](AGENTS.md)

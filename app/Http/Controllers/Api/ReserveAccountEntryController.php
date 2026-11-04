@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReserveAccount\UpsertReserveAccountEntriesRequest;
 use App\Http\Requests\ReserveAccount\UpsertReserveAccountEntryRequest;
 use App\Http\Resources\ReserveAccountEntryResource;
 use App\Services\ReserveAccountService;
@@ -26,6 +27,21 @@ class ReserveAccountEntryController extends Controller
         }
 
         return ReserveAccountEntryResource::collection($lancamentos);
+    }
+
+    public function upsertMany(
+        UpsertReserveAccountEntriesRequest $request,
+    ): AnonymousResourceCollection|JsonResponse {
+        try {
+            $entries = $this->reserveAccountService->definirSaldosDoMesEmLote(
+                $this->usuarioIdAutenticado(),
+                $request->validated(),
+            );
+        } catch (DomainException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 404);
+        }
+
+        return ReserveAccountEntryResource::collection($entries);
     }
 
     public function update(

@@ -1,4 +1,4 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
 import BaseButton from '../../components/base/BaseButton.vue'
 import BaseCard from '../../components/base/BaseCard.vue'
@@ -101,8 +101,10 @@ const cashTotal = computed(() => filteredPurchases.value
 
 const installmentTotal = computed(() => totalMonth.value - cashTotal.value)
 
-const settledCount = computed(() => filteredPurchases.value.filter((purchase) => purchase.is_settled).length)
-const pendingCount = computed(() => filteredPurchases.value.length - settledCount.value)
+const scheduleEndedCount = computed(() => filteredPurchases.value.filter(
+  (purchase) => purchase.installment_schedule_ended ?? purchase.is_settled,
+).length)
+const futureInstallmentCount = computed(() => filteredPurchases.value.length - scheduleEndedCount.value)
 
 const categoryTotals = computed(() => {
   const totals = new Map()
@@ -154,9 +156,9 @@ const purchaseInsights = computed(() => {
   })
 
   insights.push({
-    title: `${pendingCount.value} compra(s) em andamento`,
-    description: 'Compras parceladas ainda não quitadas continuam impactando os próximos meses.',
-    tone: pendingCount.value > 0 ? 'warning' : 'success',
+    title: `${futureInstallmentCount.value} compra(s) com parcelas futuras`,
+    description: 'As parcelas previstas impactam competências futuras. Esta área não registra pagamento de faturas.',
+    tone: futureInstallmentCount.value > 0 ? 'warning' : 'success',
   })
 
   if (categoryTotals.value[0]) {
@@ -354,6 +356,10 @@ onMounted(loadInitialData)
 
     <CardsSubNav />
 
+    <p class="mt-4 rounded-2xl border border-sky-300/15 bg-sky-300/[0.06] p-4 text-sm leading-6 text-sky-100/80">
+      Compras e parcelas desta área alimentam apenas as análises de cartões. Elas não alteram as despesas do dashboard geral nem registram pagamento de fatura; mantenha os painéis separados ao comparar os totais.
+    </p>
+
     <p v-if="generalError" class="mt-5 rounded-2xl bg-rose-500/10 p-4 text-sm text-rose-200">
       {{ generalError }}
     </p>
@@ -362,12 +368,12 @@ onMounted(loadInitialData)
       <article class="financial-card financial-card--rose">
         <p class="text-sm font-semibold text-slate-400">Total do mês</p>
         <strong class="mt-3 block text-3xl font-black text-rose-300">{{ formatCurrency(totalMonth) }}</strong>
-        <p class="mt-3 text-sm text-slate-400">Soma das parcelas com vencimento nesta competência.</p>
+        <p class="mt-3 text-sm text-slate-400">Soma das parcelas previstas nesta competência.</p>
       </article>
       <article class="financial-card financial-card--sky">
         <p class="text-sm font-semibold text-slate-400">À vista</p>
         <strong class="mt-3 block text-3xl font-black text-sky-300">{{ formatCurrency(cashTotal) }}</strong>
-        <p class="mt-3 text-sm text-slate-400">Compras pagas integralmente no mês.</p>
+        <p class="mt-3 text-sm text-slate-400">Compras à vista registradas integralmente nesta competência.</p>
       </article>
       <article class="financial-card financial-card--violet">
         <p class="text-sm font-semibold text-slate-400">Parcelado</p>
@@ -375,9 +381,9 @@ onMounted(loadInitialData)
         <p class="mt-3 text-sm text-slate-400">Parcelas de compras parceladas neste mês.</p>
       </article>
       <article class="financial-card financial-card--emerald">
-        <p class="text-sm font-semibold text-slate-400">Situação</p>
-        <strong class="mt-3 block text-3xl font-black text-slate-50">{{ settledCount }}/{{ filteredPurchases.length }}</strong>
-        <p class="mt-3 text-sm text-slate-400">{{ pendingCount }} compra(s) ainda em andamento.</p>
+        <p class="text-sm font-semibold text-slate-400">Cronograma previsto</p>
+        <strong class="mt-3 block text-3xl font-black text-slate-50">{{ scheduleEndedCount }}/{{ filteredPurchases.length }}</strong>
+        <p class="mt-3 text-sm text-slate-400">{{ futureInstallmentCount }} compra(s) com parcelas futuras.</p>
       </article>
     </div>
 
@@ -544,15 +550,15 @@ onMounted(loadInitialData)
           accent="sky"
         />
         <FinancialCard
-          label="Comprometido futuro"
+          label="Previsão total futura"
           :value="formatCurrency(committedFuture)"
-          hint="Parcelas com vencimento após este mês"
+          hint="Compras e parcelas registradas para competências posteriores"
           accent="violet"
         />
         <FinancialCard
-          label="Saldo devedor parcelado"
+          label="Parcelas futuras"
           :value="formatCurrency(outstandingBalance)"
-          hint="Parte ainda não vencida das compras parceladas"
+          hint="Soma das parcelas registradas para competências posteriores"
           accent="emerald"
         />
       </div>

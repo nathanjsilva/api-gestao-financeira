@@ -97,6 +97,16 @@ class ReserveAccountTest extends TestCase
 
         $this->putJson("/api/reserve-accounts/{$conta['id']}", ['active' => false])->assertOk();
 
+        $this->getJson('/api/reserve-accounts?competency=2026-02')
+            ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $arquivada = $this->getJson('/api/reserve-accounts?competency=2026-02&include_archived=1')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->json('data.0');
+        $this->assertFalse($arquivada['active']);
+
         $resumo = $this->getJson('/api/dashboard/monthly-summary?competency=2026-02')->assertOk()->json('data');
         $this->assertEquals(0, $resumo['current_reserve']);
 
@@ -121,5 +131,60 @@ class ReserveAccountTest extends TestCase
 
         $this->assertEquals(5000, $contaListada['current_balance']);
         $this->assertTrue($contaListada['is_inherited']);
+    }
+
+    public function test_atualizar_saldos_de_varias_contas_em_lote(): void
+    {
+        $usuario = User::factory()->create();
+        Sanctum::actingAs($usuario);
+
+        $contaA = $this->postJson('/api/reserve-accounts', ['name' => 'Emergencia'])->json('data');
+        $contaB = $this->postJson('/api/reserve-accounts', ['name' => 'Viagem'])->json('data');
+
+        $this->putJson('/api/reserve-account-balances', [
+            'competency' => '2026-05',
+            'entries' => [
+                ['account_id' => $contaA['id'], 'balance' => 1500, 'note' => 'Conta de emergencia'],
+                ['account_id' => $contaB['id'], 'balance' => 800],
+            ],
+        ])->assertOk()->assertJsonCount(2, 'data');
+
+        $this->assertDatabaseHas('reserve_account_entries', [
+            'reserve_account_id' => $contaA['id'],
+            'competency' => '2026-05',
+            'balance' => '1500.00',
+        ]);
+        $this->assertDatabaseHas('reserve_account_entries', [
+            'reserve_account_id' => $contaB['id'],
+            'competency' => '2026-05',
+            'balance' => '800.00',
+        ]);
+    }
+
+    public function test_lote_invalido_nao_persiste_saldo_de_outra_conta(): void
+    {
+        $usuario = User::factory()->create();
+        $outroUsuario = User::factory()->create();
+        Sanctum::actingAs($usuario);
+
+        $contaDoUsuario = $this->postJson('/api/reserve-accounts', ['name' => 'Emergencia'])->json('data');
+        $contaDeOutroUsuario = $this->actingAs($outroUsuario)
+            ->postJson('/api/reserve-accounts', ['name' => 'Privada'])
+            ->json('data');
+
+        Sanctum::actingAs($usuario);
+
+        $this->putJson('/api/reserve-account-balances', [
+            'competency' => '2026-05',
+            'entries' => [
+                ['account_id' => $contaDoUsuario['id'], 'balance' => 1500],
+                ['account_id' => $contaDeOutroUsuario['id'], 'balance' => 900],
+            ],
+        ])->assertUnprocessable();
+
+        $this->assertDatabaseMissing('reserve_account_entries', [
+            'reserve_account_id' => $contaDoUsuario['id'],
+            'competency' => '2026-05',
+        ]);
     }
 }

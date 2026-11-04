@@ -9,6 +9,7 @@ use App\Repositories\MonthlyReserveEntryRepository;
 use App\Repositories\MonthlyReserveRepository;
 use DomainException;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 class MonthlyReserveService
 {
@@ -106,11 +107,14 @@ class MonthlyReserveService
 
     public function criarLancamento(int $reservaId, int $usuarioId, array $dados): MonthlyReserveEntry
     {
-        $reservaMensal = $this->buscarPorIdOuFalhar($reservaId, $usuarioId);
+        $lancamento = DB::transaction(function () use ($reservaId, $usuarioId, $dados): MonthlyReserveEntry {
+            $reservaMensal = $this->buscarPorIdOuFalharComBloqueio($reservaId, $usuarioId);
+            $lancamento = $this->monthlyReserveEntryRepository->criar($reservaMensal->id, $dados);
 
-        $lancamento = $this->monthlyReserveEntryRepository->criar($reservaMensal->id, $dados);
+            $this->recalcularInvestimento($reservaMensal);
 
-        $this->recalcularInvestimento($reservaMensal);
+            return $lancamento;
+        });
 
         event(new DadosFinanceirosAlterados($usuarioId));
 
@@ -119,26 +123,30 @@ class MonthlyReserveService
 
     public function atualizarLancamento(int $reservaId, int $lancamentoId, int $usuarioId, array $dados): MonthlyReserveEntry
     {
-        $reservaMensal = $this->buscarPorIdOuFalhar($reservaId, $usuarioId);
-        $lancamento = $this->buscarLancamentoOuFalhar($lancamentoId, $reservaMensal->id);
+        $lancamento = DB::transaction(function () use ($reservaId, $lancamentoId, $usuarioId, $dados): MonthlyReserveEntry {
+            $reservaMensal = $this->buscarPorIdOuFalharComBloqueio($reservaId, $usuarioId);
+            $lancamento = $this->buscarLancamentoOuFalhar($lancamentoId, $reservaMensal->id);
 
-        $this->monthlyReserveEntryRepository->atualizar($lancamento, $dados);
+            $this->monthlyReserveEntryRepository->atualizar($lancamento, $dados);
+            $this->recalcularInvestimento($reservaMensal);
 
-        $this->recalcularInvestimento($reservaMensal);
+            return $lancamento->refresh();
+        });
 
         event(new DadosFinanceirosAlterados($usuarioId));
 
-        return $lancamento->refresh();
+        return $lancamento;
     }
 
     public function excluirLancamento(int $reservaId, int $lancamentoId, int $usuarioId): void
     {
-        $reservaMensal = $this->buscarPorIdOuFalhar($reservaId, $usuarioId);
-        $lancamento = $this->buscarLancamentoOuFalhar($lancamentoId, $reservaMensal->id);
+        DB::transaction(function () use ($reservaId, $lancamentoId, $usuarioId): void {
+            $reservaMensal = $this->buscarPorIdOuFalharComBloqueio($reservaId, $usuarioId);
+            $lancamento = $this->buscarLancamentoOuFalhar($lancamentoId, $reservaMensal->id);
 
-        $this->monthlyReserveEntryRepository->excluir($lancamento);
-
-        $this->recalcularInvestimento($reservaMensal);
+            $this->monthlyReserveEntryRepository->excluir($lancamento);
+            $this->recalcularInvestimento($reservaMensal);
+        });
 
         event(new DadosFinanceirosAlterados($usuarioId));
     }
@@ -184,6 +192,17 @@ class MonthlyReserveService
     protected function buscarPorIdOuFalhar(int $id, int $usuarioId): MonthlyReserve
     {
         $reservaMensal = $this->monthlyReserveRepository->buscarPorIdEUsuarioId($id, $usuarioId);
+
+        if ($reservaMensal !== null) {
+            return $reservaMensal;
+        }
+
+        throw new DomainException('Reserva mensal nao encontrada para este usuario.');
+    }
+
+    protected function buscarPorIdOuFalharComBloqueio(int $id, int $usuarioId): MonthlyReserve
+    {
+        $reservaMensal = $this->monthlyReserveRepository->bloquearPorIdEUsuarioId($id, $usuarioId);
 
         if ($reservaMensal !== null) {
             return $reservaMensal;
