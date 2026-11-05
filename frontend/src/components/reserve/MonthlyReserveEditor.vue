@@ -3,232 +3,153 @@ import { computed, reactive, ref, watch } from 'vue'
 import BaseButton from '../base/BaseButton.vue'
 import BaseInput from '../base/BaseInput.vue'
 import BaseMonthPicker from '../base/BaseMonthPicker.vue'
+import BaseSelect from '../base/BaseSelect.vue'
 import BaseTextarea from '../base/BaseTextarea.vue'
 import EmptyState from '../data-display/EmptyState.vue'
 import { useFormErrors } from '../../composables/useFormErrors'
 import { useLoading } from '../../composables/useLoading'
 import { getCurrentCompetency } from '../../helpers/competency'
 import { formatCurrency } from '../../helpers/currency'
-import { dashboardService } from '../../services/dashboard/dashboardService'
 import { monthlyReserveService } from '../../services/monthly-reserves/monthlyReserveService'
 import { reserveAccountService } from '../../services/reserve-accounts/reserveAccountService'
 import ReserveAccountRow from './ReserveAccountRow.vue'
 
+type ReserveItem = {
+  id: number
+  name: string
+  type: 'reserve' | 'investment'
+  active: boolean
+  current_balance: number | null
+  previous_balance: number | null
+  delta: number | null
+  is_inherited: boolean
+  note: string | null
+  archive_status_needs_review: boolean
+}
+
+type ItemDraft = { name: string; balance: number | string; note: string }
+
 const props = defineProps({
-  reserveId: {
-    type: [Number, String],
-    default: null,
-  },
-  initialCompetency: {
-    type: String,
-    required: true,
-  },
-  initialObservations: {
-    type: String,
-    default: '',
-  },
-  // Modal usage: shows a "Cancelar" button that asks the parent to close the modal.
-  showCancel: {
-    type: Boolean,
-    default: false,
-  },
-  // Inline usage: after creating a reserve in place, shows a button to reset back to a blank draft.
-  allowReset: {
-    type: Boolean,
-    default: false,
-  },
+  reserveId: { type: [Number, String], default: null },
+  initialCompetency: { type: String, required: true },
+  initialObservations: { type: String, default: '' },
+  showCancel: { type: Boolean, default: false },
+  allowReset: { type: Boolean, default: false },
 })
 
 const emit = defineEmits(['saved', 'cancel'])
-
 const currentId = ref(props.reserveId)
 const { isLoading, withLoading } = useLoading()
 const { generalError, clearErrors, setErrorsFromApi, fieldError } = useFormErrors()
+const { isLoading: isItemsLoading, withLoading: withItemsLoading } = useLoading()
+const { generalError: itemsError, clearErrors: clearItemsError, setErrorsFromApi: setItemsError } = useFormErrors()
 
-const entries = ref([])
-const editingEntryId = ref(null)
-const { isLoading: isEntryLoading, withLoading: withEntryLoading } = useLoading()
-const {
-  generalError: entryGeneralError,
-  clearErrors: clearEntryErrors,
-  setErrorsFromApi: setEntryErrorsFromApi,
-  fieldError: entryFieldError,
-} = useFormErrors()
+const form = reactive({ competency: props.initialCompetency, observations: props.initialObservations })
+const items = ref<ReserveItem[]>([])
+const drafts = reactive<Record<number, ItemDraft>>({})
+const newItemName = ref('')
+const newItemType = ref<'reserve' | 'investment'>('reserve')
+const itemTypeOptions = [
+  { value: 'reserve', label: 'Reserva' },
+  { value: 'investment', label: 'Investimento' },
+]
 
-const entryForm = reactive({
-  description: '',
-  amount: '',
-})
+const activeItems = computed(() => items.value.filter((item) => item.active))
+const archivedItems = computed(() => items.value.filter((item) => !item.active))
+const reserveTotal = computed(() => activeItems.value
+  .filter((item) => item.type === 'reserve')
+  .reduce((sum, item) => sum + Number(drafts[item.id]?.balance || 0), 0))
+const investmentTotal = computed(() => activeItems.value
+  .filter((item) => item.type === 'investment')
+  .reduce((sum, item) => sum + Number(drafts[item.id]?.balance || 0), 0))
+const totalSaved = computed(() => reserveTotal.value + investmentTotal.value)
+const submitLabel = computed(() => currentId.value ? 'Salvar alterações' : 'Registrar competência')
 
-const form = reactive({
-  competency: props.initialCompetency,
-  observations: props.initialObservations,
-})
-
-const competencySummary = ref(null)
-
-// Contas de reserva (Nathan, Esposa, Viagem etc.) da competência selecionada.
-const reserveAccounts = ref([])
-const accountDrafts = reactive({})
-const newAccountName = ref('')
-const { isLoading: isAccountsLoading, withLoading: withAccountsLoading } = useLoading()
-const { generalError: accountGeneralError, clearErrors: clearAccountErrors, setErrorsFromApi: setAccountErrorsFromApi } = useFormErrors()
-
-const activeReserveAccounts = computed(() => reserveAccounts.value.filter((account) => account.active))
-const archivedReserveAccounts = computed(() => reserveAccounts.value.filter((account) => !account.active))
-const submitLabel = computed(() => currentId.value ? 'Salvar alterações' : 'Cadastrar reserva')
-const entriesTotal = computed(() => entries.value.reduce((sum, entry) => sum + Number(entry.amount || 0), 0))
-const previewRemainingAmount = computed(() => Number(competencySummary.value?.remaining_amount || 0))
-const reserveAccountsTotal = computed(() => activeReserveAccounts.value.reduce((sum, account) => sum + Number(accountDrafts[account.id]?.balance || 0), 0))
-const currentReservePreview = computed(() => reserveAccountsTotal.value + previewRemainingAmount.value)
-const totalSavedPreview = computed(() => currentReservePreview.value + entriesTotal.value)
-const entrySubmitLabel = computed(() => editingEntryId.value ? 'Salvar lançamento' : 'Adicionar lançamento')
-
-function buildAccountDrafts(accounts) {
-  for (const key of Object.keys(accountDrafts)) {
-    delete accountDrafts[key]
-  }
-
-  for (const account of accounts) {
-    accountDrafts[account.id] = {
-      name: account.name,
-      balance: account.current_balance ?? 0,
-      note: account.note ?? '',
+function buildDrafts(list: ReserveItem[]) {
+  for (const key of Object.keys(drafts)) delete drafts[Number(key)]
+  for (const item of list) {
+    drafts[item.id] = {
+      name: item.name,
+      balance: item.current_balance ?? 0,
+      note: item.note ?? '',
     }
   }
 }
 
-async function loadReserveAccounts(competency) {
+async function loadItems(competency: string) {
   if (!competency) {
-    reserveAccounts.value = []
+    items.value = []
     return
   }
-
-  clearAccountErrors()
-
-  await withAccountsLoading(async () => {
+  clearItemsError()
+  await withItemsLoading(async () => {
     try {
-      reserveAccounts.value = await reserveAccountService.list({ competency, include_archived: 1 })
-      buildAccountDrafts(reserveAccounts.value)
+      items.value = await reserveAccountService.list({ competency, include_archived: 1 })
+      buildDrafts(items.value)
     } catch (error) {
-      setAccountErrorsFromApi(error)
+      setItemsError(error)
     }
   })
 }
 
-async function fetchCompetencySummary(competency) {
-  if (!competency) {
-    competencySummary.value = null
-    return
-  }
+watch(() => form.competency, loadItems, { immediate: true })
 
-  try {
-    competencySummary.value = await dashboardService.monthlySummary(competency)
-  } catch {
-    competencySummary.value = null
-  }
-}
-
-watch(() => form.competency, (competency) => {
-  loadReserveAccounts(competency)
-  fetchCompetencySummary(competency)
-}, { immediate: true })
-
-async function saveAccountDrafts(competency) {
+async function saveItemBalances(competency: string) {
   const entries = []
-
-  for (const account of activeReserveAccounts.value) {
-    const draft = accountDrafts[account.id]
-
-    if (!draft) {
-      continue
+  for (const item of activeItems.value) {
+    const draft = drafts[item.id]
+    if (!draft) continue
+    if (draft.name.trim() !== item.name) {
+      await reserveAccountService.update(item.id, { name: draft.name.trim() })
     }
-
-    if (draft.name.trim() !== account.name) {
-      await reserveAccountService.update(account.id, { name: draft.name.trim() })
+    const balanceChanged = item.current_balance === null
+      || Number(draft.balance || 0) !== Number(item.current_balance || 0)
+    const noteChanged = (draft.note || '') !== (item.note || '')
+    if (balanceChanged || noteChanged) {
+      entries.push({ account_id: item.id, balance: Number(draft.balance || 0), note: draft.note || null })
     }
-
-    const mudouSaldo = Number(draft.balance || 0) !== Number(account.current_balance || 0)
-    const mudouNota = (draft.note || '') !== (account.note || '')
-
-    if (!mudouSaldo && !mudouNota) {
-      continue
-    }
-
-    entries.push({
-      account_id: account.id,
-      balance: Number(draft.balance || 0),
-      note: draft.note || null,
-    })
   }
-
-  if (entries.length) {
-    await reserveAccountService.setEntries(competency, entries)
-  }
+  if (entries.length) await reserveAccountService.setEntries(competency, entries)
 }
 
-async function setAccountActive(account, active) {
-  if (!active && !confirm(`Arquivar "${account.name}"? O saldo deixa de entrar nos totais dos próximos meses.`)) {
-    return
-  }
-
-  clearAccountErrors()
-
-  await withAccountsLoading(async () => {
+async function setItemActive(item: ReserveItem, active: boolean) {
+  if (!active && !confirm(`Arquivar "${item.name}" a partir de ${form.competency}?`)) return
+  clearItemsError()
+  await withItemsLoading(async () => {
     try {
-      await reserveAccountService.update(account.id, { active })
-      reserveAccounts.value = await reserveAccountService.list({
-        competency: form.competency,
-        include_archived: 1,
-      })
-      buildAccountDrafts(reserveAccounts.value)
+      await reserveAccountService.update(item.id, { active, competency: form.competency })
+      await loadItems(form.competency)
     } catch (error) {
-      setAccountErrorsFromApi(error)
+      setItemsError(error)
     }
   })
 }
 
-async function createReserveAccount() {
-  if (!newAccountName.value.trim()) {
-    return
-  }
-
-  clearAccountErrors()
-
-  await withAccountsLoading(async () => {
+async function createItem() {
+  if (!newItemName.value.trim()) return
+  clearItemsError()
+  await withItemsLoading(async () => {
     try {
-      await reserveAccountService.create({ name: newAccountName.value.trim() })
-      newAccountName.value = ''
-      await loadReserveAccounts(form.competency)
+      await reserveAccountService.create({ name: newItemName.value.trim(), type: newItemType.value })
+      newItemName.value = ''
+      newItemType.value = 'reserve'
+      await loadItems(form.competency)
     } catch (error) {
-      setAccountErrorsFromApi(error)
+      setItemsError(error)
     }
   })
-}
-
-async function loadEntries(reserveId) {
-  clearEntryErrors()
-
-  try {
-    entries.value = await monthlyReserveService.listEntries(reserveId)
-  } catch (error) {
-    setEntryErrorsFromApi(error)
-  }
 }
 
 async function handleSubmit() {
   clearErrors()
-
   await withLoading(async () => {
     try {
-      await saveAccountDrafts(form.competency)
-
+      await saveItemBalances(form.competency)
       if (currentId.value) {
-        const updated = await monthlyReserveService.update(currentId.value, {
+        emit('saved', await monthlyReserveService.update(currentId.value, {
           competency: form.competency,
           observations: form.observations,
-        })
-        emit('saved', updated)
+        }))
       } else {
         const created = await monthlyReserveService.create({
           competency: form.competency,
@@ -236,68 +157,11 @@ async function handleSubmit() {
           observations: form.observations,
         })
         currentId.value = created.id
-        await loadEntries(created.id)
         emit('saved', created)
       }
-
-      await loadReserveAccounts(form.competency)
+      await loadItems(form.competency)
     } catch (error) {
       setErrorsFromApi(error)
-    }
-  })
-}
-
-function resetEntryForm() {
-  editingEntryId.value = null
-  entryForm.description = ''
-  entryForm.amount = ''
-  clearEntryErrors()
-}
-
-function startEditEntry(entry) {
-  editingEntryId.value = entry.id
-  entryForm.description = entry.description
-  entryForm.amount = entry.amount
-  clearEntryErrors()
-}
-
-async function handleEntrySubmit() {
-  clearEntryErrors()
-
-  const payload = {
-    description: entryForm.description,
-    amount: Number(entryForm.amount || 0),
-  }
-
-  await withEntryLoading(async () => {
-    try {
-      if (editingEntryId.value) {
-        await monthlyReserveService.updateEntry(currentId.value, editingEntryId.value, payload)
-      } else {
-        await monthlyReserveService.createEntry(currentId.value, payload)
-      }
-
-      resetEntryForm()
-      await loadEntries(currentId.value)
-      emit('saved')
-    } catch (error) {
-      setEntryErrorsFromApi(error)
-    }
-  })
-}
-
-async function deleteEntry(entry) {
-  if (!confirm(`Excluir o lançamento "${entry.description}"?`)) {
-    return
-  }
-
-  await withEntryLoading(async () => {
-    try {
-      await monthlyReserveService.removeEntry(currentId.value, entry.id)
-      await loadEntries(currentId.value)
-      emit('saved')
-    } catch (error) {
-      setEntryErrorsFromApi(error)
     }
   })
 }
@@ -306,147 +170,74 @@ function resetToBlankDraft() {
   currentId.value = null
   form.competency = getCurrentCompetency()
   form.observations = ''
-  entries.value = []
   clearErrors()
-  resetEntryForm()
-}
-
-if (currentId.value) {
-  loadEntries(currentId.value)
 }
 </script>
 
 <template>
   <div>
-    <p v-if="generalError" class="mb-4 rounded-2xl bg-rose-500/10 p-4 text-sm text-rose-200">
-      {{ generalError }}
-    </p>
-
+    <p v-if="generalError" class="mb-4 rounded-2xl bg-rose-500/10 p-4 text-sm text-rose-200">{{ generalError }}</p>
     <form class="space-y-5" @submit.prevent="handleSubmit">
-      <BaseMonthPicker id="reserve-competency" v-model="form.competency" label="Competência" :error="fieldError('competency')" />
+      <BaseMonthPicker id="reserve-competency" v-model="form.competency" label="Competência dos saldos" :error="fieldError('competency')" />
 
       <div>
-        <p class="mb-3 text-sm font-bold uppercase text-sky-300">Contas de reserva</p>
-
-        <p v-if="accountGeneralError" class="mb-3 text-sm text-rose-300">{{ accountGeneralError }}</p>
-
-        <EmptyState
-          v-if="!isAccountsLoading && !activeReserveAccounts.length"
-          title="Nenhuma conta de reserva ainda"
-          description="Crie uma conta para cada pessoa ou objetivo (ex: Nathan, Esposa, Viagem)."
-        />
-
+        <p class="mb-3 text-sm font-bold uppercase text-sky-300">Itens patrimoniais</p>
+        <p class="mb-3 text-sm text-slate-400">Informe o saldo total de cada item nesta competência. Sem nova declaração, o último saldo é herdado.</p>
+        <p v-if="itemsError" class="mb-3 text-sm text-rose-300">{{ itemsError }}</p>
+        <EmptyState v-if="!isItemsLoading && !activeItems.length" title="Nenhum item ativo" description="Cadastre uma Reserva ou um Investimento para acompanhar seu saldo." />
         <div v-else class="space-y-3">
           <ReserveAccountRow
-            v-for="account in activeReserveAccounts"
-            :key="account.id"
-            :account="account"
-            v-model="accountDrafts[account.id]"
-            @archive="setAccountActive(account, false)"
+            v-for="item in activeItems"
+            :key="item.id"
+            :account="item"
+            v-model="drafts[item.id]"
+            @archive="setItemActive(item, false)"
           />
         </div>
 
-        <div v-if="archivedReserveAccounts.length" class="mt-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-          <p class="text-sm font-bold text-slate-300">Contas arquivadas</p>
+        <div v-if="archivedItems.length" class="mt-4 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+          <p class="text-sm font-bold text-slate-300">Itens arquivados</p>
+          <p v-if="archivedItems.some((item) => item.archive_status_needs_review)" class="mt-2 text-xs text-amber-300">
+            Escolha a competência acima para confirmar quando os itens legados foram arquivados.
+          </p>
           <div class="mt-3 space-y-2">
-            <div v-for="account in archivedReserveAccounts" :key="account.id" class="flex items-center justify-between gap-3">
-              <span class="truncate text-sm text-slate-400">{{ account.name }}</span>
-              <BaseButton type="button" variant="secondary" :disabled="isAccountsLoading" @click="setAccountActive(account, true)">
-                Reativar
+            <div v-for="item in archivedItems" :key="item.id" class="flex items-center justify-between gap-3">
+              <span class="truncate text-sm text-slate-400">{{ item.name }} · {{ item.type === 'investment' ? 'Investimento' : 'Reserva' }}</span>
+              <BaseButton
+                type="button"
+                variant="secondary"
+                :disabled="isItemsLoading"
+                @click="setItemActive(item, item.archive_status_needs_review ? false : true)"
+              >
+                {{ item.archive_status_needs_review ? 'Confirmar arquivamento nesta competência' : 'Reativar' }}
               </BaseButton>
             </div>
           </div>
         </div>
 
-        <div class="mt-3 flex gap-2">
-          <BaseInput
-            id="new-account-name"
-            v-model="newAccountName"
-            label="Nova conta"
-            placeholder="Ex: Reserva de emergência"
-          />
-          <BaseButton type="button" variant="secondary" class="mt-7 shrink-0" :disabled="isAccountsLoading" @click="createReserveAccount">
-            Adicionar
-          </BaseButton>
+        <div class="mt-3 grid gap-2 @min-[40rem]:grid-cols-[minmax(0,1fr)_12rem_auto]">
+          <BaseInput id="new-item-name" v-model="newItemName" label="Descrição do item" placeholder="Ex.: Reserva de emergência" />
+          <BaseSelect id="new-item-type" v-model="newItemType" label="Classificação" :options="itemTypeOptions" />
+          <BaseButton type="button" variant="secondary" class="mt-7" :disabled="isItemsLoading" @click="createItem">Adicionar</BaseButton>
         </div>
       </div>
 
-      <BaseTextarea id="observations" v-model="form.observations" label="Observações" placeholder="Resumo opcional do mês" :error="fieldError('observations')" />
+      <BaseTextarea id="observations" v-model="form.observations" label="Observações" placeholder="Nota opcional da competência" :error="fieldError('observations')" />
 
       <div class="rounded-3xl border border-white/10 bg-slate-950/60 p-4">
-        <p class="text-sm font-bold uppercase text-sky-300">Prévia automática</p>
-        <div class="mt-4 grid gap-3">
-          <div>
-            <span class="text-sm text-slate-400">Contas de reserva</span>
-            <strong class="block text-lg text-slate-50">{{ formatCurrency(reserveAccountsTotal) }}</strong>
-          </div>
-          <div>
-            <span class="text-sm text-slate-400">Saldo das transações do mês (automático)</span>
-            <strong class="block text-lg" :class="previewRemainingAmount >= 0 ? 'text-emerald-300' : 'text-rose-300'">
-              {{ formatCurrency(previewRemainingAmount) }}
-            </strong>
-          </div>
-          <div>
-            <span class="text-sm text-slate-400">Reserva atual (contas + saldo do mês)</span>
-            <strong class="block text-lg text-emerald-300">{{ formatCurrency(currentReservePreview) }}</strong>
-          </div>
-          <div>
-            <span class="text-sm text-slate-400">Total guardado (reserva atual + investimentos)</span>
-            <strong class="block text-lg text-violet-300">{{ formatCurrency(totalSavedPreview) }}</strong>
-          </div>
+        <p class="text-sm font-bold uppercase text-sky-300">Patrimônio na competência</p>
+        <div class="mt-4 grid gap-3 @min-[40rem]:grid-cols-3">
+          <div><span class="text-sm text-slate-400">Reserva atual</span><strong class="block text-lg text-slate-50">{{ formatCurrency(reserveTotal) }}</strong></div>
+          <div><span class="text-sm text-slate-400">Investimento atual</span><strong class="block text-lg text-slate-50">{{ formatCurrency(investmentTotal) }}</strong></div>
+          <div><span class="text-sm text-slate-400">Total guardado</span><strong class="block text-lg text-violet-300">{{ formatCurrency(totalSaved) }}</strong></div>
         </div>
       </div>
 
       <div class="grid gap-3">
         <BaseButton type="submit" class="w-full" :loading="isLoading">{{ submitLabel }}</BaseButton>
         <BaseButton v-if="showCancel" type="button" class="w-full" variant="secondary" @click="$emit('cancel')">Cancelar</BaseButton>
-        <BaseButton v-if="allowReset && currentId" type="button" class="w-full" variant="secondary" @click="resetToBlankDraft">Cancelar edição e iniciar nova reserva</BaseButton>
+        <BaseButton v-if="allowReset && currentId" type="button" class="w-full" variant="secondary" @click="resetToBlankDraft">Cancelar edição e iniciar nova competência</BaseButton>
       </div>
     </form>
-
-    <div v-if="currentId" class="mt-6 rounded-3xl border border-white/10 bg-slate-950/60 p-4">
-      <div class="flex items-center justify-between gap-3">
-        <p class="text-sm font-bold uppercase text-sky-300">Lançamentos de investimento</p>
-        <span class="rounded-full bg-white/[0.06] px-3 py-1 text-xs text-slate-300">{{ formatCurrency(entriesTotal) }}</span>
-      </div>
-
-      <p v-if="entryGeneralError" class="mt-3 text-sm text-rose-300">{{ entryGeneralError }}</p>
-
-      <EmptyState
-        v-if="!entries.length"
-        title="Nenhum lançamento neste mês"
-        description="Cadastre os aportes de investimento do mês — eles ficam sempre separados da reserva."
-      />
-
-      <div v-else class="mt-4 space-y-2">
-        <div
-          v-for="entry in entries"
-          :key="entry.id"
-          class="flex items-center justify-between gap-3 rounded-2xl bg-white/[0.04] px-4 py-3"
-        >
-          <div class="min-w-0">
-            <p class="truncate text-sm font-semibold text-slate-100">{{ entry.description }}</p>
-            <p class="text-xs text-slate-400">{{ formatCurrency(entry.amount) }}</p>
-          </div>
-          <div class="flex shrink-0 gap-3">
-            <button type="button" class="text-xs font-bold text-sky-300 hover:text-sky-200" :disabled="isEntryLoading" @click="startEditEntry(entry)">
-              Editar
-            </button>
-            <button type="button" class="text-xs font-bold text-rose-300 hover:text-rose-200" :disabled="isEntryLoading" @click="deleteEntry(entry)">
-              Excluir
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <form class="mt-4 grid gap-3 @min-[40rem]:grid-cols-2" @submit.prevent="handleEntrySubmit">
-        <BaseInput id="entry-description" v-model="entryForm.description" label="Descrição" placeholder="Ex: Aporte em fundo DI" :error="entryFieldError('description')" />
-        <BaseInput id="entry-amount" v-model="entryForm.amount" label="Valor" type="number" placeholder="Ex: 250.00" :error="entryFieldError('amount')" />
-        <div class="flex gap-2 @min-[40rem]:col-span-2">
-          <BaseButton type="submit" class="flex-1" :loading="isEntryLoading">{{ entrySubmitLabel }}</BaseButton>
-          <BaseButton v-if="editingEntryId" type="button" variant="secondary" @click="resetEntryForm">Cancelar</BaseButton>
-        </div>
-      </form>
-    </div>
   </div>
 </template>

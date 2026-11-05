@@ -45,7 +45,9 @@ class ReserveAccountController extends Controller
         try {
             $conta = $this->reserveAccountService->atualizar($id, $this->usuarioIdAutenticado(), $request->validated());
         } catch (DomainException $exception) {
-            return response()->json(['message' => $exception->getMessage()], 404);
+            $status = str_contains($exception->getMessage(), 'nao encontrada') ? 404 : 422;
+
+            return response()->json(['message' => $exception->getMessage()], $status);
         }
 
         return new ReserveAccountResource($conta);

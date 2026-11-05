@@ -22,9 +22,7 @@ function barHeight(value) {
     <div class="mb-5">
       <p class="text-sm font-bold uppercase text-sky-300">EvoluÃ§Ã£o patrimonial</p>
       <h2 class="mt-2 text-2xl font-black text-slate-50">Reserva e investimentos</h2>
-      <p class="mt-3 text-sm leading-6 text-slate-400">
-        Compara o total guardado e os investimentos registrados em cada competÃªncia.
-      </p>
+      <p class="mt-3 text-sm leading-6 text-slate-400">Compara os saldos vigentes de reservas, investimentos e patrimônio total por competência.</p>
     </div>
 
     <div class="responsive-chart-frame flex h-64 items-end gap-2 rounded-3xl bg-slate-950/60 p-3 @min-[40rem]:h-72 @min-[40rem]:gap-4 @min-[40rem]:p-5">
@@ -36,13 +34,18 @@ function barHeight(value) {
         <div class="flex h-40 w-full min-w-0 items-end justify-center gap-1.5 @min-[40rem]:h-48 @min-[40rem]:gap-2">
           <span
             class="w-3 rounded-t-full bg-sky-300 @min-[40rem]:w-5"
-            :style="{ height: barHeight(item.total_saved) }"
-            :title="formatCurrency(item.total_saved)"
+            :style="{ height: barHeight(item.reserve_total) }"
+            :title="`Reserva: ${formatCurrency(item.reserve_total)}`"
+          />
+          <span
+            class="w-3 rounded-t-full bg-violet-300 @min-[40rem]:w-5"
+            :style="{ height: barHeight(item.investment_total) }"
+            :title="`Investimento: ${formatCurrency(item.investment_total)}`"
           />
           <span
             class="w-3 rounded-t-full bg-emerald-300 @min-[40rem]:w-5"
-            :style="{ height: barHeight(item.investimento) }"
-            :title="formatCurrency(item.investimento)"
+            :style="{ height: barHeight(item.total_saved) }"
+            :title="formatCurrency(item.total_saved)"
           />
         </div>
         <span class="max-w-full truncate text-[10px] font-bold text-slate-400 @min-[40rem]:text-xs">{{ item.competency }}</span>
@@ -50,8 +53,9 @@ function barHeight(value) {
     </div>
 
     <div class="mt-4 flex flex-wrap gap-3 text-sm text-slate-400">
-      <span class="inline-flex items-center gap-2"><i class="size-3 rounded-full bg-sky-300" /> Total guardado</span>
-      <span class="inline-flex items-center gap-2"><i class="size-3 rounded-full bg-emerald-300" /> Investimentos</span>
+      <span class="inline-flex items-center gap-2"><i class="size-3 rounded-full bg-sky-300" /> Reservas</span>
+      <span class="inline-flex items-center gap-2"><i class="size-3 rounded-full bg-violet-300" /> Investimentos</span>
+      <span class="inline-flex items-center gap-2"><i class="size-3 rounded-full bg-emerald-300" /> Total guardado</span>
     </div>
   </section>
 </template>

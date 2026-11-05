@@ -19,6 +19,8 @@ class MonthlyComparisonService
             'income_difference' => round($entradasAtual - $entradasAnterior, 2),
             'income_percentage' => $this->calcularPercentual($entradasAtual, $entradasAnterior),
             'reserve_difference' => round($atual['current_reserve'] - $anterior['current_reserve'], 2),
+            'investment_difference' => round($atual['investment_total'] - $anterior['investment_total'], 2),
+            'asset_difference' => round($atual['total_saved'] - $anterior['total_saved'], 2),
             'remaining_difference' => round($atual['remaining_amount'] - $anterior['remaining_amount'], 2),
             'trend' => $this->definirTendencia($gastosAtual, $gastosAnterior),
         ];
@@ -64,4 +66,3 @@ class MonthlyComparisonService
         return 'stable';
     }
 }
-

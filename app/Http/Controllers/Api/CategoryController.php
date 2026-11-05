@@ -58,9 +58,11 @@ class CategoryController extends Controller
         try {
             $categoria = $this->categoryService->atualizar((int) $id, $this->usuarioIdAutenticado(), $request->validated());
         } catch (DomainException $exception) {
+            $status = str_contains($exception->getMessage(), 'nao encontrada') ? 404 : 422;
+
             return response()->json([
                 'message' => $exception->getMessage(),
-            ], 404);
+            ], $status);
         }
 
         return new CategoryResource($categoria);

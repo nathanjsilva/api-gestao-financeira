@@ -31,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::apiResource('reserve-accounts', ReserveAccountController::class)
         ->only(['index', 'store', 'update']);
     Route::get('/reserve-accounts/{contaId}/entries', [ReserveAccountEntryController::class, 'index']);
+    Route::get('/reserve-accounts/{contaId}/status-history', [ReserveAccountEntryController::class, 'statusHistory']);
     Route::put('/reserve-accounts/{contaId}/entries/{competencia}', [ReserveAccountEntryController::class, 'update'])
         ->where('competencia', '\d{4}-\d{2}');
     Route::delete('/reserve-accounts/{contaId}/entries/{competencia}', [ReserveAccountEntryController::class, 'destroy'])

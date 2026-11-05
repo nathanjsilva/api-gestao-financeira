@@ -74,3 +74,9 @@ O helper cardInstallments.ts replica no navegador apenas a prévia do algoritmo 
 - frontend/src/main.ts registra Pinia e Vue Router, importa os estilos e monta App.vue.
 - frontend/src/router/index.ts cria o router a partir de router/routes.ts.
 - frontend/index.html aponta para frontend/src/main.ts.
+
+## Atualização — Reservas e Dashboard patrimonial (2026-11)
+
+A tela de Reservas cadastra itens compartilhados classificados como Reserva ou Investimento e declara o saldo total por competência. Itens sem nova declaração herdam o último saldo. A tela mantém os tipos separados e não usa as APIs antigas de aportes para cadastrar Investimentos.
+
+O dashboard apresenta Reserva Atual, Investimento Atual, Total Guardado, Variação Patrimonial e resultado financeiro realizado/projetado. O resultado das transações não altera os saldos patrimoniais. Itens antigos arquivados com competência desconhecida são sinalizados para revisão.

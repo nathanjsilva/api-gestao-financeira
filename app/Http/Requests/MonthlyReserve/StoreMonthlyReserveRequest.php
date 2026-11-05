@@ -21,12 +21,12 @@ class StoreMonthlyReserveRequest extends FormRequest
         return [
             'competency' => [
                 'required',
-                new CompetencyRule(),
+                new CompetencyRule,
                 Rule::unique('monthly_reserves', 'competency')->where(
                     fn ($query) => $query->where('user_id', $this->user()?->id)
                 ),
             ],
-            'investimento' => ['required', 'numeric', 'min:0'],
+            'investimento' => ['sometimes', 'numeric', 'in:0'],
             'observations' => ['nullable', 'string'],
         ];
     }

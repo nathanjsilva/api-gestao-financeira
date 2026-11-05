@@ -116,7 +116,8 @@ class FinancialAnalyticsService
                 (float) $mesAtual['remaining_amount'],
                 (float) $mesAtual['total_income'],
             ),
-            'projected_closing' => $mesAtual['remaining_amount'],
+            'projected_closing' => $mesAtual['projected_result'],
+            'projected_result' => $mesAtual['projected_result'],
         ];
     }
 
@@ -128,7 +129,10 @@ class FinancialAnalyticsService
                 'previous_reserve' => $mes['previous_reserve'],
                 'current_reserve' => $mes['current_reserve'],
                 'investment' => $mes['investment'],
+                'reserve_total' => $mes['reserve_total'],
+                'investment_total' => $mes['investment_total'],
                 'total_saved' => $mes['total_saved'],
+                'asset_variation' => $mes['asset_variation'],
             ])
             ->values()
             ->all();
@@ -139,9 +143,11 @@ class FinancialAnalyticsService
         return collect($meses)
             ->map(fn (array $mes): array => [
                 'competency' => $mes['competency'],
-                'income' => $mes['total_income'],
-                'expense' => $mes['total_expense'],
+                'income' => $mes['realized_income'],
+                'expense' => $mes['realized_expense'],
                 'remaining' => $mes['remaining_amount'],
+                'pending_income' => $mes['pending_income'],
+                'pending_expense' => $mes['pending_expense'],
             ])
             ->values()
             ->all();
@@ -221,6 +227,19 @@ class FinancialAnalyticsService
             'current_reserve' => 0,
             'investment' => 0,
             'total_saved' => 0,
+            'realized_income' => 0,
+            'realized_expense' => 0,
+            'realized_result' => 0,
+            'pending_income' => 0,
+            'pending_expense' => 0,
+            'projected_result' => 0,
+            'reserve_total' => 0,
+            'investment_total' => 0,
+            'previous_total_saved' => 0,
+            'asset_variation' => 0,
+            'reserve_variation' => 0,
+            'investment_variation' => 0,
+            'has_unresolved_archived_items' => false,
         ];
     }
 }

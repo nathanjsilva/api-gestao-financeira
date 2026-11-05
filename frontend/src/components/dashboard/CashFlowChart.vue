@@ -14,8 +14,10 @@ function formatShort(val) {
 }
 
 const series = computed(() => [
-  { name: 'Entradas', data: props.items.map((i) => Number(i.income || 0)) },
-  { name: 'Gastos',   data: props.items.map((i) => Number(i.expense || 0)) },
+  { name: 'Entradas realizadas', data: props.items.map((i) => Number(i.income || 0)) },
+  { name: 'Gastos realizados', data: props.items.map((i) => Number(i.expense || 0)) },
+  { name: 'Entradas pendentes', data: props.items.map((i) => Number(i.pending_income || 0)) },
+  { name: 'Gastos pendentes', data: props.items.map((i) => Number(i.pending_expense || 0)) },
 ])
 
 const chartOptions = computed(() => ({
@@ -30,7 +32,7 @@ const chartOptions = computed(() => ({
     animations: { enabled: true, easing: 'easeinout', speed: 400 },
   },
   theme: { mode: 'dark' },
-  colors: ['#6ee7b7', '#fda4af'],
+  colors: ['#6ee7b7', '#fda4af', '#34d399', '#fb7185'],
   plotOptions: {
     bar: { columnWidth: '55%', borderRadius: 4, borderRadiusApplication: 'end' },
   },
@@ -70,17 +72,12 @@ const chartOptions = computed(() => ({
     <div class="mb-5">
       <p class="text-sm font-bold uppercase text-sky-300">Fluxo do dinheiro</p>
       <h2 class="mt-2 text-2xl font-black text-slate-50">Entradas vs gastos</h2>
-      <p class="mt-3 text-sm leading-6 text-slate-400">
-        Compara, mÃªs a mÃªs, quanto entrou e quanto saiu. Verde representa entradas e rosa representa gastos.
-      </p>
+      <p class="mt-3 text-sm leading-6 text-slate-400">Separa receitas e despesas realizadas das que ainda estão pendentes.</p>
     </div>
 
     <EmptyState v-if="!items.length" title="Sem dados de fluxo de caixa" description="Registre transaÃ§Ãµes para visualizar o grÃ¡fico." />
     <apexchart v-else type="bar" height="280" :options="chartOptions" :series="series" />
 
-    <p class="mt-5 rounded-2xl bg-white/4 p-4 text-sm leading-6 text-slate-400">
-      CÃ¡lculo: para cada competÃªncia, somamos todas as transaÃ§Ãµes de entrada e todas as transaÃ§Ãµes de gasto.
-      A diferenÃ§a entre elas forma o saldo restante do mÃªs.
-    </p>
+    <p class="mt-5 rounded-2xl bg-white/4 p-4 text-sm leading-6 text-slate-400">O resultado realizado considera apenas transações pagas. O projetado inclui as pendentes sem incorporá-las ao patrimônio.</p>
   </section>
 </template>

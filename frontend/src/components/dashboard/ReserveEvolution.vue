@@ -14,8 +14,9 @@ function formatShort(val) {
 }
 
 const series = computed(() => [
+  { name: 'Reserva atual', data: props.items.map((i) => Number(i.reserve_total || 0)) },
+  { name: 'Investimento atual', data: props.items.map((i) => Number(i.investment_total || 0)) },
   { name: 'Total guardado', data: props.items.map((i) => Number(i.total_saved || 0)) },
-  { name: 'Investimento',   data: props.items.map((i) => Number(i.investment || 0)) },
 ])
 
 const chartOptions = computed(() => ({
@@ -30,7 +31,7 @@ const chartOptions = computed(() => ({
     animations: { enabled: true, easing: 'easeinout', speed: 400 },
   },
   theme: { mode: 'dark' },
-  colors: ['#38bdf8', '#a78bfa'],
+  colors: ['#38bdf8', '#a78bfa', '#34d399'],
   stroke: { curve: 'smooth', width: 2 },
   fill: {
     type: 'gradient',
@@ -81,17 +82,13 @@ const chartOptions = computed(() => ({
   <section class="analytics-panel">
     <div class="mb-5">
       <p class="text-sm font-bold uppercase text-sky-300">PatrimÃ´nio</p>
-      <h2 class="mt-2 text-2xl font-black text-slate-50">EvoluÃ§Ã£o da reserva</h2>
-      <p class="mt-3 text-sm leading-6 text-slate-400">
-        Acompanha se sua reserva e seus investimentos estÃ£o crescendo ou diminuindo ao longo dos meses.
-      </p>
+      <h2 class="mt-2 text-2xl font-black text-slate-50">Evolução patrimonial</h2>
+      <p class="mt-3 text-sm leading-6 text-slate-400">Mostra os saldos vigentes de reservas, investimentos e patrimônio total em cada competência.</p>
     </div>
 
     <EmptyState v-if="!items.length" title="Sem dados de reserva" description="Cadastre reservas mensais para visualizar a evoluÃ§Ã£o." />
     <apexchart v-else type="area" height="280" :options="chartOptions" :series="series" />
 
-    <p class="mt-5 rounded-2xl bg-white/4 p-4 text-sm leading-6 text-slate-400">
-      CÃ¡lculo: reserva atual = reserva anterior + saldo restante do mÃªs. Total guardado = reserva atual + investimento.
-    </p>
+    <p class="mt-5 rounded-2xl bg-white/4 p-4 text-sm leading-6 text-slate-400">Cada ponto representa o saldo total declarado ou herdado naquela competência. Competências diferentes não são somadas; transações não alteram o patrimônio.</p>
   </section>
 </template>

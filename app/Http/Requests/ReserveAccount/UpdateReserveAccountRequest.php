@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\ReserveAccount;
 
+use App\Rules\CompetencyRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateReserveAccountRequest extends FormRequest
@@ -19,6 +20,8 @@ class UpdateReserveAccountRequest extends FormRequest
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'active' => ['sometimes', 'required', 'boolean'],
+            'competency' => ['required_with:active', new CompetencyRule],
+            'type' => ['prohibited'],
         ];
     }
 }

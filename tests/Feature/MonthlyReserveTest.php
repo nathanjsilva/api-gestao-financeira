@@ -41,7 +41,7 @@ class MonthlyReserveTest extends TestCase
         $reserva = MonthlyReserve::create([
             'user_id' => $usuario->id,
             'competency' => '2026-01',
-            'investimento' => 0,
+            'investimento' => 25,
             'observations' => 'observacao original',
         ]);
 
@@ -51,9 +51,10 @@ class MonthlyReserveTest extends TestCase
 
         $response->assertOk();
         $this->assertSame('observacao atualizada', $response->json('data.observations'));
+        $this->assertSame('25.00', $reserva->fresh()->investimento);
     }
 
-    public function test_listagem_retorna_saldo_calculado_com_transacoes_e_investimento(): void
+    public function test_listagem_usa_os_saldos_dos_itens_e_ignora_investimento_legado(): void
     {
         $usuario = User::factory()->create();
         Sanctum::actingAs($usuario);
@@ -71,6 +72,17 @@ class MonthlyReserveTest extends TestCase
         ]);
 
         $this->criarContaComSaldo($usuario->id, '2026-01', 10000);
+        $contaInvestimento = ReserveAccount::create([
+            'user_id' => $usuario->id,
+            'name' => 'Fundo DI',
+            'type' => 'investment',
+            'active' => true,
+        ]);
+        ReserveAccountEntry::create([
+            'reserve_account_id' => $contaInvestimento->id,
+            'competency' => '2026-01',
+            'balance' => 500,
+        ]);
 
         MonthlyReserve::create([
             'user_id' => $usuario->id,
@@ -108,35 +120,30 @@ class MonthlyReserveTest extends TestCase
 
         $this->assertNotNull($reserva);
         $this->assertEquals(200, $reserva['remaining_amount']);
-        $this->assertEquals(10200, $reserva['current_reserve']);
+        $this->assertEquals(10000, $reserva['current_reserve']);
+        $this->assertEquals(500, $reserva['investment_total']);
         $this->assertEquals(10500, $reserva['total_saved']);
     }
 
-    public function test_lancamentos_de_investimento_mantem_total_sincronizado_ao_criar_editar_e_excluir(): void
+    public function test_investimento_legado_nao_pode_ser_gravado_novamente(): void
     {
         $usuario = User::factory()->create();
         Sanctum::actingAs($usuario);
+
+        $this->postJson('/api/monthly-reserves', [
+            'competency' => '2026-04',
+            'investimento' => 175,
+        ])->assertUnprocessable();
 
         $reserva = $this->postJson('/api/monthly-reserves', [
             'competency' => '2026-04',
             'investimento' => 0,
         ])->assertCreated()->json('data');
 
-        $lancamento = $this->postJson("/api/monthly-reserves/{$reserva['id']}/entries", [
+        $this->postJson("/api/monthly-reserves/{$reserva['id']}/entries", [
             'description' => 'Aporte em renda fixa',
             'amount' => 120,
-        ])->assertCreated()->json('data');
-
-        $this->assertSame('120.00', MonthlyReserve::findOrFail($reserva['id'])->investimento);
-
-        $this->putJson("/api/monthly-reserves/{$reserva['id']}/entries/{$lancamento['id']}", [
-            'amount' => 175,
-        ])->assertOk();
-
-        $this->assertSame('175.00', MonthlyReserve::findOrFail($reserva['id'])->investimento);
-
-        $this->deleteJson("/api/monthly-reserves/{$reserva['id']}/entries/{$lancamento['id']}")
-            ->assertNoContent();
+        ])->assertUnprocessable();
 
         $this->assertSame('0.00', MonthlyReserve::findOrFail($reserva['id'])->investimento);
     }

@@ -2,18 +2,16 @@
 
 namespace App\Services;
 
-use DomainException;
-use App\Repositories\MonthlyReserveRepository;
 use App\Repositories\ReserveAccountEntryRepository;
 use App\Repositories\TransactionRepository;
 use Carbon\Carbon;
+use DomainException;
 use Illuminate\Support\Collection;
 
 class DashboardService
 {
     public function __construct(
         protected TransactionRepository $transactionRepository,
-        protected MonthlyReserveRepository $monthlyReserveRepository,
         protected ReserveAccountEntryRepository $reserveAccountEntryRepository,
     ) {}
 
@@ -136,40 +134,72 @@ class DashboardService
     protected function obterResumosBaseIndexados(int $usuarioId, array $competencias): array
     {
         $competencias = array_values(array_unique($competencias));
-        $resumosPorTipo = $this->transactionRepository
-            ->obterResumoMensalPorTipoEntreCompetencias($usuarioId, $competencias)
+        $competenciasComAnterior = collect($competencias)
+            ->flatMap(fn (string $competencia): array => [
+                $competencia,
+                Carbon::createFromFormat('Y-m', $competencia)->subMonth()->format('Y-m'),
+            ])
+            ->unique()
+            ->values()
+            ->all();
+        $resumosPorTipoEStatus = $this->transactionRepository
+            ->obterResumoMensalPorTipoEStatusEntreCompetencias($usuarioId, $competencias)
             ->groupBy('competency');
-
-        $reservasMensais = $this->monthlyReserveRepository
-            ->obterPorUsuarioIdECompetencias($usuarioId, $competencias)
-            ->keyBy('competency');
-
-        $reservasPorContas = $this->reserveAccountEntryRepository
-            ->obterSaldoVigenteTotalIndexadoPorCompetencia($usuarioId, $competencias);
+        $saldosPatrimoniais = $this->reserveAccountEntryRepository
+            ->obterSaldosVigentesIndexadosPorTipoECompetencia($usuarioId, $competenciasComAnterior);
 
         $resumos = [];
 
         foreach ($competencias as $competencia) {
-            $resumoPorTipo = $resumosPorTipo->get($competencia, collect());
-            $reservaMensal = $reservasMensais->get($competencia);
+            $resumoPorTipoEStatus = $resumosPorTipoEStatus->get($competencia, collect());
+            $saldosAtuais = $saldosPatrimoniais[$competencia] ?? [
+                'reserve' => 0.0,
+                'investment' => 0.0,
+                'has_unresolved_archived_items' => false,
+            ];
+            $competenciaAnterior = Carbon::createFromFormat('Y-m', $competencia)->subMonth()->format('Y-m');
+            $saldosAnteriores = $saldosPatrimoniais[$competenciaAnterior] ?? [
+                'reserve' => 0.0,
+                'investment' => 0.0,
+            ];
 
-            $totalEntradas = (float) ($resumoPorTipo->firstWhere('type', 'income')->total ?? 0);
-            $totalGastos = (float) ($resumoPorTipo->firstWhere('type', 'expense')->total ?? 0);
+            $totalEntradas = (float) $resumoPorTipoEStatus
+                ->where('type', 'income')->where('status', 'paid')->sum('total');
+            $totalGastos = (float) $resumoPorTipoEStatus
+                ->where('type', 'expense')->where('status', 'paid')->sum('total');
+            $entradasPendentes = (float) $resumoPorTipoEStatus
+                ->where('type', 'income')->where('status', 'pending')->sum('total');
+            $gastosPendentes = (float) $resumoPorTipoEStatus
+                ->where('type', 'expense')->where('status', 'pending')->sum('total');
             $valorRestante = $totalEntradas - $totalGastos;
-            $reservaAnterior = (float) ($reservasPorContas[$competencia] ?? 0);
-            $investimento = (float) ($reservaMensal->investimento ?? 0);
-            $reservaAtual = $reservaAnterior + $valorRestante;
+            $resultadoProjetado = $totalEntradas + $entradasPendentes - $totalGastos - $gastosPendentes;
+            $reservaAtual = (float) $saldosAtuais['reserve'];
+            $investimento = (float) $saldosAtuais['investment'];
             $totalGuardado = $reservaAtual + $investimento;
+            $totalGuardadoAnterior = (float) $saldosAnteriores['reserve'] + (float) $saldosAnteriores['investment'];
 
             $resumos[$competencia] = [
                 'competency' => $competencia,
                 'total_income' => round($totalEntradas, 2),
                 'total_expense' => round($totalGastos, 2),
                 'remaining_amount' => round($valorRestante, 2),
-                'previous_reserve' => round($reservaAnterior, 2),
+                'realized_income' => round($totalEntradas, 2),
+                'realized_expense' => round($totalGastos, 2),
+                'realized_result' => round($valorRestante, 2),
+                'pending_income' => round($entradasPendentes, 2),
+                'pending_expense' => round($gastosPendentes, 2),
+                'projected_result' => round($resultadoProjetado, 2),
+                'previous_reserve' => round((float) $saldosAnteriores['reserve'], 2),
                 'current_reserve' => round($reservaAtual, 2),
                 'investment' => round($investimento, 2),
                 'total_saved' => round($totalGuardado, 2),
+                'reserve_total' => round($reservaAtual, 2),
+                'investment_total' => round($investimento, 2),
+                'previous_total_saved' => round($totalGuardadoAnterior, 2),
+                'asset_variation' => round($totalGuardado - $totalGuardadoAnterior, 2),
+                'reserve_variation' => round($reservaAtual - (float) $saldosAnteriores['reserve'], 2),
+                'investment_variation' => round($investimento - (float) $saldosAnteriores['investment'], 2),
+                'has_unresolved_archived_items' => (bool) $saldosAtuais['has_unresolved_archived_items'],
             ];
         }
 

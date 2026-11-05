@@ -19,7 +19,9 @@ class ReserveAccount extends Model
     protected $fillable = [
         'user_id',
         'name',
+        'type',
         'active',
+        'archive_status_needs_review',
     ];
 
     /**
@@ -30,6 +32,7 @@ class ReserveAccount extends Model
     protected function casts(): array
     {
         return [
+            'archive_status_needs_review' => 'boolean',
             'active' => 'boolean',
         ];
     }
@@ -42,5 +45,10 @@ class ReserveAccount extends Model
     public function entries(): HasMany
     {
         return $this->hasMany(ReserveAccountEntry::class);
+    }
+
+    public function statusEntries(): HasMany
+    {
+        return $this->hasMany(ReserveAccountStatusEntry::class)->orderBy('competency');
     }
 }

@@ -19,7 +19,17 @@ class ReserveAccountResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'active' => $this->active,
+            'description' => $this->name,
+            'type' => $this->type,
+            'active' => $this->active_at_competency ?? $this->active,
+            'current_active' => $this->active,
+            'archive_status_needs_review' => $this->archive_status_needs_review,
+            'effective_status_competency' => $this->effective_status_competency
+                ?? $this->statusEntries->last()?->competency,
+            'status_history' => $this->whenLoaded('statusEntries', fn () => $this->statusEntries->map(fn ($status): array => [
+                'competency' => $status->competency,
+                'active' => $status->active,
+            ])->values()),
             'current_balance' => $saldo['current_balance'] ?? null,
             'previous_balance' => $saldo['previous_balance'] ?? null,
             'delta' => $saldo['delta'] ?? null,

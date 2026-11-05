@@ -9,7 +9,6 @@ use App\Repositories\MonthlyReserveEntryRepository;
 use App\Repositories\MonthlyReserveRepository;
 use DomainException;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 
 class MonthlyReserveService
 {
@@ -55,7 +54,7 @@ class MonthlyReserveService
         $reserva = $this->monthlyReserveRepository->criar([
             'user_id' => $usuarioId,
             'competency' => $dados['competency'],
-            'investimento' => $dados['investimento'],
+            'investimento' => 0,
             'observations' => $dados['observations'] ?? null,
         ]);
 
@@ -78,6 +77,7 @@ class MonthlyReserveService
             }
         }
 
+        unset($dados['investimento']);
         $this->monthlyReserveRepository->atualizar($reservaMensal, $dados);
 
         event(new DadosFinanceirosAlterados($usuarioId));
@@ -107,48 +107,17 @@ class MonthlyReserveService
 
     public function criarLancamento(int $reservaId, int $usuarioId, array $dados): MonthlyReserveEntry
     {
-        $lancamento = DB::transaction(function () use ($reservaId, $usuarioId, $dados): MonthlyReserveEntry {
-            $reservaMensal = $this->buscarPorIdOuFalharComBloqueio($reservaId, $usuarioId);
-            $lancamento = $this->monthlyReserveEntryRepository->criar($reservaMensal->id, $dados);
-
-            $this->recalcularInvestimento($reservaMensal);
-
-            return $lancamento;
-        });
-
-        event(new DadosFinanceirosAlterados($usuarioId));
-
-        return $lancamento;
+        throw new DomainException('Lancamentos legados de investimento sao somente leitura. Cadastre o saldo em Reservas.');
     }
 
     public function atualizarLancamento(int $reservaId, int $lancamentoId, int $usuarioId, array $dados): MonthlyReserveEntry
     {
-        $lancamento = DB::transaction(function () use ($reservaId, $lancamentoId, $usuarioId, $dados): MonthlyReserveEntry {
-            $reservaMensal = $this->buscarPorIdOuFalharComBloqueio($reservaId, $usuarioId);
-            $lancamento = $this->buscarLancamentoOuFalhar($lancamentoId, $reservaMensal->id);
-
-            $this->monthlyReserveEntryRepository->atualizar($lancamento, $dados);
-            $this->recalcularInvestimento($reservaMensal);
-
-            return $lancamento->refresh();
-        });
-
-        event(new DadosFinanceirosAlterados($usuarioId));
-
-        return $lancamento;
+        throw new DomainException('Lancamentos legados de investimento sao somente leitura.');
     }
 
     public function excluirLancamento(int $reservaId, int $lancamentoId, int $usuarioId): void
     {
-        DB::transaction(function () use ($reservaId, $lancamentoId, $usuarioId): void {
-            $reservaMensal = $this->buscarPorIdOuFalharComBloqueio($reservaId, $usuarioId);
-            $lancamento = $this->buscarLancamentoOuFalhar($lancamentoId, $reservaMensal->id);
-
-            $this->monthlyReserveEntryRepository->excluir($lancamento);
-            $this->recalcularInvestimento($reservaMensal);
-        });
-
-        event(new DadosFinanceirosAlterados($usuarioId));
+        throw new DomainException('Lancamentos legados de investimento sao somente leitura.');
     }
 
     /**
@@ -169,40 +138,9 @@ class MonthlyReserveService
         }
     }
 
-    protected function recalcularInvestimento(MonthlyReserve $reservaMensal): void
-    {
-        $totalLancamentos = $this->monthlyReserveEntryRepository->somarPorReservaId($reservaMensal->id);
-
-        $this->monthlyReserveRepository->atualizar($reservaMensal, [
-            'investimento' => $totalLancamentos,
-        ]);
-    }
-
-    protected function buscarLancamentoOuFalhar(int $lancamentoId, int $reservaId): MonthlyReserveEntry
-    {
-        $lancamento = $this->monthlyReserveEntryRepository->buscarPorIdEReservaId($lancamentoId, $reservaId);
-
-        if ($lancamento !== null) {
-            return $lancamento;
-        }
-
-        throw new DomainException('Lancamento nao encontrado para esta reserva.');
-    }
-
     protected function buscarPorIdOuFalhar(int $id, int $usuarioId): MonthlyReserve
     {
         $reservaMensal = $this->monthlyReserveRepository->buscarPorIdEUsuarioId($id, $usuarioId);
-
-        if ($reservaMensal !== null) {
-            return $reservaMensal;
-        }
-
-        throw new DomainException('Reserva mensal nao encontrada para este usuario.');
-    }
-
-    protected function buscarPorIdOuFalharComBloqueio(int $id, int $usuarioId): MonthlyReserve
-    {
-        $reservaMensal = $this->monthlyReserveRepository->bloquearPorIdEUsuarioId($id, $usuarioId);
 
         if ($reservaMensal !== null) {
             return $reservaMensal;

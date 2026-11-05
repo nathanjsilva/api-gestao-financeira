@@ -79,3 +79,7 @@ Os scripts atuais da SPA são dev, build, typecheck e preview. O script typechec
 ## Infraestrutura
 
 O Docker Compose do projeto fornece a API, MySQL e Redis. A SPA é executada separadamente pelo Vite e não há serviço de frontend no Compose. Variáveis e credenciais dependem do ambiente; não trate valores exemplificativos como segredos ou configurações universais.
+
+## Regras financeiras aprovadas — 2026-11
+
+As descrições antigas dos modelos `MonthlyReserve`, `MonthlyReserveEntry`, `ReserveAccount` e das fórmulas do Dashboard devem ser lidas junto das regras revisadas em `.ai/backend/contexts/monthly-reserve.md` e `.ai/backend/contexts/dashboard.md`. Reservas e Investimentos são itens com saldos totais por competência no módulo compartilhado de Reservas. O fluxo de transações é separado do patrimônio, e investimentos operacionais legados são arquivados e zerados por migration recuperável, sem execução automática no banco real.

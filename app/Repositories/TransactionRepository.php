@@ -70,7 +70,19 @@ class TransactionRepository
             )
             ->where('user_id', $userId)
             ->whereIn('competency', $competencias)
+            ->where('status', 'paid')
             ->groupBy('competency', 'type')
+            ->get();
+    }
+
+    public function obterResumoMensalPorTipoEStatusEntreCompetencias(int $userId, array $competencias): Collection
+    {
+        return $this->model
+            ->query()
+            ->select('competency', 'type', 'status', DB::raw('SUM(amount) as total'))
+            ->where('user_id', $userId)
+            ->whereIn('competency', $competencias)
+            ->groupBy('competency', 'type', 'status')
             ->get();
     }
 
@@ -86,6 +98,7 @@ class TransactionRepository
             ->where('user_id', $userId)
             ->where('competency', $competency)
             ->where('type', 'expense')
+            ->where('status', 'paid')
             ->groupBy('category_id')
             ->orderByDesc('total')
             ->get();
@@ -106,6 +119,7 @@ class TransactionRepository
             ->with('category:id,name,type')
             ->where('user_id', $userId)
             ->where('type', 'expense')
+            ->where('status', 'paid')
             ->whereIn('competency', [$competenciaInicial, $competenciaFinal])
             ->groupBy('category_id', 'competency')
             ->orderBy('category_id')

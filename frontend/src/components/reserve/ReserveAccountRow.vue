@@ -38,6 +38,7 @@ function updateNote(value) {
     <div class="flex items-center justify-between gap-3">
       <div class="min-w-0">
         <p class="truncate text-sm font-bold text-slate-100">{{ account.name }}</p>
+        <p class="text-xs uppercase text-sky-300">{{ account.type === 'investment' ? 'Investimento' : 'Reserva' }}</p>
         <p v-if="account.is_inherited" class="text-xs text-slate-500">Herdado do mês anterior</p>
       </div>
       <span
@@ -52,7 +53,7 @@ function updateNote(value) {
     <div class="mt-3 grid gap-2 @min-[40rem]:grid-cols-2">
       <BaseInput
         :id="`reserve-account-${account.id}-name`"
-        label="Nome da conta"
+        label="Descrição"
         :model-value="modelValue.name"
         @update:model-value="updateName"
       />

@@ -37,11 +37,11 @@ defineProps({
         <span class="text-sm text-slate-400">{{ formatPercentage(comparison.expense_percentage) }}</span>
       </div>
       <div class="rounded-2xl bg-white/[0.04] p-4">
-        <p class="text-sm text-slate-400">VariaÃ§Ã£o da reserva</p>
+        <p class="text-sm text-slate-400">Variação patrimonial</p>
         <strong class="mt-2 block text-xl text-slate-50">
-          {{ formatCurrency(comparison.reserve_difference) }}
+          {{ formatCurrency(comparison.asset_difference) }}
         </strong>
-        <span class="text-sm text-slate-400">comparado ao mÃªs anterior</span>
+        <span class="text-sm text-slate-400">reserva + investimentos vs. mês anterior</span>
       </div>
     </div>
 

@@ -25,16 +25,5 @@ export const monthlyReserveService = {
     return getData(await httpClient.get(`/monthly-reserves/${reserveId}/entries`))
   },
 
-  async createEntry(reserveId, payload) {
-    return getData(await httpClient.post(`/monthly-reserves/${reserveId}/entries`, payload))
-  },
-
-  async updateEntry(reserveId, entryId, payload) {
-    return getData(await httpClient.put(`/monthly-reserves/${reserveId}/entries/${entryId}`, payload))
-  },
-
-  async removeEntry(reserveId, entryId) {
-    await httpClient.delete(`/monthly-reserves/${reserveId}/entries/${entryId}`)
-  },
 }
 

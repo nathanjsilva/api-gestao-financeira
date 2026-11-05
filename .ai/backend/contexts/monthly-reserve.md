@@ -80,3 +80,16 @@ A API de MonthlyReserve também aceita investimento diretamente por compatibilid
 - Arquivar tem efeito retroativo nos agregados do dashboard porque contas inativas são filtradas independentemente da competência.
 - O snapshot de saldo não é movimento de caixa. Não inferir transferências ou pagamentos a partir dele.
 - Migração de dados: snapshots históricos do antigo campo reserva_anterior foram copiados para uma conta de reserva chamada Reserva por usuário antes da remoção da coluna. A migration correspondente é 2026_07_31_000003_backfill_reserve_accounts_from_monthly_reserves.php.
+
+
+## Regras de negócio atualizadas — 2026-11
+
+Esta seção substitui as fórmulas e os fluxos de investimento descritos acima.
+
+- O módulo mantém um único fluxo de Reservas com vários itens identificados por ID, descrição e tipo (`reserve` ou `investment`). Os itens anteriores de `reserve_accounts` continuam como Reserva; novas classificações de Investimento usam a mesma estrutura de itens e snapshots.
+- `reserve_account_entries.balance` é o saldo total do próprio item naquela competência, nunca um aporte. Sem uma declaração, usa-se o saldo declarado mais recente do mesmo item e a API informa `is_inherited`. Não se somam competências diferentes.
+- `reserve_accounts.type` não pode ser alterado depois do cadastro. Reservas e Investimentos novos usam IDs e saldos da tabela `reserve_accounts`/`reserve_account_entries`; não usam nem compartilham os IDs dos registros antigos em `monthly_reserves` e `monthly_reserve_entries`.
+- O histórico de `reserve_account_entries` é preservado. A tabela de status por competência registra a competência efetiva de arquivamento/reativação. Contas antigas com `active=false` recebem `archive_status_needs_review=true`, porque o sistema não conhece a data histórica. Até a revisão, seus saldos não entram nos totais e o dashboard sinaliza a pendência. A pessoa confirma a competência antes de o sistema aplicar o status ao histórico.
+- A migration `2026_11_04_000003_archive_and_zero_legacy_investments` copia integralmente IDs de origem, usuário, competência, valores, observações/descrições, timestamps e relação pai dos registros antigos para `legacy_monthly_reserve_archives` e `legacy_monthly_reserve_entry_archives`, confere a cópia e só então zera `monthly_reserves.investimento` e `monthly_reserve_entries.amount`. `legacy_investment_migration_state` torna a operação idempotente. O rollback restaura os registros e valores a partir do arquivo.
+- Os endpoints antigos de lançamentos de investimento permanecem disponíveis para leitura; escrita e exclusão retornam 422. O campo legado `investimento` aceita apenas zero. Investimentos novos são cadastrados como itens do tipo `investment`, com saldos por competência.
+- Preparar/validar migration não autoriza executá-la no banco real. É necessária autorização explícita específica para a aplicação no banco real.

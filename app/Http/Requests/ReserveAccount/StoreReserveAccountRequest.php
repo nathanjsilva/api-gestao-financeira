@@ -3,6 +3,7 @@
 namespace App\Http\Requests\ReserveAccount;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class StoreReserveAccountRequest extends FormRequest
 {
@@ -18,6 +19,7 @@ class StoreReserveAccountRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'type' => ['sometimes', 'required', Rule::in(['reserve', 'investment'])],
         ];
     }
 }

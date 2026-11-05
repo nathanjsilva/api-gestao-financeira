@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Category;
+use App\Models\ReserveAccount;
+use App\Models\ReserveAccountEntry;
 use App\Models\Transaction;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -57,7 +59,7 @@ class ReserveAccountTest extends TestCase
         $this->assertTrue($contaListada['is_inherited']);
     }
 
-    public function test_reserva_atual_soma_todas_as_contas_ativas_mais_saldo_do_mes(): void
+    public function test_reserva_atual_soma_somente_saldos_declarados_das_contas_ativas(): void
     {
         $usuario = User::factory()->create();
         Sanctum::actingAs($usuario);
@@ -83,8 +85,84 @@ class ReserveAccountTest extends TestCase
         $resumo = $this->getJson('/api/dashboard/monthly-summary?competency=2026-05')->assertOk()->json('data');
 
         $this->assertEquals(500, $resumo['remaining_amount']);
-        $this->assertEquals(8500, $resumo['current_reserve']);
-        $this->assertEquals(8500, $resumo['total_saved']);
+        $this->assertEquals(8000, $resumo['current_reserve']);
+        $this->assertEquals(8000, $resumo['total_saved']);
+    }
+
+    public function test_dashboard_separa_reservas_investimentos_e_transacoes_pendentes(): void
+    {
+        $usuario = User::factory()->create();
+        Sanctum::actingAs($usuario);
+
+        $categoria = Category::create(['user_id' => $usuario->id, 'name' => 'Renda', 'type' => 'income']);
+        $categoriaDespesa = Category::create(['user_id' => $usuario->id, 'name' => 'Contas', 'type' => 'expense']);
+        $reserva = $this->postJson('/api/reserve-accounts', ['name' => 'Conta corrente'])->assertCreated()->json('data');
+        $investimento = $this->postJson('/api/reserve-accounts', ['name' => 'CDB', 'type' => 'investment'])
+            ->assertCreated()->json('data');
+        $this->putJson("/api/reserve-accounts/{$reserva['id']}/entries/2026-04", ['balance' => 800])->assertSuccessful();
+        $this->putJson("/api/reserve-accounts/{$investimento['id']}/entries/2026-04", ['balance' => 300])->assertSuccessful();
+        $this->putJson("/api/reserve-accounts/{$reserva['id']}/entries/2026-05", ['balance' => 900])->assertSuccessful();
+        $this->putJson("/api/reserve-accounts/{$investimento['id']}/entries/2026-05", ['balance' => 400])->assertSuccessful();
+
+        Transaction::create([
+            'user_id' => $usuario->id, 'category_id' => $categoria->id, 'description' => 'Recebido',
+            'amount' => 100, 'type' => 'income', 'status' => 'paid', 'competency' => '2026-05', 'is_recurring' => false,
+        ]);
+        Transaction::create([
+            'user_id' => $usuario->id, 'category_id' => $categoria->id, 'description' => 'A receber',
+            'amount' => 50, 'type' => 'income', 'status' => 'pending', 'competency' => '2026-05', 'is_recurring' => false,
+        ]);
+        Transaction::create([
+            'user_id' => $usuario->id, 'category_id' => $categoriaDespesa->id, 'description' => 'Conta pendente',
+            'amount' => 20, 'type' => 'expense', 'status' => 'pending', 'competency' => '2026-05', 'is_recurring' => false,
+        ]);
+
+        $resumo = $this->getJson('/api/dashboard/monthly-summary?competency=2026-05')->assertOk()->json('data');
+
+        $this->assertEquals(900, $resumo['reserve_total']);
+        $this->assertEquals(400, $resumo['investment_total']);
+        $this->assertEquals(1300, $resumo['total_saved']);
+        $this->assertEquals(100, $resumo['realized_result']);
+        $this->assertEquals(50, $resumo['pending_income']);
+        $this->assertEquals(20, $resumo['pending_expense']);
+        $this->assertEquals(130, $resumo['projected_result']);
+        $this->assertEquals(200, $resumo['asset_variation']);
+    }
+
+    public function test_conta_arquivada_sem_data_conhecida_exige_revisao_e_preserva_o_historico(): void
+    {
+        $usuario = User::factory()->create();
+        Sanctum::actingAs($usuario);
+        $conta = ReserveAccount::create([
+            'user_id' => $usuario->id,
+            'name' => 'Conta legada arquivada',
+            'active' => false,
+            'archive_status_needs_review' => true,
+        ]);
+        ReserveAccountEntry::create([
+            'reserve_account_id' => $conta->id,
+            'competency' => '2026-01',
+            'balance' => 1000,
+        ]);
+
+        $antesDaRevisao = $this->getJson('/api/dashboard/monthly-summary?competency=2026-01')
+            ->assertOk()->json('data');
+        $this->assertEquals(0, $antesDaRevisao['reserve_total']);
+        $this->assertTrue($antesDaRevisao['has_unresolved_archived_items']);
+
+        $this->putJson("/api/reserve-accounts/{$conta->id}", [
+            'active' => false,
+            'competency' => '2026-02',
+        ])->assertOk();
+
+        $historicoConfirmado = $this->getJson('/api/dashboard/monthly-summary?competency=2026-01')
+            ->assertOk()->json('data');
+        $this->assertEquals(1000, $historicoConfirmado['reserve_total']);
+        $this->assertFalse($historicoConfirmado['has_unresolved_archived_items']);
+
+        $depoisDoArquivo = $this->getJson('/api/dashboard/monthly-summary?competency=2026-02')
+            ->assertOk()->json('data');
+        $this->assertEquals(0, $depoisDoArquivo['reserve_total']);
     }
 
     public function test_conta_arquivada_deixa_de_somar_mas_mantem_historico(): void
@@ -95,7 +173,10 @@ class ReserveAccountTest extends TestCase
         $conta = $this->postJson('/api/reserve-accounts', ['name' => 'Viagem'])->json('data');
         $this->putJson("/api/reserve-accounts/{$conta['id']}/entries/2026-01", ['balance' => 1000])->assertSuccessful();
 
-        $this->putJson("/api/reserve-accounts/{$conta['id']}", ['active' => false])->assertOk();
+        $this->putJson("/api/reserve-accounts/{$conta['id']}", ['active' => false, 'competency' => '2026-02'])->assertOk();
+
+        $resumoAnterior = $this->getJson('/api/dashboard/monthly-summary?competency=2026-01')->assertOk()->json('data');
+        $this->assertEquals(1000, $resumoAnterior['reserve_total']);
 
         $this->getJson('/api/reserve-accounts?competency=2026-02')
             ->assertOk()

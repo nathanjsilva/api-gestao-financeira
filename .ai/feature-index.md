@@ -99,3 +99,7 @@ Frontend:
 - Composables: frontend/src/composables/useFormErrors.ts, useLoading.ts e usePagination.ts.
 - Helpers: frontend/src/helpers/apiError.ts, competency.ts, currency.ts e percentage.ts.
 - Constantes: frontend/src/constants/layouts.ts, routeNames.ts e transactions.ts.
+
+## Atualização funcional — Reservas e Dashboard (2026-11)
+
+A funcionalidade de reserva mensal agora atende múltiplos itens por usuário, com classificação Reserva/Investimento e snapshots de saldo total por competência. Consulte as regras atualizadas em `backend/contexts/monthly-reserve.md` e `backend/contexts/dashboard.md`; as descrições antigas de aportes e fórmulas foram substituídas.

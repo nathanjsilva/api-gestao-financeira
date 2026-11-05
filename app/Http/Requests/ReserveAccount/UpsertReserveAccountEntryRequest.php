@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\ReserveAccount;
 
+use App\Rules\CompetencyRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class UpsertReserveAccountEntryRequest extends FormRequest
@@ -11,12 +12,18 @@ class UpsertReserveAccountEntryRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->merge(['competency' => $this->route('competencia')]);
+    }
+
     /**
      * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
+            'competency' => ['required', new CompetencyRule],
             'balance' => ['required', 'numeric', 'min:0'],
             'note' => ['nullable', 'string'],
         ];

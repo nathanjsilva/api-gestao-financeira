@@ -17,6 +17,7 @@ class ReserveAccountEntryResource extends JsonResource
         return [
             'id' => $this->id,
             'competency' => $this->competency,
+            'declared_balance' => $this->balance,
             'balance' => $this->balance,
             'note' => $this->note,
             'created_at' => $this->created_at,

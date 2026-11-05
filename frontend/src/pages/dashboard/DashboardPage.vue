@@ -75,6 +75,9 @@ onMounted(loadAnalytics)
     <p v-if="generalError" class="mb-5 rounded-2xl bg-rose-500/10 p-4 text-sm text-rose-200">
       {{ generalError }}
     </p>
+    <p v-if="overview.has_unresolved_archived_items" class="mb-5 rounded-2xl bg-amber-400/10 p-4 text-sm text-amber-200">
+      Há itens antigos arquivados sem competência de arquivamento confirmada. Eles foram omitidos do patrimônio histórico até a revisão.
+    </p>
 
     <div v-if="isLoading && !analytics" class="grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-4">
       <div v-for="item in 4" :key="item" class="skeleton-card" />
@@ -83,16 +86,16 @@ onMounted(loadAnalytics)
     <template v-else>
       <div class="grid gap-4 @min-[48rem]:grid-cols-2 @min-[80rem]:grid-cols-4">
         <FinancialCard
-          label="Entradas do mÃªs"
+          label="Entradas realizadas"
           :value="formatCurrency(overview.total_income)"
-          hint="Renda e recebimentos confirmados"
+          :hint="`Pendentes: ${formatCurrency(overview.pending_income)}`"
           accent="emerald"
           trend="up"
         />
         <FinancialCard
-          label="Gastos do mÃªs"
+          label="Gastos realizados"
           :value="formatCurrency(overview.total_expense)"
-          :hint="`${formatPercentage(kpis.income_commitment_rate)} da renda comprometida`"
+          :hint="`Pendentes: ${formatCurrency(overview.pending_expense)} · ${formatPercentage(kpis.income_commitment_rate)} da renda realizada`"
           accent="rose"
           :trend="comparison.expense_difference > 0 ? 'down' : 'up'"
         />
@@ -104,11 +107,32 @@ onMounted(loadAnalytics)
           :trend="overview.remaining_amount >= 0 ? 'up' : 'down'"
         />
         <FinancialCard
+          label="Resultado projetado"
+          :value="formatCurrency(overview.projected_result)"
+          hint="Resultado realizado + receitas e despesas pendentes"
+          accent="rose"
+          trend="neutral"
+        />
+        <FinancialCard
+          label="Reserva atual"
+          :value="formatCurrency(overview.reserve_total)"
+          hint="Saldo patrimonial vigente"
+          accent="sky"
+          trend="neutral"
+        />
+        <FinancialCard
+          label="Investimento atual"
+          :value="formatCurrency(overview.investment_total)"
+          hint="Saldo patrimonial vigente"
+          accent="violet"
+          trend="neutral"
+        />
+        <FinancialCard
           label="Total guardado"
           :value="formatCurrency(overview.total_saved)"
-          hint="Reserva atual + investimento"
-          accent="violet"
-          :trend="comparison.reserve_difference >= 0 ? 'up' : 'down'"
+          :hint="`Variação patrimonial: ${formatCurrency(overview.asset_variation)}`"
+          accent="emerald"
+          :trend="overview.asset_variation >= 0 ? 'up' : 'down'"
         />
       </div>
 

@@ -16,6 +16,7 @@ class ReserveAccountRepository
         return $this->model
             ->query()
             ->where('user_id', $userId)
+            ->with('statusEntries')
             ->when(! $incluirArquivadas, fn ($query) => $query->where('active', true))
             ->orderBy('name')
             ->get();
@@ -27,6 +28,7 @@ class ReserveAccountRepository
             ->query()
             ->where('id', $id)
             ->where('user_id', $userId)
+            ->with('statusEntries')
             ->first();
     }
 
@@ -35,7 +37,9 @@ class ReserveAccountRepository
         return $this->model->query()->create([
             'user_id' => $userId,
             'name' => $dados['name'],
+            'type' => $dados['type'] ?? 'reserve',
             'active' => true,
+            'archive_status_needs_review' => false,
         ]);
     }
 

@@ -24,10 +24,10 @@ const { generalError, clearErrors, setErrorsFromApi } = useFormErrors()
 const { currentPage, totalPages, paginatedItems, pageNumbers, nextPage, prevPage, goToPage } = usePagination(reserves)
 
 const latestReserve = computed(() => reserves.value[0] || null)
-const previousReserve = computed(() => reserves.value[1] || null)
-const reserveDifference = computed(() => Number(latestReserve.value?.current_reserve || 0) - Number(previousReserve.value?.current_reserve || 0))
-const investmentDifference = computed(() => Number(latestReserve.value?.investimento || 0) - Number(previousReserve.value?.investimento || 0))
-const reserveGrowthPercentage = computed(() => percentageChange(Number(latestReserve.value?.current_reserve || 0), Number(previousReserve.value?.current_reserve || 0)))
+const reserveDifference = computed(() => Number(latestReserve.value?.reserve_variation || 0))
+const investmentDifference = computed(() => Number(latestReserve.value?.investment_variation || 0))
+const previousReserveTotal = computed(() => Number(latestReserve.value?.current_reserve || 0) - reserveDifference.value)
+const reserveGrowthPercentage = computed(() => percentageChange(Number(latestReserve.value?.current_reserve || 0), previousReserveTotal.value))
 const isEditModalOpen = computed(() => editingId.value !== null)
 const editingReserve = computed(() => reserves.value.find((reserve) => reserve.id === editingId.value) || null)
 
@@ -126,8 +126,8 @@ onMounted(loadReserves)
     <div class="dashboard-hero">
       <PageHeader
         eyebrow="Reserva financeira"
-        title="Reserva mensal"
-        description="Acompanhe sua evoluÃ§Ã£o patrimonial, investimentos e saldo final mÃªs a mÃªs."
+        title="Reservas e investimentos"
+        description="Acompanhe os saldos patrimoniais de Reserva e Investimento e o resultado financeiro por competência."
       />
     </div>
 
@@ -156,7 +156,7 @@ onMounted(loadReserves)
           <div>
             <p class="text-sm font-semibold text-slate-400">Investimentos</p>
             <strong class="mt-3 block text-3xl font-black text-slate-50">
-              {{ formatCurrency(latestReserve?.investimento) }}
+              {{ formatCurrency(latestReserve?.investment_total) }}
             </strong>
             <p class="mt-3 text-sm" :class="investmentDifference >= 0 ? 'text-emerald-300' : 'text-amber-300'">
               {{ investmentDifference >= 0 ? 'â†‘' : 'â†“' }} {{ formatCurrency(Math.abs(investmentDifference)) }} no comparativo
@@ -188,10 +188,8 @@ onMounted(loadReserves)
 
     <div class="mt-5 grid min-w-0 gap-4 @min-[80rem]:grid-cols-[minmax(360px,0.9fr)_minmax(0,1.1fr)]">
       <BaseCard>
-        <h2 class="text-2xl font-black text-slate-50">Nova reserva</h2>
-        <p class="mt-2 text-sm leading-6 text-slate-400">
-          Declare o saldo de cada conta de reserva no mÃªs. Contas sem alteraÃ§Ã£o mantÃªm automaticamente o valor do mÃªs anterior.
-        </p>
+        <h2 class="text-2xl font-black text-slate-50">Novos saldos patrimoniais</h2>
+        <p class="mt-2 text-sm leading-6 text-slate-400">Declare o saldo total de cada Reserva ou Investimento na competência. Itens sem nova declaração herdam o último saldo conhecido.</p>
 
         <div class="mt-6">
           <MonthlyReserveEditor

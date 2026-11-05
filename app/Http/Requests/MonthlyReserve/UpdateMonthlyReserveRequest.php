@@ -24,12 +24,12 @@ class UpdateMonthlyReserveRequest extends FormRequest
             'competency' => [
                 'sometimes',
                 'required',
-                new CompetencyRule(),
+                new CompetencyRule,
                 Rule::unique('monthly_reserves', 'competency')
                     ->ignore($reservaMensalId)
                     ->where(fn ($query) => $query->where('user_id', $this->user()?->id)),
             ],
-            'investimento' => ['sometimes', 'required', 'numeric', 'min:0'],
+            'investimento' => ['sometimes', 'required', 'numeric', 'in:0'],
             'observations' => ['nullable', 'string'],
         ];
     }

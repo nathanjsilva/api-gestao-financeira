@@ -71,3 +71,15 @@ O listener InvalidarCacheDashboard incrementa a versão após eventos DadosFinan
 - Contas de reserva e investimento mensal alimentam reserve_evolution e current_reserve/total_saved.
 - O editor de reserva consulta monthly-summary para calcular prévias da competência.
 - Os painéis de cartões têm serviço, dados e cache independentes; não entram neste cálculo.
+
+## Regras de cálculo atualizadas — 2026-11
+
+Esta seção substitui as fórmulas e descrições de status do dashboard acima.
+
+- `reserve_total`/Reserva Atual soma os saldos vigentes dos itens ativos do tipo `reserve`; `investment_total`/Investimento Atual soma os itens ativos do tipo `investment`; `total_saved` é a soma desses dois valores. Um saldo declarado em uma competência é total do item e não é somado a saldos de outras competências.
+- `asset_variation` compara `total_saved` com o total da competência imediatamente anterior. O dashboard não soma o resultado das transações ao patrimônio.
+- `realized_income`, `realized_expense` e `realized_result` consideram apenas transações `paid`. `pending_income` e `pending_expense` permanecem separados; `projected_result` é o resultado realizado acrescido das receitas pendentes e deduzido das despesas pendentes. Os campos de compatibilidade `total_income`, `total_expense` e `remaining_amount` representam valores realizados.
+- Categorias e gráficos de despesas consideram valores realizados; o gráfico de fluxo distingue realizados e pendentes. A evolução patrimonial apresenta Reserva, Investimento e Total Guardado.
+- `has_unresolved_archived_items` indica que saldos de itens antigos com data de arquivamento desconhecida foram omitidos do patrimônio histórico até a revisão.
+- O zeramento dos investimentos legados reduz intencionalmente os indicadores históricos baseados nesses campos. O arquivo preserva os valores originais para auditoria/recuperação; não se deve compensar os saldos patrimoniais antigos.
+- Alterações de categorias também disparam `DadosFinanceirosAlterados` para invalidar nomes e dados analíticos em cache. A mudança mantém os limites existentes do dashboard de cartões, que segue independente.

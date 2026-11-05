@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\ReserveAccount\DeleteReserveAccountEntryRequest;
 use App\Http\Requests\ReserveAccount\UpsertReserveAccountEntriesRequest;
 use App\Http\Requests\ReserveAccount\UpsertReserveAccountEntryRequest;
 use App\Http\Resources\ReserveAccountEntryResource;
+use App\Http\Resources\ReserveAccountStatusEntryResource;
 use App\Services\ReserveAccountService;
 use DomainException;
 use Illuminate\Http\JsonResponse;
@@ -27,6 +29,17 @@ class ReserveAccountEntryController extends Controller
         }
 
         return ReserveAccountEntryResource::collection($lancamentos);
+    }
+
+    public function statusHistory(int $contaId): AnonymousResourceCollection|JsonResponse
+    {
+        try {
+            $history = $this->reserveAccountService->obterStatusHistory($contaId, $this->usuarioIdAutenticado());
+        } catch (DomainException $exception) {
+            return response()->json(['message' => $exception->getMessage()], 404);
+        }
+
+        return ReserveAccountStatusEntryResource::collection($history);
     }
 
     public function upsertMany(
@@ -53,7 +66,7 @@ class ReserveAccountEntryController extends Controller
             $entry = $this->reserveAccountService->definirSaldoDoMes(
                 $contaId,
                 $this->usuarioIdAutenticado(),
-                $competencia,
+                $request->validated('competency'),
                 $request->validated(),
             );
         } catch (DomainException $exception) {
@@ -63,10 +76,14 @@ class ReserveAccountEntryController extends Controller
         return new ReserveAccountEntryResource($entry);
     }
 
-    public function destroy(int $contaId, string $competencia): Response|JsonResponse
+    public function destroy(DeleteReserveAccountEntryRequest $request, int $contaId): Response|JsonResponse
     {
         try {
-            $this->reserveAccountService->removerSaldoDoMes($contaId, $this->usuarioIdAutenticado(), $competencia);
+            $this->reserveAccountService->removerSaldoDoMes(
+                $contaId,
+                $this->usuarioIdAutenticado(),
+                $request->validated('competency'),
+            );
         } catch (DomainException $exception) {
             return response()->json(['message' => $exception->getMessage()], 404);
         }

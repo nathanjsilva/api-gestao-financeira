@@ -23,7 +23,9 @@ class MonthlyReserveEntryController extends Controller
         try {
             $lancamentos = $this->monthlyReserveService->listarLancamentos($reservaId, $this->usuarioIdAutenticado());
         } catch (DomainException $exception) {
-            return response()->json(['message' => $exception->getMessage()], 404);
+            $status = str_contains($exception->getMessage(), 'nao encontrada') ? 404 : 422;
+
+            return response()->json(['message' => $exception->getMessage()], $status);
         }
 
         return MonthlyReserveEntryResource::collection($lancamentos);
@@ -38,7 +40,10 @@ class MonthlyReserveEntryController extends Controller
                 $request->validated()
             );
         } catch (DomainException $exception) {
-            return response()->json(['message' => $exception->getMessage()], 404);
+            $status = str_contains($exception->getMessage(), 'nao encontrada')
+                || str_contains($exception->getMessage(), 'nao encontrado') ? 404 : 422;
+
+            return response()->json(['message' => $exception->getMessage()], $status);
         }
 
         return (new MonthlyReserveEntryResource($lancamento))
@@ -56,7 +61,10 @@ class MonthlyReserveEntryController extends Controller
                 $request->validated()
             );
         } catch (DomainException $exception) {
-            return response()->json(['message' => $exception->getMessage()], 404);
+            $status = str_contains($exception->getMessage(), 'nao encontrada')
+                || str_contains($exception->getMessage(), 'nao encontrado') ? 404 : 422;
+
+            return response()->json(['message' => $exception->getMessage()], $status);
         }
 
         return new MonthlyReserveEntryResource($lancamento);
@@ -67,7 +75,10 @@ class MonthlyReserveEntryController extends Controller
         try {
             $this->monthlyReserveService->excluirLancamento($reservaId, $lancamentoId, $this->usuarioIdAutenticado());
         } catch (DomainException $exception) {
-            return response()->json(['message' => $exception->getMessage()], 404);
+            $status = str_contains($exception->getMessage(), 'nao encontrada')
+                || str_contains($exception->getMessage(), 'nao encontrado') ? 404 : 422;
+
+            return response()->json(['message' => $exception->getMessage()], $status);
         }
 
         return response()->noContent();

@@ -7,6 +7,7 @@ use App\Models\ReserveAccount;
 use App\Models\ReserveAccountEntry;
 use App\Repositories\ReserveAccountEntryRepository;
 use App\Repositories\ReserveAccountRepository;
+use App\Repositories\ReserveAccountStatusRepository;
 use Carbon\Carbon;
 use DomainException;
 use Illuminate\Database\Eloquent\Collection;
@@ -17,6 +18,7 @@ class ReserveAccountService
     public function __construct(
         protected ReserveAccountRepository $reserveAccountRepository,
         protected ReserveAccountEntryRepository $reserveAccountEntryRepository,
+        protected ReserveAccountStatusRepository $reserveAccountStatusRepository,
     ) {}
 
     public function listar(int $usuarioId, bool $incluirArquivadas = false): Collection
@@ -31,10 +33,19 @@ class ReserveAccountService
      */
     public function listarComSaldo(int $usuarioId, string $competencia, bool $incluirArquivadas = false): Collection
     {
-        $contas = $this->listar($usuarioId, $incluirArquivadas);
+        $contas = $this->reserveAccountRepository->listarPorUsuarioId($usuarioId, true);
         $competenciaAnterior = Carbon::createFromFormat('Y-m', $competencia)->subMonth()->format('Y-m');
 
         foreach ($contas as $conta) {
+            $statusAtual = $this->reserveAccountStatusRepository->buscarStatusVigente($conta->id, $competencia);
+            $statusDoMes = $statusAtual?->active;
+            $statusIndefinido = $statusDoMes === null && $conta->archive_status_needs_review;
+            $ativoNaCompetencia = $statusDoMes ?? ! $statusIndefinido;
+
+            $conta->setAttribute('active_at_competency', $ativoNaCompetencia);
+            $conta->setAttribute('archive_status_needs_review', $statusIndefinido);
+            $conta->setAttribute('effective_status_competency', $statusAtual?->competency);
+
             $vigente = $this->reserveAccountEntryRepository->buscarSaldoVigente($conta->id, $competencia);
             $vigenteAnterior = $this->reserveAccountEntryRepository->buscarSaldoVigente($conta->id, $competenciaAnterior);
 
@@ -52,7 +63,9 @@ class ReserveAccountService
             ]);
         }
 
-        return $contas;
+        return $contas->filter(function (ReserveAccount $conta) use ($incluirArquivadas): bool {
+            return $incluirArquivadas || $conta->active_at_competency === true;
+        })->values();
     }
 
     public function buscarPorId(int $id, int $usuarioId): ?ReserveAccount
@@ -62,7 +75,10 @@ class ReserveAccountService
 
     public function criar(int $usuarioId, array $dados): ReserveAccount
     {
-        $conta = $this->reserveAccountRepository->criar($usuarioId, $dados);
+        $conta = $this->reserveAccountRepository->criar($usuarioId, [
+            'name' => $dados['name'],
+            'type' => $dados['type'] ?? 'reserve',
+        ]);
 
         event(new DadosFinanceirosAlterados($usuarioId));
 
@@ -72,6 +88,24 @@ class ReserveAccountService
     public function atualizar(int $id, int $usuarioId, array $dados): ReserveAccount
     {
         $conta = $this->buscarPorIdOuFalhar($id, $usuarioId);
+
+        $novoStatus = $dados['active'] ?? null;
+        $competenciaStatus = $dados['competency'] ?? null;
+
+        if ($novoStatus !== null) {
+            if (! $novoStatus && $conta->archive_status_needs_review && $competenciaStatus === null) {
+                throw new DomainException('Informe a competência efetiva do arquivamento para confirmar o histórico.');
+            }
+
+            if ($novoStatus && $conta->archive_status_needs_review) {
+                throw new DomainException('Confirme primeiro a competência efetiva do arquivamento.');
+            }
+
+            $this->reserveAccountStatusRepository->definirStatus($conta->id, $competenciaStatus, $novoStatus);
+            $dados['archive_status_needs_review'] = false;
+        }
+
+        unset($dados['competency']);
 
         $this->reserveAccountRepository->atualizar($conta, $dados);
 
@@ -98,13 +132,20 @@ class ReserveAccountService
         return $entry;
     }
 
+    public function obterStatusHistory(int $contaId, int $usuarioId): Collection
+    {
+        $conta = $this->buscarPorIdOuFalhar($contaId, $usuarioId);
+
+        return $this->reserveAccountStatusRepository->listarPorContaId($conta->id);
+    }
+
     /**
      * @param  array{competency: string, entries: list<array{account_id: int, balance: numeric, note?: string|null}>}  $dados
      */
     public function definirSaldosDoMesEmLote(int $usuarioId, array $dados): Collection
     {
         $entries = DB::transaction(function () use ($usuarioId, $dados): Collection {
-            $resultado = new Collection();
+            $resultado = new Collection;
 
             foreach ($dados['entries'] as $dadosEntrada) {
                 $conta = $this->reserveAccountRepository->buscarPorIdEUsuarioId(
