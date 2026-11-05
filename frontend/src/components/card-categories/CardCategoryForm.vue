@@ -38,7 +38,7 @@ defineEmits(['submit', 'cancel'])
       id="card-category-name"
       v-model="form.name"
       label="Nome"
-      placeholder="Ex: AlimentaÃ§Ã£o"
+      placeholder="Ex: Alimentação"
       :error="fieldError('name')"
     />
 

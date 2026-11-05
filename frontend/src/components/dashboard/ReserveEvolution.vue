@@ -81,12 +81,12 @@ const chartOptions = computed(() => ({
 <template>
   <section class="analytics-panel">
     <div class="mb-5">
-      <p class="text-sm font-bold uppercase text-sky-300">PatrimÃ´nio</p>
+      <p class="text-sm font-bold uppercase text-sky-300">Patrimônio</p>
       <h2 class="mt-2 text-2xl font-black text-slate-50">Evolução patrimonial</h2>
       <p class="mt-3 text-sm leading-6 text-slate-400">Mostra os saldos vigentes de reservas, investimentos e patrimônio total em cada competência.</p>
     </div>
 
-    <EmptyState v-if="!items.length" title="Sem dados de reserva" description="Cadastre reservas mensais para visualizar a evoluÃ§Ã£o." />
+    <EmptyState v-if="!items.length" title="Sem dados de reserva" description="Cadastre reservas mensais para visualizar a evolução." />
     <apexchart v-else type="area" height="280" :options="chartOptions" :series="series" />
 
     <p class="mt-5 rounded-2xl bg-white/4 p-4 text-sm leading-6 text-slate-400">Cada ponto representa o saldo total declarado ou herdado naquela competência. Competências diferentes não são somadas; transações não alteram o patrimônio.</p>

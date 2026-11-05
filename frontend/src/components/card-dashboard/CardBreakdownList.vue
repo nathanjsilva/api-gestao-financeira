@@ -23,7 +23,7 @@ function barWidth(total) {
       <h2 v-if="subtitle" class="mt-2 text-2xl font-black text-slate-50">{{ subtitle }}</h2>
     </div>
 
-    <EmptyState v-if="!items.length" title="Sem gastos no perÃ­odo" description="Cadastre compras para visualizar este ranking." />
+    <EmptyState v-if="!items.length" title="Sem gastos no período" description="Cadastre compras para visualizar este ranking." />
 
     <div v-else class="space-y-3">
       <div v-for="item in items" :key="item.label" class="rounded-2xl bg-white/[0.04] p-4">

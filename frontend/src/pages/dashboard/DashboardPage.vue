@@ -59,14 +59,14 @@ onMounted(loadAnalytics)
   <section class="dashboard-shell mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
     <div class="dashboard-hero">
       <PageHeader
-        eyebrow="InteligÃªncia financeira"
-        title="Dashboard analÃ­tico"
-        description="Entenda para onde seu dinheiro estÃ¡ indo, compare meses e acompanhe a evoluÃ§Ã£o da sua reserva."
+        eyebrow="Inteligência financeira"
+        title="Dashboard analítico"
+        description="Entenda para onde seu dinheiro está indo, compare meses e acompanhe a evolução da sua reserva."
       >
         <template #actions>
           <div class="grid gap-3 @min-[40rem]:grid-cols-[180px_150px]">
-            <BaseInput id="dashboard-competency" v-model="competency" label="CompetÃªncia" type="month" />
-            <BaseInput id="dashboard-months" v-model="months" label="PerÃ­odo" type="number" />
+            <BaseInput id="dashboard-competency" v-model="competency" label="Competência" type="month" />
+            <BaseInput id="dashboard-months" v-model="months" label="Período" type="number" />
           </div>
         </template>
       </PageHeader>
@@ -156,49 +156,49 @@ onMounted(loadAnalytics)
 
         <section class="analytics-panel">
           <div class="mb-5">
-            <p class="text-sm font-bold uppercase text-sky-300">KPIs avanÃ§ados</p>
+            <p class="text-sm font-bold uppercase text-sky-300">KPIs avançados</p>
             <h2 class="mt-2 text-2xl font-black text-slate-50">Comportamento financeiro</h2>
             <p class="mt-3 text-sm leading-6 text-slate-400">
-              Resumo simples dos principais indicadores do perÃ­odo selecionado.
+              Resumo simples dos principais indicadores do período selecionado.
             </p>
           </div>
 
           <div class="grid gap-3 @min-[40rem]:grid-cols-2">
             <div class="kpi-tile">
-              <span>MÃ©dia mensal de gastos</span>
+              <span>Média mensal de gastos</span>
               <strong>{{ formatCurrency(kpis.average_monthly_expense) }}</strong>
-              <small>Soma dos gastos do perÃ­odo dividida pela quantidade de meses.</small>
+              <small>Soma dos gastos do período dividida pela quantidade de meses.</small>
             </div>
             <div class="kpi-tile">
-              <span>MÃ©dia mensal de entradas</span>
+              <span>Média mensal de entradas</span>
               <strong>{{ formatCurrency(kpis.average_monthly_income) }}</strong>
-              <small>Soma das entradas do perÃ­odo dividida pela quantidade de meses.</small>
+              <small>Soma das entradas do período dividida pela quantidade de meses.</small>
             </div>
             <div class="kpi-tile">
-              <span>Melhor mÃªs</span>
+              <span>Melhor mês</span>
               <strong>{{ kpis.best_month?.competency || '-' }}</strong>
-              <small>MÃªs com maior saldo restante entre entradas e gastos.</small>
+              <small>Mês com maior saldo restante entre entradas e gastos.</small>
             </div>
             <div class="kpi-tile">
-              <span>Pior mÃªs</span>
+              <span>Pior mês</span>
               <strong>{{ kpis.worst_month?.competency || '-' }}</strong>
-              <small>MÃªs com menor saldo restante no perÃ­odo analisado.</small>
+              <small>Mês com menor saldo restante no período analisado.</small>
             </div>
             <div class="kpi-tile">
-              <span>Saldo mÃ©dio</span>
+              <span>Saldo médio</span>
               <strong>{{ formatCurrency(kpis.average_remaining) }}</strong>
-              <small>MÃ©dia do dinheiro que sobrou em cada mÃªs.</small>
+              <small>Média do dinheiro que sobrou em cada mês.</small>
             </div>
             <div class="kpi-tile">
-              <span>PrevisÃ£o de fechamento</span>
+              <span>Previsão de fechamento</span>
               <strong>{{ formatCurrency(kpis.projected_closing) }}</strong>
-              <small>Saldo restante calculado para a competÃªncia selecionada.</small>
+              <small>Saldo restante calculado para a competência selecionada.</small>
             </div>
           </div>
 
           <p class="mt-5 rounded-2xl bg-white/[0.04] p-4 text-sm leading-6 text-slate-400">
-            CÃ¡lculo geral: usamos os meses do perÃ­odo escolhido, somamos entradas, gastos e saldo restante,
-            depois geramos mÃ©dias e identificamos melhor e pior mÃªs pelo saldo final.
+            Cálculo geral: usamos os meses do período escolhido, somamos entradas, gastos e saldo restante,
+            depois geramos médias e identificamos melhor e pior mês pelo saldo final.
           </p>
         </section>
       </div>

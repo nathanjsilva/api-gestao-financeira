@@ -60,17 +60,17 @@ const impactPreview = computed(() => {
     </div>
 
     <BaseSelect :id="`transaction-category-${form.type}`" v-model="form.category_id" label="Categoria" :options="categoryOptions" :error="fieldError('category_id')" />
-    <BaseInput id="transaction-description" v-model="form.description" label="DescriÃ§Ã£o" placeholder="Ex: Supermercado" :error="fieldError('description')" />
+    <BaseInput id="transaction-description" v-model="form.description" label="Descrição" placeholder="Ex: Supermercado" :error="fieldError('description')" />
     <BaseInput id="transaction-amount" v-model="form.amount" label="Valor" type="number" placeholder="Ex: 250.90" :error="fieldError('amount')" />
 
     <div class="grid gap-3">
       <BaseSelect id="transaction-status" v-model="form.status" label="Status" :options="TRANSACTION_STATUS" :error="fieldError('status')" />
-      <BaseMonthPicker id="transaction-form-competency" v-model="form.competency" label="CompetÃªncia" :error="fieldError('competency')" />
+      <BaseMonthPicker id="transaction-form-competency" v-model="form.competency" label="Competência" :error="fieldError('competency')" />
     </div>
 
     <label class="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-sm text-slate-200">
       <input v-model="form.is_recurring" type="checkbox" class="size-4 accent-sky-400">
-      LanÃ§amento recorrente
+      Lançamento recorrente
     </label>
 
     <div class="rounded-2xl border border-white/10 bg-slate-950/60 p-3">

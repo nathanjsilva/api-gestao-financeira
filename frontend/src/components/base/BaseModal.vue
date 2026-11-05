@@ -41,7 +41,7 @@ onBeforeUnmount(() => document.removeEventListener('keydown', handleKeydown))
               aria-label="Fechar"
               @click="$emit('close')"
             >
-              âœ•
+              ✕
             </button>
           </div>
 

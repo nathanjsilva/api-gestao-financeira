@@ -72,18 +72,18 @@ const chartOptions = computed(() => ({
 <template>
   <section class="analytics-panel">
     <div class="mb-5">
-      <p class="text-sm font-bold uppercase text-sky-300">DistribuiÃ§Ã£o</p>
+      <p class="text-sm font-bold uppercase text-sky-300">Distribuição</p>
       <h2 class="mt-2 text-2xl font-black text-slate-50">Gastos por categoria</h2>
       <p class="mt-3 text-sm leading-6 text-slate-400">
-        Mostra a participaÃ§Ã£o de cada categoria no total gasto. Ajuda a enxergar para onde o dinheiro estÃ¡ indo.
+        Mostra a participação de cada categoria no total gasto. Ajuda a enxergar para onde o dinheiro está indo.
       </p>
     </div>
 
-    <EmptyState v-if="!categories.length" title="Sem gastos registrados" description="Registre transaÃ§Ãµes de saÃ­da para visualizar a distribuiÃ§Ã£o." />
+    <EmptyState v-if="!categories.length" title="Sem gastos registrados" description="Registre transações de saída para visualizar a distribuição." />
     <apexchart v-else type="donut" height="320" :options="chartOptions" :series="series" />
 
     <p class="mt-5 rounded-2xl bg-white/4 p-4 text-sm leading-6 text-slate-400">
-      CÃ¡lculo: somamos todos os gastos do mÃªs e depois calculamos a porcentagem de cada categoria sobre esse total.
+      Cálculo: somamos todos os gastos do mês e depois calculamos a porcentagem de cada categoria sobre esse total.
     </p>
   </section>
 </template>

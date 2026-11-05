@@ -68,11 +68,11 @@ const chartOptions = computed(() => ({
 <template>
   <section class="analytics-panel">
     <div class="mb-5">
-      <p class="text-sm font-bold uppercase text-sky-300">DistribuiÃ§Ã£o</p>
-      <h2 class="mt-2 text-2xl font-black text-slate-50">Gastos de cartÃ£o por categoria</h2>
+      <p class="text-sm font-bold uppercase text-sky-300">Distribuição</p>
+      <h2 class="mt-2 text-2xl font-black text-slate-50">Gastos de cartão por categoria</h2>
     </div>
 
-    <EmptyState v-if="!categories.length" title="Sem gastos no perÃ­odo" description="Cadastre compras para visualizar a distribuiÃ§Ã£o." />
+    <EmptyState v-if="!categories.length" title="Sem gastos no período" description="Cadastre compras para visualizar a distribuição." />
     <apexchart v-else type="donut" height="320" :options="chartOptions" :series="series" />
   </section>
 </template>

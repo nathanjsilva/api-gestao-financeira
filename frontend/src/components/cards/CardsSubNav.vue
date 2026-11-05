@@ -6,7 +6,7 @@ const route = useRoute()
 
 const items = [
   { label: 'Compras', routeName: ROUTE_NAMES.CARD_PURCHASES },
-  { label: 'CartÃµes', routeName: ROUTE_NAMES.CARDS },
+  { label: 'Cartões', routeName: ROUTE_NAMES.CARDS },
   { label: 'Categorias', routeName: ROUTE_NAMES.CARD_CATEGORIES },
 ]
 
@@ -16,7 +16,7 @@ function isActive(routeName) {
 </script>
 
 <template>
-  <nav class="mb-6 flex gap-2 overflow-x-auto pb-1" aria-label="NavegaÃ§Ã£o do mÃ³dulo de cartÃµes">
+  <nav class="mb-6 flex gap-2 overflow-x-auto pb-1" aria-label="Navegação do módulo de cartões">
     <RouterLink
       v-for="item in items"
       :key="item.routeName"

@@ -20,7 +20,7 @@ function barHeight(value) {
 <template>
   <section class="analytics-panel">
     <div class="mb-5">
-      <p class="text-sm font-bold uppercase text-sky-300">EvoluÃ§Ã£o patrimonial</p>
+      <p class="text-sm font-bold uppercase text-sky-300">Evolução patrimonial</p>
       <h2 class="mt-2 text-2xl font-black text-slate-50">Reserva e investimentos</h2>
       <p class="mt-3 text-sm leading-6 text-slate-400">Compara os saldos vigentes de reservas, investimentos e patrimônio total por competência.</p>
     </div>

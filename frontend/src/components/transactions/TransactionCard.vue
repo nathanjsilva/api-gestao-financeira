@@ -25,7 +25,7 @@ defineEmits(['edit', 'remove'])
         class="grid size-11 shrink-0 place-items-center rounded-2xl text-lg"
         :class="transaction.type === 'income' ? 'bg-emerald-400/10 text-emerald-200' : 'bg-rose-400/10 text-rose-200'"
       >
-        {{ transaction.type === 'income' ? 'â†‘' : 'â†“' }}
+        {{ transaction.type === 'income' ? '↑' : '↓' }}
       </span>
     </div>
 

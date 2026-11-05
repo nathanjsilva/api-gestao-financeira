@@ -75,7 +75,7 @@ const chartOptions = computed(() => ({
       <p class="mt-3 text-sm leading-6 text-slate-400">Separa receitas e despesas realizadas das que ainda estão pendentes.</p>
     </div>
 
-    <EmptyState v-if="!items.length" title="Sem dados de fluxo de caixa" description="Registre transaÃ§Ãµes para visualizar o grÃ¡fico." />
+    <EmptyState v-if="!items.length" title="Sem dados de fluxo de caixa" description="Registre transações para visualizar o gráfico." />
     <apexchart v-else type="bar" height="280" :options="chartOptions" :series="series" />
 
     <p class="mt-5 rounded-2xl bg-white/4 p-4 text-sm leading-6 text-slate-400">O resultado realizado considera apenas transações pagas. O projetado inclui as pendentes sem incorporá-las ao patrimônio.</p>

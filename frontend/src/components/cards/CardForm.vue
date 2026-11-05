@@ -37,7 +37,7 @@ defineEmits(['submit', 'cancel'])
     <BaseInput
       id="card-name"
       v-model="form.name"
-      label="Nome do cartÃ£o"
+      label="Nome do cartão"
       placeholder="Ex: Nubank Roxinho"
       :error="fieldError('name')"
     />
@@ -45,7 +45,7 @@ defineEmits(['submit', 'cancel'])
     <BaseInput
       id="card-responsible-person"
       v-model="form.responsible_person"
-      label="Pessoa responsÃ¡vel"
+      label="Pessoa responsável"
       placeholder="Ex: Nathan"
       :error="fieldError('responsible_person')"
     />
@@ -55,7 +55,7 @@ defineEmits(['submit', 'cancel'])
       class="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-sm text-slate-200"
     >
       <input v-model="form.active" type="checkbox" class="size-4 accent-sky-400">
-      CartÃ£o ativo
+      Cartão ativo
     </label>
 
     <div class="grid gap-3">
