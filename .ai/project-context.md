@@ -50,8 +50,8 @@ Detalhes, restrições e cálculos de cada domínio estão nos contextos especí
 - Dashboard geral agrega transações, snapshots das contas de reserva ativas e o investimento mensal. Transações pagas e pendentes entram nos totais.
 - Reserva mensal reúne snapshots de contas de reserva e itens de investimento. Os snapshots são saldos, não movimentos de caixa.
 - Compras de cartão dependem de cartão e categoria de cartão ativos do mesmo usuário. O backend gera parcelas; o dashboard de cartões lê essas parcelas.
-- Categorias de cartão, compras de cartão e painéis de cartão não alteram transações nem o dashboard geral.
-- Mutação de dados financeiros invalida a versão do cache do dashboard geral. Mutação de cartão, categoria de cartão ou compra invalida uma versão de cache separada.
+- Categorias e compras de cartão não alteram transações. O analytics do dashboard geral exibe as parcelas em `card_expenses`, separadas dos totais de transações, do fluxo de caixa e das categorias financeiras.
+- Mutação de dados financeiros invalida o cache do dashboard geral. Mutação de cartão, categoria de cartão ou compra invalida os caches dos dois analytics que exibem esses dados.
 
 ## API
 

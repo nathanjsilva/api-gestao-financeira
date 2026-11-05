@@ -2,7 +2,7 @@
 
 ## Responsabilidade e dependências
 
-O dashboard geral agrega transações, saldos vigentes das contas de reserva ativas e o investimento mensal para apresentar resumo, comparações, séries temporais, indicadores e insights. Ele não lê parcelas de cartão. O controller obtém o user_id do token autenticado; services e repositories filtram os dados desse usuário.
+O dashboard geral agrega transações, saldos vigentes de Reserva e Investimento e, no painel analítico, exibe os gastos de cartão por categoria em um bloco separado. O controller obtém o user_id do token autenticado; services e repositories filtram os dados desse usuário. Parcelas de cartão não são incorporadas ao resultado financeiro, ao fluxo de caixa ou aos totais de transações.
 
 Arquivos centrais: DashboardController, DashboardService, FinancialAnalyticsService, CategoryAnalyticsService, MonthlyComparisonService, TransactionRepository, MonthlyReserveRepository, ReserveAccountEntryRepository e os Requests/Resources em app/Http/Requests/Dashboard e app/Http/Resources/Dashboard*.
 
@@ -46,6 +46,7 @@ A resposta de /analytics tem estes blocos:
 | comparison | Competências anterior/atual, diferenças e percentuais de entradas e gastos, diferença de reserva e saldo, e tendência de gastos (worse, better ou stable). |
 | kpis | average_monthly_expense, average_monthly_income, average_remaining, best_month, worst_month, income_commitment_rate, savings_rate e projected_closing. |
 | categories | ranking, maior e menor gasto e top_growth. Cada item inclui total, total anterior, diferença, participação percentual e tendência. |
+| card_expenses | Total das parcelas da competência e ranking por categoria própria do cartão, comparado com a competência anterior. Fica separado dos gastos de transações porque parcelas não possuem status pago/pendente. |
 | evolution | Resumo mensal de cada competência da janela, inclusive meses sem transações, que aparecem com valores zero. |
 | reserve_evolution | Competência, previous_reserve, current_reserve, investment e total_saved por mês. |
 | cash_flow | Competência, income, expense e remaining por mês; inclui transações pagas e pendentes. |
@@ -79,7 +80,7 @@ Esta seção substitui as fórmulas e descrições de status do dashboard acima.
 - `reserve_total`/Reserva Atual soma os saldos vigentes dos itens ativos do tipo `reserve`; `investment_total`/Investimento Atual soma os itens ativos do tipo `investment`; `total_saved` é a soma desses dois valores. Um saldo declarado em uma competência é total do item e não é somado a saldos de outras competências.
 - `asset_variation` compara `total_saved` com o total da competência imediatamente anterior. O dashboard não soma o resultado das transações ao patrimônio.
 - `realized_income`, `realized_expense` e `realized_result` consideram apenas transações `paid`. `pending_income` e `pending_expense` permanecem separados; `projected_result` é o resultado realizado acrescido das receitas pendentes e deduzido das despesas pendentes. Os campos de compatibilidade `total_income`, `total_expense` e `remaining_amount` representam valores realizados.
-- Categorias e gráficos de despesas consideram valores realizados; o gráfico de fluxo distingue realizados e pendentes. A evolução patrimonial apresenta Reserva, Investimento e Total Guardado.
+- Categorias e gráficos de transações consideram valores realizados; o gráfico de fluxo distingue realizados e pendentes. O bloco `card_expenses` soma `card_installments` da competência e agrupa por `card_category_id`, separado dos totais financeiros. A evolução patrimonial apresenta Reserva, Investimento e Total Guardado.
 - `has_unresolved_archived_items` indica que saldos de itens antigos com data de arquivamento desconhecida foram omitidos do patrimônio histórico até a revisão.
 - O zeramento dos investimentos legados reduz intencionalmente os indicadores históricos baseados nesses campos. O arquivo preserva os valores originais para auditoria/recuperação; não se deve compensar os saldos patrimoniais antigos.
-- Alterações de categorias também disparam `DadosFinanceirosAlterados` para invalidar nomes e dados analíticos em cache. A mudança mantém os limites existentes do dashboard de cartões, que segue independente.
+- Alterações de cartão, categoria de cartão e compra invalidam também a versão do cache do analytics financeiro para atualizar o bloco `card_expenses`. O cache próprio do dashboard de cartões continua separado.

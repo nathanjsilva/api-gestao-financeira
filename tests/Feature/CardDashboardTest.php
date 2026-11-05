@@ -163,7 +163,7 @@ class CardDashboardTest extends TestCase
         ));
     }
 
-    public function test_dashboard_financeiro_geral_nao_e_afetado_por_compras_de_cartao(): void
+    public function test_compras_de_cartao_nao_alteram_o_resumo_financeiro_mas_aparecem_por_categoria_no_analytics(): void
     {
         $usuario = User::factory()->create();
         Sanctum::actingAs($usuario);
@@ -187,5 +187,60 @@ class CardDashboardTest extends TestCase
 
         $this->assertEquals($antes['total_expense'], $depois['total_expense']);
         $this->assertEquals($antes['remaining_amount'], $depois['remaining_amount']);
+
+        $analytics = $this->getJson('/api/dashboard/analytics?competency=2026-01')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame(0.0, (float) $analytics['overview']['total_expense']);
+        $this->assertSame(500.0, (float) $analytics['card_expenses']['total']);
+        $this->assertSame('Mercado', $analytics['card_expenses']['categories'][0]['category_name']);
+        $this->assertSame(500.0, (float) $analytics['card_expenses']['categories'][0]['total']);
+    }
+
+    public function test_analytics_do_dashboard_atualiza_compras_de_cartao_e_isola_por_usuario(): void
+    {
+        $usuario = User::factory()->create();
+        $outroUsuario = User::factory()->create();
+        Sanctum::actingAs($usuario);
+
+        $cartao = Card::create(['user_id' => $usuario->id, 'name' => 'Cartao', 'responsible_person' => 'Nathan', 'active' => true]);
+        $categoria = CardCategory::create(['user_id' => $usuario->id, 'name' => 'Mercado', 'active' => true]);
+        $cartaoAlheio = Card::create(['user_id' => $outroUsuario->id, 'name' => 'Outro cartao', 'responsible_person' => 'Outra pessoa', 'active' => true]);
+        $categoriaAlheia = CardCategory::create(['user_id' => $outroUsuario->id, 'name' => 'Lazer', 'active' => true]);
+
+        $this->getJson('/api/dashboard/analytics?competency=2026-01')
+            ->assertOk()
+            ->assertJsonPath('data.card_expenses.total', 0);
+
+        $this->postJson('/api/card-purchases', [
+            'card_id' => $cartaoAlheio->id,
+            'card_category_id' => $categoriaAlheia->id,
+            'description' => 'Compra de outra pessoa',
+            'total_amount' => 999,
+            'purchase_date' => '2026-01-05',
+            'reference_competency' => '2026-01',
+            'payment_type' => 'cash',
+        ])->assertUnprocessable();
+
+        $this->postJson('/api/card-purchases', [
+            'card_id' => $cartao->id,
+            'card_category_id' => $categoria->id,
+            'description' => 'Compra do usuario',
+            'total_amount' => 250,
+            'purchase_date' => '2026-01-05',
+            'reference_competency' => '2026-01',
+            'payment_type' => 'installment',
+            'installments_total' => 2,
+            'starting_installment_number' => 1,
+        ])->assertCreated();
+
+        $analytics = $this->getJson('/api/dashboard/analytics?competency=2026-01')
+            ->assertOk()
+            ->json('data');
+
+        $this->assertSame(125.0, (float) $analytics['card_expenses']['total']);
+        $this->assertCount(1, $analytics['card_expenses']['categories']);
+        $this->assertSame('Mercado', $analytics['card_expenses']['categories'][0]['category_name']);
     }
 }

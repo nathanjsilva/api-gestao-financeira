@@ -18,6 +18,7 @@ class DashboardAnalyticsResource extends JsonResource
             'comparison' => $this['comparison'],
             'kpis' => $this['kpis'],
             'categories' => $this['categories'],
+            'card_expenses' => $this['card_expenses'],
             'evolution' => $this['evolution'],
             'reserve_evolution' => $this['reserve_evolution'],
             'cash_flow' => $this['cash_flow'],
@@ -26,4 +27,3 @@ class DashboardAnalyticsResource extends JsonResource
         ];
     }
 }
-

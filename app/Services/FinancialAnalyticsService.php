@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Repositories\CardInstallmentRepository;
 use App\Repositories\TransactionRepository;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
@@ -11,8 +12,10 @@ class FinancialAnalyticsService
     public function __construct(
         protected DashboardService $dashboardService,
         protected TransactionRepository $transactionRepository,
+        protected CardInstallmentRepository $cardInstallmentRepository,
         protected MonthlyComparisonService $monthlyComparisonService,
         protected CategoryAnalyticsService $categoryAnalyticsService,
+        protected CardAnalyticsService $cardAnalyticsService,
     ) {}
 
     public function obterPainelAnalitico(int $usuarioId, string $competencia, int $meses = 6): array
@@ -53,6 +56,9 @@ class FinancialAnalyticsService
         $gastosAtuais = $this->transactionRepository->obterTotaisDeGastosAgrupadosPorCategoria($usuarioId, $competencia);
         $gastosAnteriores = $this->transactionRepository->obterTotaisDeGastosAgrupadosPorCategoria($usuarioId, $competenciaAnterior);
         $ranking = $this->categoryAnalyticsService->montarRanking($gastosAtuais, $gastosAnteriores);
+        $gastosCartaoAtuais = $this->cardInstallmentRepository->obterTotalAgrupadoPorCategoria($usuarioId, $competencia);
+        $gastosCartaoAnteriores = $this->cardInstallmentRepository->obterTotalAgrupadoPorCategoria($usuarioId, $competenciaAnterior);
+        $rankingCartao = $this->cardAnalyticsService->montarRankingCategorias($gastosCartaoAtuais, $gastosCartaoAnteriores);
         $comparacao = $this->monthlyComparisonService->comparar($mesAtual, $mesAnterior);
         $kpis = $this->montarKpis($mesAtual, $mesesDoPeriodo->all());
 
@@ -70,6 +76,10 @@ class FinancialAnalyticsService
                 'highest_expense' => $ranking[0] ?? null,
                 'lowest_expense' => ! empty($ranking) ? $ranking[array_key_last($ranking)] : null,
                 'top_growth' => $this->categoryAnalyticsService->categoriasQueMaisCresceram($ranking),
+            ],
+            'card_expenses' => [
+                'total' => round((float) $gastosCartaoAtuais->sum('total'), 2),
+                'categories' => $rankingCartao,
             ],
             'evolution' => $mesesDoPeriodo->all(),
             'reserve_evolution' => $this->montarEvolucaoReserva($mesesDoPeriodo->all()),

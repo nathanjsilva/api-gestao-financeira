@@ -4,7 +4,7 @@
 
 Gerenciamento detalhado de gastos em cartão: cadastro de cartões e de categorias próprias de cartão, lançamento de compras à vista ou parceladas com geração automática de parcelas, e consolidação/dashboard mensal.
 
-Este módulo é **totalmente aditivo e isolado** do restante do sistema: não referencia `categories`/`transactions`, não altera o dashboard financeiro geral (`FinancialAnalyticsService`) e não recalcula nem migra as `Transaction` antigas usadas historicamente para registrar o valor total gasto no cartão (essas continuam existindo normalmente, tipicamente como uma `Transaction` de `expense` com alguma categoria genérica). A partir da implantação deste módulo, novos lançamentos detalhados de cartão devem ser feitos aqui.
+Este módulo mantém compras, parcelas e categorias próprias, sem gravar ou migrar `categories`/`transactions`. O endpoint `/dashboard/analytics` lê as parcelas para exibir um bloco separado `card_expenses`, agrupado por categoria de cartão; não mistura esses valores com o resultado financeiro realizado/pendente, o fluxo de caixa ou as categorias financeiras. Transações antigas usadas para registrar genericamente o total do cartão continuam sem alteração. Novos lançamentos detalhados de cartão devem ser feitos aqui.
 
 ---
 
@@ -18,7 +18,7 @@ Este módulo é **totalmente aditivo e isolado** do restante do sistema: não re
 | Models | `Card`, `CardCategory`, `CardPurchase`, `CardInstallment` |
 | Requests | `Card/*`, `CardCategory/*`, `CardPurchase/*`, `CardDashboard/*` |
 | Resources | `CardResource`, `CardCategoryResource`, `CardPurchaseResource`, `CardInstallmentResource`, `CardDashboardAnalyticsResource`, `CardMonthlySummaryResource` |
-| Evento/Cache | `CartaoDadosAlterados` + `InvalidarCacheCartoes` (versão de cache própria: `cards:user:{id}:version`) |
+| Evento/Cache | `CartaoDadosAlterados` invalida o cache próprio (`InvalidarCacheCartoes`) e o analytics financeiro que exibe gastos de cartão (`InvalidarCacheDashboardPorCartoes`). |
 | Migrations | `database/migrations/2026_08_25_*` (`cards`, `card_categories`, `card_purchases`, `card_installments`) |
 
 ---
@@ -92,7 +92,7 @@ Chave própria, **não compartilhada** com o dashboard financeiro geral:
 ```
 "cards:analytics:user:{userId}:{competency}:{months}:v{versao}"
 ```
-Versão incrementada via `Cache::increment("cards:user:{userId}:version")` sempre que `CartaoDadosAlterados` é disparado (criar/atualizar/excluir cartão, categoria ou compra).
+Versão do cache de cartões incrementada via `Cache::increment("cards:user:{userId}:version")` sempre que `CartaoDadosAlterados` é disparado (criar/atualizar/excluir cartão, categoria ou compra). O mesmo evento incrementa `dashboard:user:{userId}:version` para atualizar o bloco de gastos por categoria no dashboard geral.
 
 ---
 
@@ -104,7 +104,7 @@ Versão incrementada via `Cache::increment("cards:user:{userId}:version")` sempr
 
 ## Pontos de Atenção
 
-- `CardAnalyticsService` é deliberadamente **independente** do `CategoryAnalyticsService` do dashboard financeiro geral, mesmo tendo lógica parecida — evita acoplar os dois domínios.
+- `CardAnalyticsService` mantém o ranking baseado nas categorias e parcelas do cartão. O dashboard financeiro usa esse resultado apenas no bloco separado `card_expenses`.
 - Se o usuário desativar um cartão/categoria, compras já lançadas continuam existindo e aparecendo nas consultas — apenas não podem mais ser usadas em **novas** compras nem em edições de compras existentes.
 - `by_card`/`by_person`/`by_category` (e `top_categories`/`top_cards`) retornam dados brutos das Repositories (Collections de models/stdClass) — os Resources (`CardDashboardAnalyticsResource`, `CardMonthlySummaryResource`) são responsáveis por achatar isso em arrays simples antes de serializar, seguindo o mesmo padrão do `DashboardResource` existente.
 

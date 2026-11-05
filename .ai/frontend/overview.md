@@ -46,7 +46,7 @@ A raiz redireciona para o dashboard quando autenticado ou para login quando visi
 | Categorias | pages/categories; services/categories/categoryService.ts | CategoryForm e opções de tipo. |
 | Transações | pages/transactions; services/transactions/transactionService.ts | categorias, filtros locais por texto/categoria/tipo/status/recorrência, resumo da competência e gráfico de gastos por categoria. |
 | Reserva mensal | pages/monthly-reserve; services/monthly-reserves/monthlyReserveService.ts e services/reserve-accounts/reserveAccountService.ts | MonthlyReserveEditor também chama dashboardService e edita snapshots, itens de investimento, observações e contas. |
-| Dashboard geral | pages/dashboard; services/dashboard/dashboardService.ts | Resumo, comparações, ranking, evolução, reservas, fluxo de caixa, heatmap, insights e KPIs. |
+| Dashboard geral | pages/dashboard; services/dashboard/dashboardService.ts | Resumo, comparações, ranking de transações, gastos de cartão separados por categoria, evolução, reservas, fluxo de caixa, heatmap, insights e KPIs. |
 | Cartões | páginas em pages/cards, card-categories e card-purchases; services/cards, card-categories, card-purchases e card-dashboard | Ver [contexto frontend de cartões](cards.md). |
 
 MonthlyReserveEditor carrega contas da competência incluindo arquivadas, apresenta contas ativas e arquivadas, permite criar, renomear, arquivar e reativar, e prepara os saldos das contas ativas para gravação em lote. A gravação dos saldos é atômica no endpoint de lote. Renomeações são requests separados e não fazem parte dessa atomicidade. O componente também gerencia os itens de investimento da reserva mensal.

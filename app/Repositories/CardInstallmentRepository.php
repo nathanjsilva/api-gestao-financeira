@@ -105,6 +105,7 @@ class CardInstallmentRepository
             ->selectRaw('card_category_id, SUM(amount) as total')
             ->where('user_id', $userId)
             ->where('competency', $competencia)
+            ->whereHas('category', fn ($query) => $query->where('user_id', $userId))
             ->groupBy('card_category_id')
             ->with('category:id,name')
             ->orderByDesc('total')

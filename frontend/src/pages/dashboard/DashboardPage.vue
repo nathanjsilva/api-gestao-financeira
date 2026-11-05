@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import BaseInput from '../../components/base/BaseInput.vue'
+import CardExpensesByCategory from '../../components/dashboard/CardExpensesByCategory.vue'
 import CashFlowChart from '../../components/dashboard/CashFlowChart.vue'
 import CategoryRanking from '../../components/dashboard/CategoryRanking.vue'
 import ExpenseChart from '../../components/dashboard/ExpenseChart.vue'
@@ -27,6 +28,7 @@ const overview = computed(() => analytics.value?.overview || {})
 const comparison = computed(() => analytics.value?.comparison || {})
 const kpis = computed(() => analytics.value?.kpis || {})
 const categories = computed(() => analytics.value?.categories?.ranking || [])
+const cardExpenses = computed(() => analytics.value?.card_expenses || { total: 0, categories: [] })
 const insights = computed(() => analytics.value?.insights || [])
 const reserveEvolution = computed(() => analytics.value?.reserve_evolution || [])
 const cashFlow = computed(() => analytics.value?.cash_flow || [])
@@ -144,6 +146,10 @@ onMounted(loadAnalytics)
       <div class="mt-5 grid gap-4 @min-[80rem]:grid-cols-[1.1fr_0.9fr]">
         <ExpenseChart :categories="categories" />
         <CategoryRanking :categories="categories" />
+      </div>
+
+      <div class="mt-5">
+        <CardExpensesByCategory :total="cardExpenses.total" :categories="cardExpenses.categories" />
       </div>
 
       <div class="mt-5 grid gap-4 @min-[80rem]:grid-cols-[1fr_1fr]">
